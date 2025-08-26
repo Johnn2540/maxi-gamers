@@ -1,52 +1,46 @@
 const mongoose = require("mongoose");
+const bcrypt = require("bcrypt");
 
-mongoose.connect("mongodb://localhost:27017/loginSignup", {
+mongoose.connect("mongodb://127.0.0.1:27017/loginSignup", {
     useNewUrlParser: true,
     useUnifiedTopology: true
 })
-.then(() => {
-    console.log("MongoDB connected");
-})
-.catch((err) => {
-    console.error("MongoDB connection failed:", err.message);
-});
+.then(() => console.log("MongoDB connected"))
+.catch((err) => console.error("MongoDB connection failed:", err.message));
 
-// Define schema
 const userSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: true,
-        trim: true
-    },
-    email: {
-        type: String,
-        required: true,
-        unique: true,   // prevent duplicate emails
-        lowercase: true,
-        trim: true,
+    name: { type: String, required: true, trim: true },
+    email: { 
+        type: String, required: true, unique: true, lowercase: true, trim: true,
         match: [/^\S+@\S+\.\S+$/, "Please use a valid email address"]
     },
-    phone: {
-        type: String,
-        required: true,
-        unique: true,   // no duplicate phone numbers
-        match: [/^\d{10,15}$/, "Please enter a valid phone number"] // 10–15 digits
+    phone: { 
+        type: String, required: true, unique: true,
+        match: [/^\d{10,15}$/, "Please enter a valid phone number"]
     },
-    password: {
-        type: String,
-        required: true
-    },
-    role: {
-        type: String,
-        enum: ["user", "admin"], 
-        default: "user"
-    }
+    studentId: { type: String, required: false, unique: true, sparse: true },
+    password: { type: String, required: true },
+    role: { type: String, enum: ["user"], default: "user" },
+    active: { type: Boolean, default: true }
+}, { timestamps: true });
+
+// Hash password before saving
+userSchema.pre("save", async function (next) {
+    if (!this.isModified("password")) return next();
+    this.password = await bcrypt.hash(this.password, 10);
+    next();
 });
 
-// Create model
-const Collection = mongoose.model("Collection1", userSchema);
+// Compare password method
+userSchema.methods.comparePassword = function (candidatePassword) {
+    return bcrypt.compare(candidatePassword, this.password);
+};
 
-module.exports = Collection;
+const User = mongoose.model("User", userSchema);
+
+module.exports = User;
+
+
 
 
 
