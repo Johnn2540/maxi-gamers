@@ -6,27 +6,12 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
   <style>
-    body {
-      min-height: 100vh;
-      display: flex;
-    }
-    .sidebar {
-      width: 250px;
-      background: #212529;
-      color: #fff;
-    }
-    .sidebar .nav-link {
-      color: #ddd;
-    }
-    .sidebar .nav-link.active {
-      background: #0d6efd;
-      color: #fff;
-      font-weight: bold;
-    }
-    .content {
-      flex: 1;
-      padding: 20px;
-    }
+    body { min-height: 100vh; display: flex; }
+    .sidebar { width: 250px; background: #212529; color: #fff; }
+    .sidebar .nav-link { color: #ddd; }
+    .sidebar .nav-link.active { background: #0d6efd; color: #fff; font-weight: bold; }
+    .content { flex: 1; padding: 20px; }
+    img.thumb { border-radius: 6px; object-fit: cover; }
   </style>
 </head>
 <body>
@@ -38,7 +23,9 @@
       <li><a href="#users" class="nav-link active" data-bs-toggle="tab"><i class="bi bi-people"></i> Users</a></li>
       <li><a href="#products" class="nav-link" data-bs-toggle="tab"><i class="bi bi-box-seam"></i> Products</a></li>
       <li><a href="#loans" class="nav-link" data-bs-toggle="tab"><i class="bi bi-cash-stack"></i> Loans</a></li>
-      <li><a href="#content" class="nav-link" data-bs-toggle="tab"><i class="bi bi-layout-text-sidebar"></i> Content</a></li>
+      <li><a href="#content" class="nav-link" data-bs-toggle="tab"><i class="bi bi-layout-text-sidebar"></i> Banner-Content</a></li>
+      <li><a href="#leaderboard" class="nav-link" data-bs-toggle="tab"><i class="bi bi-box-seam"></i> Leaderboard</a></li>
+      <li><a href="#bookings" class="nav-link" data-bs-toggle="tab"><i class="bi bi-cash-stack"></i> Bookings</a></li>
     </ul>
     <hr>
     <a href="/logout" class="btn btn-sm btn-danger w-100"><i class="bi bi-box-arrow-right"></i> Logout</a>
@@ -47,61 +34,483 @@
   <!-- Main Content -->
   <div class="content">
     <div class="tab-content">
-<tbody>
-  {{#each users}}
-  <tr>
-    <td>{{this._id}}</td>
-    <td>{{this.name}}</td>
-    <td>{{this.email}}</td>
-    <td>
-      <span class="badge {{#if (eq this.role 'admin')}}bg-danger{{else}}bg-primary{{/if}}">
-        {{this.role}}
-      </span>
-    </td>
-    <td>
-      {{#if this.active}}
-        <span class="badge bg-success">Active</span>
-      {{else}}
-        <span class="badge bg-secondary">Suspended</span>
-      {{/if}}
-    </td>
-    <td class="text-end">
-      <div class="dropdown">
-        <button class="btn btn-sm btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown">
-          Actions
-        </button>
-        <ul class="dropdown-menu dropdown-menu-end">
-          <li><a class="dropdown-item" href="/admin/users/edit/{{this._id}}"><i class="bi bi-pencil"></i> Edit</a></li>
-          <li><a class="dropdown-item" href="/admin/users/suspend/{{this._id}}">{{#if this.active}}<i class="bi bi-pause"></i> Suspend{{else}}<i class="bi bi-play"></i> Activate{{/if}}</a></li>
-          <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item text-danger" href="/admin/users/delete/{{this._id}}" onclick="return confirm('Are you sure?')"><i class="bi bi-trash"></i> Delete</a></li>
-        </ul>
-      </div>
-    </td>
-  </tr>
-  {{/each}}
-</tbody>
 
-      <!-- Products Tab -->
+      <!-- Users -->
+      <div class="tab-pane fade show active" id="users">
+        <h2>👥 Manage Users</h2>
+        <table class="table table-striped mt-3">
+          <thead>
+            <tr>
+              <th>ID</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each users}}
+            <tr id="user-{{this._id}}">
+              <td>{{this._id}}</td>
+              <td>{{this.name}}</td>
+              <td>{{this.email}}</td>
+              <td>
+                <span class="badge {{#if (eq this.role 'admin')}}bg-danger{{else}}bg-primary{{/if}}">{{this.role}}</span>
+              </td>
+              <td class="status-col">
+                {{#if this.active}}
+                  <span class="badge bg-success">Active</span>
+                {{else}}
+                  <span class="badge bg-secondary">Suspended</span>
+                {{/if}}
+              </td>
+              <td class="text-end">
+                <div class="dropdown">
+                  <button class="btn btn-sm btn-outline-dark dropdown-toggle" data-bs-toggle="dropdown">Actions</button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="/admin/users/edit/{{this._id}}"><i class="bi bi-pencil"></i> Edit</a></li>
+                    <li>
+                      <button class="dropdown-item toggle-status-btn" data-id="{{this._id}}">
+                        {{#if this.active}}<i class="bi bi-pause"></i> Suspend{{else}}<i class="bi bi-play"></i> Activate{{/if}}
+                      </button>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="/admin/users/delete/{{this._id}}" onclick="return confirm('Are you sure?')"><i class="bi bi-trash"></i> Delete</a></li>
+                  </ul>
+                </div>
+              </td>
+            </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Products -->
       <div class="tab-pane fade" id="products">
         <h2>📦 Manage Products</h2>
-        <div class="alert alert-info">Products management coming soon...</div>
+
+        <!-- Add Product -->
+        <form id="addProductForm" action="/admin/products" method="POST" enctype="multipart/form-data" class="mb-4 p-3 border rounded bg-light">
+          <h5>Add New Product</h5>
+          <div class="row g-3">
+            <div class="col-md-3"><input type="text" name="title" class="form-control" placeholder="Product Title" required></div>
+            <div class="col-md-2"><input type="number" name="marketPrice" class="form-control" placeholder="Market Price" required></div>
+            <div class="col-md-2"><input type="number" name="salePrice" class="form-control" placeholder="Sale Price" required></div>
+            <div class="col-md-3"><input type="text" name="description" class="form-control" placeholder="Description" required></div>
+            <div class="col-md-2"><input type="file" name="image" class="form-control" accept="image/*" required></div>
+          </div>
+          <div class="form-check mt-2">
+            <input class="form-check-input" type="checkbox" name="onSale" id="onSaleCheck">
+            <label class="form-check-label" for="onSaleCheck">On Sale</label>
+          </div>
+          <button type="submit" class="btn btn-success mt-3"><i class="bi bi-check2-circle"></i> Add Product</button>
+        </form>
+
+        <!-- Product Table -->
+        <table class="table table-striped" id="productsTable">
+          <thead>
+            <tr>
+              <th>ID</th><th>Title</th><th>Market Price</th><th>Sale Price</th><th>Description</th><th>On Sale</th><th>Image</th><th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each products}}
+            <tr id="product-{{this._id}}">
+              <td>{{this._id}}</td>
+              <td>{{this.title}}</td>
+              <td>{{this.marketPrice}}</td>
+              <td>{{this.salePrice}}</td>
+              <td>{{this.description}}</td>
+              <td>
+                {{#if this.onSale}}
+                  <span class="badge bg-success">Yes</span>
+                {{else}}
+                  <span class="badge bg-secondary">No</span>
+                {{/if}}
+              </td>
+              <td><img src="{{this.image}}" width="50" height="50" class="thumb" alt="{{this.title}}"></td>
+              <td class="text-end">
+                <button class="btn btn-sm btn-primary edit-btn" 
+                        data-id="{{this._id}}" 
+                        data-title="{{this.title}}" 
+                        data-market="{{this.marketPrice}}" 
+                        data-sale="{{this.salePrice}}" 
+                        data-description="{{this.description}}" 
+                        data-onsale="{{this.onSale}}" 
+                        data-image="{{this.image}}">
+                  <i class="bi bi-pencil"></i> Edit
+                </button>
+                <button class="btn btn-sm btn-danger delete-btn" data-id="{{this._id}}">
+                  <i class="bi bi-trash"></i> Delete
+                </button>
+              </td>
+            </tr>
+            {{/each}}
+          </tbody>
+        </table>
       </div>
 
-      <!-- Loans Tab -->
+      <!-- Loans -->
       <div class="tab-pane fade" id="loans">
         <h2>💰 Manage Loans</h2>
         <div class="alert alert-info">Loan management coming soon...</div>
       </div>
 
-      <!-- Content Tab -->
+      <!-- Content -->
       <div class="tab-pane fade" id="content">
         <h2>📰 Manage Content</h2>
         <div class="alert alert-info">Content management coming soon...</div>
       </div>
+
+<!-- ========================= ADMIN LEADERBOARD ========================= -->
+<div class="tab-pane fade" id="leaderboard">
+  <h2>🏆 Manage Leaderboard</h2>
+
+  <!-- ===== Add Player Form ===== -->
+  <form id="addLeaderboardForm" class="mb-4 p-3 border rounded bg-light">
+    <h5>Add New Player</h5>
+    <div class="row g-3">
+      <div class="col-md-6">
+        <input type="text" name="player" class="form-control" placeholder="Player Name" required>
+      </div>
+      <div class="col-md-4">
+        <input type="number" name="score" class="form-control" placeholder="Score" required>
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-success w-100"><i class="bi bi-plus-circle"></i> Add</button>
+      </div>
+    </div>
+  </form>
+
+  <!-- ===== Leaderboard Table ===== -->
+  <div class="table-responsive">
+    <table class="table table-dark table-striped align-middle leaderboard-table">
+      <thead>
+        <tr class="text-success">
+          <th>Rank</th>
+          <th>Player</th>
+          <th>Score</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Leaderboard will dynamically populate here -->
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===== Edit Leaderboard Modal ===== -->
+<div class="modal fade" id="editLeaderboardModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form id="editLeaderboardForm" class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Player</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editLeaderboardId">
+        <div class="mb-3">
+          <label>Player</label>
+          <input type="text" id="editPlayer" class="form-control" required>
+        </div>
+        <div class="mb-3">
+          <label>Score</label>
+          <input type="number" id="editScore" class="form-control" required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-success">Save Changes</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== Styles for Glow ===== -->
+<style>
+  .leaderboard-table tbody tr { transition: all 0.3s ease; }
+  .leaderboard-table tbody tr:hover {
+    background: rgba(0, 255, 0, 0.1);
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.6);
+    transform: scale(1.02);
+  }
+  .glow-gold { background: rgba(255, 215, 0, 0.15) !important; box-shadow: 0 0 20px rgba(255, 215, 0, 0.9); font-weight: bold; }
+  .glow-silver { background: rgba(192, 192, 192, 0.15) !important; box-shadow: 0 0 20px rgba(192, 192, 192, 0.9); font-weight: bold; }
+  .glow-bronze { background: rgba(205, 127, 50, 0.15) !important; box-shadow: 0 0 20px rgba(205, 127, 50, 0.9); font-weight: bold; }
+</style>
+
+<!-- ===== Scripts for Dynamic Add/Edit/Delete + Real-time Update ===== -->
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+const tbody = document.querySelector(".leaderboard-table tbody");
+
+// --- Helper to render leaderboard table ---
+async function renderLeaderboard() {
+  try {
+    const res = await fetch("/top-leaderboard");
+    const leaderboard = await res.json();
+    tbody.innerHTML = "";
+    leaderboard.forEach((p, i) => {
+      const tr = document.createElement("tr");
+      tr.id = `leaderboard-${p._id}`;
+      tr.className = i===0?"glow-gold":i===1?"glow-silver":i===2?"glow-bronze":"";
+      tr.innerHTML = `
+        <td>${i===0?"🥇 1":i===1?"🥈 2":i===2?"🥉 3":i+1}</td>
+        <td>${p.player}</td>
+        <td>${p.score}</td>
+        <td class="text-end">
+          <button class="btn btn-sm btn-primary edit-btn" 
+                  data-id="${p._id}" 
+                  data-player="${p.player}" 
+                  data-score="${p.score}"><i class="bi bi-pencil"></i> Edit</button>
+          <button class="btn btn-sm btn-danger delete-btn" data-id="${p._id}">
+            <i class="bi bi-trash"></i> Delete
+          </button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    // Rebind buttons
+    document.querySelectorAll(".edit-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.getElementById("editLeaderboardId").value = btn.dataset.id;
+        document.getElementById("editPlayer").value = btn.dataset.player;
+        document.getElementById("editScore").value = btn.dataset.score;
+        new bootstrap.Modal(document.getElementById("editLeaderboardModal")).show();
+      });
+    });
+
+    document.querySelectorAll(".delete-btn").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        if(!confirm("Are you sure?")) return;
+        await fetch(`/admin/leaderboard/${btn.dataset.id}`, { method: "DELETE" });
+        socket.emit("leaderboardUpdate");
+      });
+    });
+
+  } catch(err){ console.error(err); }
+}
+
+// --- Initial render ---
+renderLeaderboard();
+
+// --- Add Player ---
+document.getElementById("addLeaderboardForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const player = e.target.player.value;
+  const score = e.target.score.value;
+  await fetch("/admin/leaderboard", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ player, score })
+  });
+  e.target.reset();
+  socket.emit("leaderboardUpdate");
+});
+
+// --- Edit Player ---
+document.getElementById("editLeaderboardForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const id = document.getElementById("editLeaderboardId").value;
+  const player = document.getElementById("editPlayer").value;
+  const score = document.getElementById("editScore").value;
+  await fetch(`/admin/leaderboard/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ player, score })
+  });
+  bootstrap.Modal.getInstance(document.getElementById("editLeaderboardModal")).hide();
+  socket.emit("leaderboardUpdate");
+});
+
+// --- Real-time update ---
+socket.on("leaderboardUpdate", renderLeaderboard);
+</script>
+
+
+<!-- ========================= ADMIN BOOKINGS ========================= -->
+<div class="tab-pane fade show active" id="bookings">
+  <h2 class="mb-4 text-success">🎮 Manage Game Bookings</h2>
+
+  <!-- ===== Bookings Table ===== -->
+  <div class="table-responsive">
+    <table class="table table-striped align-middle" id="bookingsTable">
+      <thead>
+        <tr class="text-success">
+          <th>ID</th>
+          <th>User</th>
+          <th>Game</th>
+          <th>Console</th>
+          <th>Date</th>
+          <th>Time Slot</th>
+          <th>Status</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Bookings will dynamically populate here -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ===== Styles ===== -->
+  <style>
+    #bookingsTable tbody tr { transition: all 0.3s ease; }
+
+    /* New booking glow */
+    #bookingsTable tbody tr.new-booking {
+      background: rgba(0, 255, 255, 0.15);
+      box-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+      transform: scale(1.02);
+      animation: fadeHighlight 3s forwards;
+    }
+
+    /* Status update glow */
+    #bookingsTable tbody tr.updated {
+      background: rgba(255, 255, 0, 0.15);
+      box-shadow: 0 0 15px rgba(255, 255, 0, 0.6);
+      transform: scale(1.02);
+      animation: fadeUpdate 3s forwards;
+    }
+
+    @keyframes fadeHighlight { to { background: transparent; box-shadow: none; transform: none; } }
+    @keyframes fadeUpdate { to { background: transparent; box-shadow: none; transform: none; } }
+  </style>
+
+  <!-- ===== Scripts ===== -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const bookingsTbody = document.querySelector("#bookingsTable tbody");
+      const socket = io();
+
+      // Render or update a single booking row
+      function renderBookingRow(b, isNew = false) {
+        const badgeClass = b.status === "Pending" ? "warning" :
+                           b.status === "Confirmed" ? "success" :
+                           b.status === "Completed" ? "primary" : "secondary";
+
+        let row = document.getElementById(`booking-${b._id}`);
+
+        if (row) {
+          // Update existing row
+          row.querySelector("td:nth-child(3)").textContent = b.game;
+          row.querySelector("td:nth-child(4)").textContent = b.console;
+          row.querySelector("td:nth-child(5)").textContent = new Date(b.date).toLocaleDateString();
+          row.querySelector("td:nth-child(6)").textContent = b.timeSlot;
+
+          const statusSpan = row.querySelector("td:nth-child(7) span");
+          statusSpan.textContent = b.status;
+          statusSpan.className = `badge bg-${badgeClass}`;
+
+          const select = row.querySelector("select.status-select");
+          if (select) select.value = b.status;
+
+          row.classList.add("updated");
+          setTimeout(() => row.classList.remove("updated"), 3000);
+        } else {
+          // Create new row
+          row = document.createElement("tr");
+          row.id = `booking-${b._id}`;
+          if (isNew) row.classList.add("new-booking");
+
+          row.innerHTML = `
+            <td>${b._id}</td>
+            <td>${b.user.name} (${b.user.email})</td>
+            <td>${b.game}</td>
+            <td>${b.console}</td>
+            <td>${new Date(b.date).toLocaleDateString()}</td>
+            <td>${b.timeSlot}</td>
+            <td><span class="badge bg-${badgeClass}">${b.status}</span></td>
+            <td class="text-end">
+              <select class="form-select form-select-sm status-select" data-id="${b._id}">
+                <option value="Pending" ${b.status==="Pending"?"selected":""}>Pending</option>
+                <option value="Confirmed" ${b.status==="Confirmed"?"selected":""}>Confirmed</option>
+                <option value="Completed" ${b.status==="Completed"?"selected":""}>Completed</option>
+                <option value="Cancelled" ${b.status==="Cancelled"?"selected":""}>Cancelled</option>
+              </select>
+            </td>
+          `;
+          bookingsTbody.appendChild(row);
+          setTimeout(() => row.classList.remove("new-booking"), 3000);
+        }
+      }
+
+      // Fetch all bookings from server
+      async function fetchBookings() {
+        try {
+          const res = await fetch("/admin/bookings/json");
+          const data = await res.json();
+
+          // Support both array or { bookings: [...] }
+          const bookings = Array.isArray(data) ? data : data.bookings || [];
+          bookings.forEach(b => renderBookingRow(b));
+        } catch (err) {
+          console.error("Error fetching bookings:", err);
+        }
+      }
+
+      // Initial load
+      fetchBookings();
+
+      // Event delegation for status change
+      bookingsTbody.addEventListener("change", async (e) => {
+        if (!e.target.classList.contains("status-select")) return;
+        const id = e.target.dataset.id;
+        const status = e.target.value;
+
+        try {
+          const res = await fetch(`/admin/bookings/update/${id}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status })
+          });
+          const data = await res.json();
+          if (data.success) renderBookingRow(data.booking);
+        } catch (err) {
+          console.error(err);
+        }
+      });
+
+      // Socket listeners for real-time updates
+      socket.on("newBooking", b => renderBookingRow(b, true));
+      socket.on("updateBooking", b => renderBookingRow(b));
+    });
+  </script>
+</div>
+
+
+
+  <!-- Edit Product Modal -->
+  <div class="modal fade" id="editProductModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <form id="editProductForm" class="modal-content" enctype="multipart/form-data">
+        <div class="modal-header">
+          <h5 class="modal-title">Edit Product</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="id" id="editProductId">
+          <div class="mb-3"><label>Title</label><input type="text" name="title" id="editTitle" class="form-control" required></div>
+          <div class="mb-3"><label>Market Price</label><input type="number" name="marketPrice" id="editMarket" class="form-control" required></div>
+          <div class="mb-3"><label>Sale Price</label><input type="number" name="salePrice" id="editSale" class="form-control" required></div>
+          <div class="mb-3"><label>Description</label><input type="text" name="description" id="editDescription" class="form-control" required></div>
+          <div class="mb-3"><label>Image</label><input type="file" name="image" id="editImage" class="form-control"></div>
+          <div class="form-check"><input type="checkbox" name="onSale" id="editOnSale" class="form-check-input"><label class="form-check-label" for="editOnSale">On Sale</label></div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success">Save Changes</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </form>
     </div>
   </div>
 
+  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/admin.js"></script>
 </body>
 </html>
+
+
+

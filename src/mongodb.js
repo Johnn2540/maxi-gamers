@@ -1,46 +1,66 @@
 const mongoose = require("mongoose");
-const bcrypt = require("bcrypt");
 
-mongoose.connect("mongodb://127.0.0.1:27017/loginSignup", {
+// ------------------ CONNECT TO MONGODB ------------------
+mongoose
+  .connect("mongodb://127.0.0.1:27017/LoginSignup", {
     useNewUrlParser: true,
-    useUnifiedTopology: true
-})
-.then(() => console.log("MongoDB connected"))
-.catch((err) => console.error("MongoDB connection failed:", err.message));
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("MongoDB connected"))
+  .catch((err) => console.error("MongoDB connection error:", err));
 
+// ------------------ USER MODEL ------------------
 const userSchema = new mongoose.Schema({
-    name: { type: String, required: true, trim: true },
-    email: { 
-        type: String, required: true, unique: true, lowercase: true, trim: true,
-        match: [/^\S+@\S+\.\S+$/, "Please use a valid email address"]
-    },
-    phone: { 
-        type: String, required: true, unique: true,
-        match: [/^\d{10,15}$/, "Please enter a valid phone number"]
-    },
-    studentId: { type: String, required: false, unique: true, sparse: true },
-    password: { type: String, required: true },
-    role: { type: String, enum: ["user"], default: "user" },
-    active: { type: Boolean, default: true }
-}, { timestamps: true });
-
-// Hash password before saving
-userSchema.pre("save", async function (next) {
-    if (!this.isModified("password")) return next();
-    this.password = await bcrypt.hash(this.password, 10);
-    next();
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  phone: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  role: { type: String, enum: ["user", "admin"], default: "user" },
+  active: { type: Boolean, default: true },
+  studentId: { type: String },
 });
-
-// Compare password method
-userSchema.methods.comparePassword = function (candidatePassword) {
-    return bcrypt.compare(candidatePassword, this.password);
-};
 
 const User = mongoose.model("User", userSchema);
 
-module.exports = User;
+// ------------------ PRODUCT MODEL ------------------
+const productSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  marketPrice: { type: Number, required: true },
+  salePrice: { type: Number, required: true },
+  description: { type: String },
+  onSale: { type: Boolean, default: false },
+  image: { type: String },
+});
 
+const Product = mongoose.model("Product", productSchema);
 
+// ------------------ LEADERBOARD MODEL ------------------
+const leaderboardSchema = new mongoose.Schema({
+  player: { type: String, required: true },
+  score: { type: Number, required: true },
+});
+
+const Leaderboard = mongoose.model("Leaderboard", leaderboardSchema);
+
+// ------------------ BOOKING MODEL ------------------
+const bookingSchema = new mongoose.Schema({
+  user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  game: { type: String, required: true },
+  console: { type: String, required: true },
+  date: { type: Date, required: true },
+  timeSlot: { type: String, required: true },
+  status: {
+    type: String,
+    enum: ["Pending", "Confirmed", "Completed", "Cancelled"],
+    default: "Pending",
+  },
+  createdAt: { type: Date, default: Date.now },
+});
+
+const Booking = mongoose.model("Booking", bookingSchema);
+
+// ------------------ EXPORT MODELS ------------------
+module.exports = { User, Product, Leaderboard, Booking };
 
 
 

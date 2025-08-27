@@ -129,6 +129,7 @@ function switchLanguage() {
         <li class="nav-item"><a class="nav-link" href="/shop">Shop</a></li>
         <li class="nav-item"><a class="nav-link" href="/blog">Blog</a></li>
         <li class="nav-item"><a class="nav-link" href="/contact">Contact</a></li>
+        <li class="nav-item"><a class="nav-link" href="/about">About</a></li>
       </ul>
     </div>
   </div>
@@ -473,118 +474,77 @@ document.addEventListener('scroll', () => {
 .slider-dots button.active { background: #00ff99; }
 </style>
 
-
-
-<!-- Sale Products Carousel -->
-<section class="sale-products bg-dark text-white py-5">
+<!-- SALE PRODUCTS SECTION -->
+<section class="py-5 bg-dark">
   <div class="container">
-    <h3 class="text-center mb-5 fw-bold">🔥 On Sale Now 🔥</h3>
+    <!-- Section Title -->
+    <h2 class="fw-bold text-center text-success mb-4">🔥 On Sale Now</h2>
+    <p class="text-secondary text-center mb-5">Grab the best deals while they last!</p>
 
-    <div id="saleCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="5000">
-      <div class="carousel-inner">
-
-        <!-- Slide 1 -->
-        <div class="carousel-item active">
-          <div class="row g-4 justify-content-center">
-
-            <!-- Product 1 -->
-            <div class="col-12 col-md-4">
-              <div class="card h-100 shadow border-0 position-relative sale-card">
-                <div class="badge bg-danger position-absolute top-0 end-0 m-2">SALE</div>
-                <div class="badge bg-primary position-absolute top-0 start-0 m-2">NEW</div>
-                <img src="/images/products/gamepad.jpg" class="card-img-top" alt="Pro Gamepad">
-                <div class="card-body text-center">
-                  <h5 class="card-title fw-bold text-dark">Pro Gamepad</h5>
-                  <p class="mb-2"><del class="text-danger">KSh 3,500</del> <span class="text-success fw-bold">KSh 2,800</span></p>
-                  <button class="btn btn-success btn-sm">Add to Cart</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Product 2 -->
-            <div class="col-12 col-md-4">
-              <div class="card h-100 shadow border-0 position-relative sale-card">
-                <div class="badge bg-danger position-absolute top-0 end-0 m-2">SALE</div>
-                <img src="/images/products/headset.jpg" class="card-img-top" alt="Gaming Headset">
-                <div class="card-body text-center">
-                  <h5 class="card-title fw-bold text-dark">Gaming Headset</h5>
-                  <p class="mb-2"><del class="text-danger">KSh 4,200</del> <span class="text-success fw-bold">KSh 3,500</span></p>
-                  <button class="btn btn-success btn-sm">Add to Cart</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Product 3 -->
-            <div class="col-12 col-md-4">
-              <div class="card h-100 shadow border-0 position-relative sale-card">
-                <div class="badge bg-danger position-absolute top-0 end-0 m-2">SALE</div>
-                <img src="/images/products/controller.jpg" class="card-img-top" alt="Wireless Controller">
-                <div class="card-body text-center">
-                  <h5 class="card-title fw-bold text-dark">Wireless Controller</h5>
-                  <p class="mb-2"><del class="text-danger">KSh 5,000</del> <span class="text-success fw-bold">KSh 3,999</span></p>
-                  <button class="btn btn-success btn-sm">Add to Cart</button>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
+    <!-- Carousel -->
+    <div id="saleProductsCarousel" class="carousel slide" data-bs-ride="carousel">
+      <div class="carousel-inner" id="sale-products-container">
+        <!-- Products will be injected here dynamically -->
       </div>
 
       <!-- Controls -->
-      <button class="carousel-control-prev" type="button" data-bs-target="#saleCarousel" data-bs-slide="prev">
-        <span class="carousel-control-prev-icon"></span>
+      <button class="carousel-control-prev" type="button" data-bs-target="#saleProductsCarousel" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon bg-dark rounded-circle p-2"></span>
       </button>
-      <button class="carousel-control-next" type="button" data-bs-target="#saleCarousel" data-bs-slide="next">
-        <span class="carousel-control-next-icon"></span>
+      <button class="carousel-control-next" type="button" data-bs-target="#saleProductsCarousel" data-bs-slide="next">
+        <span class="carousel-control-next-icon bg-dark rounded-circle p-2"></span>
       </button>
-    </div>
-
-    <!-- Explore More Button -->
-    <div class="text-center mt-5">
-      <a href="/shop" class="btn btn-outline-light btn-lg explore-btn px-4 py-2">Explore More</a>
     </div>
   </div>
 </section>
 
-<!-- CSS -->
-<style>
-.sale-card img {
-  border-top-left-radius: 0.5rem;
-  border-top-right-radius: 0.5rem;
-  transition: transform 0.3s;
-}
-.sale-card:hover img {
-  transform: scale(1.05);
-}
-.explore-btn {
-  transition: transform 0.3s, box-shadow 0.3s;
-}
-.explore-btn:hover {
-  transform: scale(1.05);
-  box-shadow: 0 0 15px rgba(255,255,255,0.5);
-}
-</style>
-
-<!-- Multi-item Carousel JS -->
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-  const carousel = document.querySelector('#saleCarousel .carousel-inner');
-  const items = carousel.querySelectorAll('.carousel-item');
+  // Fetch sale products from backend
+  async function fetchSaleProducts() {
+    try {
+      const res = await fetch("/api/products/sale"); // backend route
+      const products = await res.json();
 
-  items.forEach((el) => {
-    const next = el.nextElementSibling || items[0];
-    const nextNext = next.nextElementSibling || items[0];
+      const container = document.getElementById("sale-products-container");
+      container.innerHTML = "";
 
-    next.querySelectorAll('.col-12.col-md-4').forEach(clone => el.querySelector('.row').appendChild(clone.cloneNode(true)));
-    nextNext.querySelectorAll('.col-12.col-md-4').forEach(clone => el.querySelector('.row').appendChild(clone.cloneNode(true)));
+      products.forEach((product, index) => {
+        container.innerHTML += `
+          <div class="carousel-item ${index === 0 ? "active" : ""}">
+            <div class="row justify-content-center">
+              <div class="col-md-4">
+                <div class="card shadow-lg border-0">
+                  <img src="${product.image}" class="card-img-top" alt="${product.name}">
+                  <div class="card-body text-center">
+                    <h5 class="card-title text-dark">${product.name}</h5>
+                    <p class="text-muted">
+                      <span class="text-decoration-line-through">KSH ${product.originalPrice}</span>
+                      <span class="fw-bold text-success">KSH ${product.salePrice}</span>
+                    </p>
+                    <button class="btn btn-success w-100">
+                      <i class="bi bi-cart"></i> Add to Cart
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+    } catch (err) {
+      console.error("Error loading sale products:", err);
+    }
+  }
+
+  // Auto-slide every 5s
+  document.addEventListener("DOMContentLoaded", () => {
+    fetchSaleProducts();
+    const carousel = new bootstrap.Carousel("#saleProductsCarousel", {
+      interval: 5000, // 5 seconds
+      ride: "carousel"
+    });
   });
-});
 </script>
-
-
-
 
 <!-- Cyber-Futuristic Loan Calculator Section -->
 <section class="cyber-loan-section py-5">
@@ -854,12 +814,11 @@ loanDurationInput.addEventListener('input', calculateLoan);
   });
 </script>
 
-
-
-<!-- Leaderboard -->
-<section class="py-5" style="background:#111;">
-  <div class="container text-center">
-    <h2 class="fw-bold mb-4 text-success">🏆 Top Gamers</h2>
+<!-- ========================= USER LEADERBOARD ========================= -->
+<section id="leaderboard-home" class="py-5">
+  <div class="container">
+    <h2 class="text-center text-success mb-4">🏆 Leaderboard</h2>
+    
     <div class="table-responsive">
       <table class="table table-dark table-striped align-middle leaderboard-table">
         <thead>
@@ -870,95 +829,58 @@ loanDurationInput.addEventListener('input', calculateLoan);
           </tr>
         </thead>
         <tbody>
-          <tr class="glow-gold">
-            <td>🥇 1</td>
-            <td>ShadowSlayer</td>
-            <td>9800</td>
-          </tr>
-          <tr class="glow-silver">
-            <td>🥈 2</td>
-            <td>NightHunter</td>
-            <td>9200</td>
-          </tr>
-          <tr class="glow-bronze">
-            <td>🥉 3</td>
-            <td>DragonFire</td>
-            <td>8700</td>
-          </tr>
-          <tr>
-            <td>4</td>
-            <td>CyberWolf</td>
-            <td>8300</td>
-          </tr>
-          <tr>
-            <td>5</td>
-            <td>PhantomX</td>
-            <td>8000</td>
-          </tr>
-          <tr>
-            <td>6</td>
-            <td>ViperVenom</td>
-            <td>7700</td>
-          </tr>
-          <tr>
-            <td>7</td>
-            <td>RogueSniper</td>
-            <td>7400</td>
-          </tr>
-          <tr>
-            <td>8</td>
-            <td>BlazeStorm</td>
-            <td>7100</td>
-          </tr>
-          <tr>
-            <td>9</td>
-            <td>DarkPhoenix</td>
-            <td>6900</td>
-          </tr>
-          <tr>
-            <td>10</td>
-            <td>SteelTitan</td>
-            <td>6700</td>
-          </tr>
+          <!-- Leaderboard will dynamically populate here -->
         </tbody>
       </table>
     </div>
   </div>
 </section>
 
-<!-- Styles -->
+<!-- ===== Styles for Glow ===== -->
 <style>
-  .leaderboard-table tbody tr {
-    transition: all 0.3s ease;
-  }
-
-  /* Hover glow for normal players */
-  .leaderboard-table tbody tr:hover {
+  #leaderboard-home .leaderboard-table tbody tr { transition: all 0.3s ease; }
+  #leaderboard-home .leaderboard-table tbody tr:hover {
     background: rgba(0, 255, 0, 0.1);
     box-shadow: 0 0 15px rgba(0, 255, 0, 0.6);
     transform: scale(1.02);
   }
-
-  /* Permanent glow for Top 3 */
-  .glow-gold {
-    background: rgba(255, 215, 0, 0.15) !important;
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.9);
-    font-weight: bold;
-  }
-
-  .glow-silver {
-    background: rgba(192, 192, 192, 0.15) !important;
-    box-shadow: 0 0 20px rgba(192, 192, 192, 0.9);
-    font-weight: bold;
-  }
-
-  .glow-bronze {
-    background: rgba(205, 127, 50, 0.15) !important;
-    box-shadow: 0 0 20px rgba(205, 127, 50, 0.9);
-    font-weight: bold;
-  }
+  .glow-gold { background: rgba(255, 215, 0, 0.15) !important; box-shadow: 0 0 20px rgba(255, 215, 0, 0.9); font-weight: bold; }
+  .glow-silver { background: rgba(192, 192, 192, 0.15) !important; box-shadow: 0 0 20px rgba(192, 192, 192, 0.9); font-weight: bold; }
+  .glow-bronze { background: rgba(205, 127, 50, 0.15) !important; box-shadow: 0 0 20px rgba(205, 127, 50, 0.9); font-weight: bold; }
 </style>
 
+<!-- ===== Scripts for Real-time Update ===== -->
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+const tbody = document.querySelector("#leaderboard-home tbody");
+
+// --- Helper to render leaderboard table ---
+async function renderLeaderboardHome() {
+  try {
+    const res = await fetch("/top-leaderboard"); // same endpoint as admin
+    const leaderboard = await res.json();
+    tbody.innerHTML = "";
+    
+    leaderboard.forEach((p, i) => {
+      const tr = document.createElement("tr");
+      tr.className = i===0?"glow-gold":i===1?"glow-silver":i===2?"glow-bronze":"";
+      tr.innerHTML = `
+        <td>${i===0?"🥇 1":i===1?"🥈 2":i===2?"🥉 3":i+1}</td>
+        <td>${p.player}</td>
+        <td>${p.score}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch(err) { console.error(err); }
+}
+
+// --- Initial render ---
+renderLeaderboardHome();
+
+// --- Real-time update ---
+socket.on("leaderboardUpdate", renderLeaderboardHome);
+</script>
 
 
 
@@ -1028,7 +950,6 @@ loanDurationInput.addEventListener('input', calculateLoan);
     <a href="/gaming" class="nav-link text-center"><i class="bi bi-controller"></i><br>Gaming</a>
     <a href="/loans" class="nav-link text-center"><i class="bi bi-cash-stack"></i><br>Loans</a>
     <a href="/shop" class="nav-link text-center"><i class="bi bi-cart"></i><br>Shop</a>
-    <a href="/profile" class="nav-link text-center"><i class="bi bi-person-circle"></i><br>Profile</a>
   </div>
 </nav>
 
