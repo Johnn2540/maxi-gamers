@@ -5,916 +5,555 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{title}} | Maximum Gamers</title>
   <link rel="icon" href="/images/logo.png" type="image/png">
+  
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  
   <!-- Bootstrap Icons -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  
+  <!-- Custom Styles -->
   <style>
-    body { padding-bottom: 70px; background: #0a0a0a; color: #fff; }
-    .navbar-brand img { height: 40px; }
-    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #0d6efd; border-top: 1px solid #ddd; }
-    .bottom-nav .nav-link { color: white; font-size: 14px; }
-    .bottom-nav .nav-link.active { font-weight: bold; border-top: 2px solid #00ff99; }
-    .feature-card { transition: 0.3s; background:#111; border: 2px solid #00ff99; box-shadow:0 0 15px #00ff99; }
-    .feature-card:hover { transform: translateY(-5px); box-shadow: 0 0 25px #00ff99; }
-    .chat-widget { position: fixed; bottom: 90px; right: 20px; background: #25d366; color: white; border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; font-size: 28px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-    h2, h4, h6 { text-shadow: 0 0 5px #00ff99; }
-    table, th, td { border-color: #00ff99 !important; }
-    table thead th { text-shadow: 0 0 5px #00ff99; }
+    :root {
+      --primary-color: #0d6efd;
+      --secondary-color: #00ff99;
+      --dark-bg: #0a0a0a;
+      --card-bg: #111;
+      --text-light: #f8f9fa;
+      --text-muted: #6c757d;
+    }
+    
+    body {
+      background: var(--dark-bg);
+      color: var(--text-light);
+      padding-bottom: 70px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    /* Navigation Styles */
+    .navbar-brand img {
+      height: 40px;
+    }
+    
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--primary-color);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      z-index: 1000;
+    }
+    
+    .bottom-nav .nav-link {
+      color: white;
+      font-size: 0.75rem;
+      padding: 0.5rem;
+    }
+    
+    .bottom-nav .nav-link.active {
+      font-weight: bold;
+      border-top: 2px solid var(--secondary-color);
+    }
+    
+    /* Card Styles */
+    .feature-card {
+      transition: all 0.3s ease;
+      background: var(--card-bg);
+      border: 2px solid var(--secondary-color);
+      border-radius: 12px;
+      overflow: hidden;
+      height: 100%;
+    }
+    
+    .feature-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 0 25px var(--secondary-color);
+    }
+    
+    /* Text Effects */
+    h1, h2, h3, h4, h5, h6 {
+      text-shadow: 0 0 5px var(--secondary-color);
+    }
+    
+    /* Table Styles */
+    table, th, td {
+      border-color: var(--secondary-color) !important;
+    }
+    
+    /* Chat Widget */
+    .chat-widget {
+      position: fixed;
+      bottom: 90px;
+      right: 20px;
+      background: #25d366;
+      color: white;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      z-index: 1000;
+      animation: pulseZoom 1.5s infinite ease-in-out;
+    }
+    
+    .chat-widget:hover {
+      background: #1ebe5d;
+      transform: scale(1.1);
+    }
+    
+    @keyframes pulseZoom {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 10px #25d366, 0 0 20px #25d366;
+      }
+      50% {
+        transform: scale(1.15);
+        box-shadow: 0 0 20px #25d366, 0 0 30px #25d366;
+      }
+    }
+    
+    /* Search Highlight */
+    mark.search-highlight {
+      background: yellow;
+      color: black;
+      padding: 0 2px;
+      border-radius: 3px;
+    }
+    
+    /* Section Spacing */
+    section {
+      padding: 3rem 0;
+    }
+    
+    /* Responsive Adjustments */
+    @media (max-width: 768px) {
+      .hero-content {
+        padding: 20px;
+      }
+      
+      .hero-title {
+        font-size: 2rem;
+      }
+      
+      section {
+        padding: 2rem 0;
+      }
+    }
+    /* Pulse / Zoom Animation */
+@keyframes pulseZoom {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.login-box {
+  text-decoration: none;
+  animation: pulseZoom 2s infinite;
+  transition: transform 0.2s ease-in-out;
+}
+
+.login-box:hover {
+  transform: scale(1.15);
+  background-color: #ffc107; /* keep warning color on hover */
+}
+
   </style>
 </head>
 <body>
 
-<!-- Top Bar -->
-<div class="bg-dark text-white py-2">
-  <div class="container d-flex justify-content-between align-items-center">
-    <span class="fw-bold" id="brandText">🎮 Maximum Gamers</span>
-    <div class="d-flex gap-3 align-items-center">
-      <form class="d-flex" role="search" onsubmit="return universalSearch(event)">
-        <input id="universalSearchInput" class="form-control form-control-sm me-2" type="search" placeholder="Search..." aria-label="Search">
-      </form>
-      <a href="/login" id="signInBtn" class="btn btn-sm btn-outline-light">Sign In</a>
-      <a href="/signup" id="registerBtn" class="btn btn-sm btn-success">Register</a>
-      <select class="form-select form-select-sm ms-2" id="languageSwitcher" onchange="switchLanguage()">
-        <option value="EN" selected>EN</option>
-        <option value="SW">SW</option>
-      </select>
+<!-- Wrapper for Sticky Top Bars -->
+<div class="sticky-top" style="z-index: 1030;">
+  
+  <!-- Main Top Bar -->
+  <div class="bg-dark text-white py-2">
+    <div class="container d-flex justify-content-between align-items-center">
+      <span class="fw-bold" id="brandText">🎮 Maximum Gamers</span>
+      <div class="d-flex gap-3 align-items-center">
+        <form class="d-flex" role="search" onsubmit="return universalSearch(event)">
+          <input id="universalSearchInput" class="form-control form-control-sm me-2" type="search" placeholder="Search..." aria-label="Search">
+        </form>
+        <a href="/login" id="signInBtn" class="btn btn-sm btn-outline-light">Sign In</a>
+        <a href="/signup" id="registerBtn" class="btn btn-sm btn-success">Register</a>
+        <select class="form-select form-select-sm ms-2" id="languageSwitcher" onchange="switchLanguage()">
+          <option value="EN" selected>EN</option>
+          <option value="SW">SW</option>
+        </select>
+      </div>
     </div>
   </div>
+
+  <!-- Top Bar Messages -->
+  <div id="topBar" class="bg-dark text-white text-center" style="height:30px;">
+    <div id="topBarMessages" 
+         class="d-flex justify-content-center align-items-center" 
+         style="overflow:hidden; height:100%; position: relative;">
+      <!-- Messages injected dynamically -->
+    </div>
+  </div>
+
 </div>
 
-<!-- Highlight Style -->
-<style>
-  mark.search-highlight {
-    background: yellow;
-    color: black;
-    padding: 0 2px;
-    border-radius: 3px;
-  }
-</style>
-
 <script>
-/* Search Function */
-function universalSearch(event) {
-  event.preventDefault(); 
+  async function displayTopBar() {
+    try {
+      const res = await fetch('/top-bar/active');
+      const data = await res.json();
+      const container = document.getElementById('topBarMessages');
 
-  let input = document.getElementById("universalSearchInput").value.trim().toLowerCase();
+      if (!data.length) {
+        container.innerHTML = `<span>No announcements</span>`;
+        return;
+      }
 
-  // Remove old highlights
-  document.querySelectorAll("mark.search-highlight").forEach(el => {
-    el.outerHTML = el.innerText;
-  });
-
-  if (input === "") return;
-
-  // Search across all text nodes in body
-  let bodyText = document.body.innerHTML;
-  let regex = new RegExp("(" + input + ")", "gi");
-
-  document.body.innerHTML = bodyText.replace(regex, '<mark class="search-highlight">$1</mark>');
-}
-
-/* Language Switcher */
-const translations = {
-  EN: {
-    brand: "🎮 Maximum Gamers",
-    signIn: "Sign In",
-    register: "Register",
-    searchPlaceholder: "Search..."
-  },
-  SW: {
-    brand: "🎮 Wachezaji Wakuu",
-    signIn: "Ingia",
-    register: "Jisajili",
-    searchPlaceholder: "Tafuta..."
+      container.innerHTML = `
+        <div style="white-space: nowrap; animation: scrollLeft 15s linear infinite;">
+          ${data.map(msg => `<span class="mx-4">${msg.content}</span>`).join("")}
+        </div>
+      `;
+    } catch (err) {
+      console.error("Error loading top bar:", err);
+      document.getElementById('topBarMessages').innerHTML = 
+        `<span class="text-danger">Error loading announcements</span>`;
+    }
   }
-};
 
-function switchLanguage() {
-  let selectedLang = document.getElementById("languageSwitcher").value;
+  // Smooth scroll animation
+  const style = document.createElement("style");
+  style.innerHTML = `
+    @keyframes scrollLeft {
+      0%   { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
+    }
+  `;
+  document.head.appendChild(style);
 
-  document.getElementById("brandText").innerText = translations[selectedLang].brand;
-  document.getElementById("signInBtn").innerText = translations[selectedLang].signIn;
-  document.getElementById("registerBtn").innerText = translations[selectedLang].register;
-  document.getElementById("universalSearchInput").setAttribute("placeholder", translations[selectedLang].searchPlaceholder);
-}
+  displayTopBar();
 </script>
 
 
-<!-- Main Navbar -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top shadow-sm">
-  <div class="container">
-    <a class="navbar-brand fw-bold" href="/">
-      Maximum Gamers
-    </a>
+  <!-- Hero Section -->
+  <section class="hero-section position-relative text-center text-white d-flex align-items-center justify-content-center">
+    <div class="hero-grid"></div>
+    <div class="hero-grid clone"></div>
 
-    <!-- Cart Icon (Visible on all screens) -->
-    <a class="nav-link position-relative me-3" href="/cart">
-      <i class="bi bi-cart-fill fs-5"></i>
-      <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-        0
-        <span class="visually-hidden">items in cart</span>
-      </span>
-    </a>
-
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
-      <span class="navbar-toggler-icon"></span>
-    </button>
+    <!-- Border Ring -->
+    <div class="hero-border-ring"></div>
     
-    <div class="collapse navbar-collapse" id="mainNav">
-      <ul class="navbar-nav ms-auto align-items-center">
-        <li class="nav-item"><a class="nav-link active" href="/">Home</a></li>
-        <li class="nav-item"><a class="nav-link" href="/gaming">Gaming</a></li>
-        <li class="nav-item"><a class="nav-link" href="/loans">Loans</a></li>
-        <li class="nav-item"><a class="nav-link" href="/shop">Shop</a></li>
-        <li class="nav-item"><a class="nav-link" href="/blog">Blog</a></li>
-        <li class="nav-item"><a class="nav-link" href="/contact">Contact</a></li>
-        <li class="nav-item"><a class="nav-link" href="/about">About</a></li>
-      </ul>
-    </div>
+    <!-- Moving Star -->
+    <div class="hero-star"></div>
+
+    <!-- Content -->
+<div class="container hero-content position-relative">
+  <h1 class="display-4 fw-bold hero-title">Welcome to Maximum Gamers</h1>
+  <p class="lead hero-subtitle">Level Up Your Gaming – Book Sessions, Borrow on Valuable Items, and Shop New or Pre-Loved Gear!</p>
+  <div class="d-flex justify-content-center gap-3 mt-4 flex-wrap">
+    <a href="/login" class="btn btn-success btn-lg shadow">🎮 Book a Gaming Session</a>
+    <a href="/login" class="btn btn-outline-light btn-lg shadow">💰 Apply for a Loan</a>
   </div>
-</nav>
 
-<!-- Include Bootstrap Icons -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-
-
-
-
-
-
-<!-- Top Bar -->
-<div id="topBar" class="bg-dark text-white text-center py-1">
-  <div id="topBarMessages" class="d-flex justify-content-center align-items-center" style="overflow:hidden; height:30px;">
-    <span class="top-bar-msg">🎮 Welcome to Maximum Gamers</span>
-    <span class="top-bar-msg d-none">🔥 Best deals on PS5, PS4, and more</span>
-    <span class="top-bar-msg d-none">💳 Easy loans on items you trust</span>
-    <span class="top-bar-msg d-none">⚡ Quick, fun & secure gaming experience</span>
-  </div>
+  <!-- Animated Login Box -->
+  <a href="/login" 
+     class="mt-4 p-2 bg-warning text-dark fw-bold rounded d-inline-block shadow login-box">
+    Login to explore more
+  </a>
 </div>
+</section>
 
-<style>
-  #topBarMessages {
-    position: relative;
-  }
-  .top-bar-msg {
-    position: absolute;
-    width: 100%;
-    transition: opacity 0.8s ease-in-out;
-  }
-  .d-none {
-    opacity: 0;
-  }
-  .d-block {
-    opacity: 1;
-  }
-</style>
+  <!-- Features Section -->
+  <section class="features-section py-5 position-relative overflow-hidden">
+    <div class="features-grid"></div>
+    <div class="features-grid clone"></div>
 
+    <!-- Shiny Star -->
+    <div class="border-star"></div>
+
+    <div class="container position-relative text-center">
+      <h2 class="mb-5">Our Services</h2>
+      <div class="row g-4 justify-content-center">
+
+        <!-- Gaming Lounge -->
+        <div class="col-md-4">
+          <div class="feature-card p-4 text-center h-100">
+            <i class="bi bi-controller fs-1 text-primary mb-3"></i>
+            <h4 class="fw-bold">Gaming Lounge</h4>
+            <p>Play the latest PlayStation games in a premium setup.</p>
+            <a href="/gaming" class="btn btn-outline-primary mt-2">Explore</a>
+          </div>
+        </div>
+
+        <!-- Quick Loans -->
+        <div class="col-md-4">
+          <div class="feature-card p-4 text-center h-100">
+            <i class="bi bi-cash-stack fs-1 text-success mb-3"></i>
+            <h4 class="fw-bold">Quick Loans</h4>
+            <p>Get instant loans on valuable items with ease.</p>
+            <a href="/loans" class="btn btn-outline-success mt-2">Learn More</a>
+          </div>
+        </div>
+
+        <!-- Buy & Sell -->
+        <div class="col-md-4">
+          <div class="feature-card p-4 text-center h-100">
+            <i class="bi bi-cart-check fs-1 text-warning mb-3"></i>
+            <h4 class="fw-bold">Buy & Sell</h4>
+            <p>Purchase or trade used gaming accessories at fair prices.</p>
+            <a href="/shop" class="btn btn-outline-warning mt-2">Shop Now</a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Sale Products Section -->
+  <section class="py-5 bg-dark">
+    <div class="container">
+      <h2 class="fw-bold text-center text-success mb-4">🔥 On Sale Now</h2>
+      <p class="text-center text-muted mb-5">Grab the best deals while they last!</p>
+
+      <div id="saleProductsCarousel" class="carousel slide" data-bs-ride="carousel">
+        <div class="carousel-inner" id="sale-products-container">
+          <!-- Products will be injected here dynamically -->
+        </div>
+
+        <button class="carousel-control-prev" type="button" data-bs-target="#saleProductsCarousel" data-bs-slide="prev">
+          <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Previous</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#saleProductsCarousel" data-bs-slide="next">
+          <span class="carousel-control-next-icon" aria-hidden="true"></span>
+          <span class="visually-hidden">Next</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Loan Calculator Section -->
+  <section class="cyber-loan-section py-5">
+    <div class="loan-border-ring"></div>
+    <div class="loan-border-light"></div>
+
+    <div class="container text-center">
+      <h2 class="mb-4">💰 Loan Calculator</h2>
+      <form class="row justify-content-center g-3">
+        <div class="col-md-3">
+          <input type="number" class="form-control bg-black text-white" placeholder="Item Value (KES)" id="loanValue">
+        </div>
+        <div class="col-md-3">
+          <input type="number" class="form-control bg-black text-white" placeholder="Duration (Months)" id="loanDuration">
+        </div>
+        <div class="col-md-2">
+          <button type="button" class="btn btn-success w-100" onclick="calculateLoan()">Calculate</button>
+        </div>
+      </form>
+      <div class="mt-4 fw-bold" id="loanResult"></div>
+    </div>
+  </section>
+  <script>
+  function calculateLoan() {
+    const value = parseFloat(document.getElementById('loanValue').value);
+    const duration = parseInt(document.getElementById('loanDuration').value);
+
+    if (!value || !duration || value <= 0 || duration <= 0) {
+      document.getElementById('loanResult').innerHTML =
+        `<div class='alert alert-warning mt-3'>Please enter valid values.</div>`;
+      return;
+    }
+
+    const interestRate = 0.30; // 30% per month
+    let totalInterest = 0;
+
+    // Build month-by-month table
+    let tableHTML = `
+      <div class="table-responsive mt-3">
+        <table class="table table-dark table-striped text-white">
+          <thead>
+            <tr>
+              <th>Month</th>
+              <th>Interest (KES)</th>
+              <th>Principal (KES)</th>
+              <th>Total Due (KES)</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    for (let month = 1; month <= duration; month++) {
+      const monthlyInterest = value * interestRate;
+      totalInterest += monthlyInterest;
+      const totalDue = value + totalInterest;
+
+      tableHTML += `
+        <tr>
+          <td>${month}</td>
+          <td>${monthlyInterest.toFixed(2)}</td>
+          <td>${value.toFixed(2)}</td>
+          <td>${totalDue.toFixed(2)}</td>
+        </tr>
+      `;
+    }
+
+    tableHTML += `</tbody></table></div>`;
+
+    // Summary
+    const resultHTML = `
+      <div class='alert alert-info mt-3'>
+        Estimated Total Repayment: KES ${(value + totalInterest).toFixed(2)} <br>
+        (Principal: KES ${value.toFixed(2)}, Total Interest: KES ${totalInterest.toFixed(2)})
+      </div>
+    `;
+
+    document.getElementById('loanResult').innerHTML = resultHTML + tableHTML;
+  }
+</script>
+
+
+  <!-- Leaderboard Section -->
+  <section id="leaderboard-home" class="py-5 bg-dark text-light">
+    <div class="container">
+      <h2 class="text-center text-success mb-4">🏆 Leaderboard</h2>
+      
+      <div class="table-responsive">
+        <table class="table table-dark table-striped align-middle leaderboard-table">
+          <thead class="table-success text-dark">
+            <tr>
+              <th>Rank</th>
+              <th>Player</th>
+              <th>Score</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboardBody">
+            <!-- Leaderboard will dynamically populate here -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+  <script src="/socket.io/socket.io.js"></script>
 <script>
-  const messages = document.querySelectorAll(".top-bar-msg");
-  let currentIndex = 0;
+  const socket = io();
+  const leaderboardBody = document.getElementById("leaderboardBody");
 
-  function showMessage(index) {
-    messages.forEach((msg, i) => {
-      msg.classList.add("d-none");
-      msg.classList.remove("d-block");
-      if (i === index) {
-        msg.classList.remove("d-none");
-        msg.classList.add("d-block");
-      }
+  // Render leaderboard
+  function renderLeaderboard(players) {
+    leaderboardBody.innerHTML = "";
+
+    if (!players.length) {
+      leaderboardBody.innerHTML = `<tr><td colspan="3" class="text-center">No players yet</td></tr>`;
+      return;
+    }
+
+    players.forEach((p, i) => {
+      let rankIcon = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1;
+      leaderboardBody.innerHTML += `
+        <tr>
+          <td>${rankIcon}</td>
+          <td>${p.player}</td>
+          <td>${p.score}</td>
+        </tr>`;
     });
   }
 
-  function nextMessage() {
-    currentIndex = (currentIndex + 1) % messages.length;
-    showMessage(currentIndex);
-  }
-
-  // Show the first message
-  showMessage(currentIndex);
-
-  // Auto-slide every 3 seconds
-  setInterval(nextMessage, 5000);
-</script>
-
-
-
-
-<!-- Hero Section -->
-<section class="hero-section position-relative text-center text-white d-flex align-items-center justify-content-center">
-  <div class="hero-grid"></div>
-  <div class="hero-grid clone"></div>
-
-  <!-- Border Ring -->
-  <div class="hero-border-ring"></div>
-  <!-- Moving Star -->
-  <div class="hero-star"></div>
-
-  <!-- Content -->
-  <div class="container hero-content position-relative" style="z-index:2;">
-    <h1 class="display-4 fw-bold hero-title">Welcome to Maximum Gamers</h1>
-    <p class="lead text-white-50 hero-subtitle">Book gaming sessions, apply for instant loans, and shop for gaming gear.</p>
-    <div class="d-flex justify-content-center gap-3 mt-4">
-      <a href="/booking" class="btn btn-success btn-lg shadow" style="box-shadow: 0 0 15px #00ff99;">🎮 Book a Gaming Session</a>
-      <a href="/loans/apply" class="btn btn-outline-light btn-lg shadow" style="box-shadow: 0 0 10px #00ff99;">💰 Apply for a Loan</a>
-    </div>
-    <div class="mt-4 p-2 bg-warning text-dark fw-bold rounded d-inline-block shadow" style="box-shadow:0 0 15px #ffcc00;">
-      🔥 Flash Sale: Get 1 Hour Free on Weekends!
-    </div>
-  </div>
-</section>
-
-<style>
-/* === HERO SECTION === */
-.hero-section {
-  height: 60vh;
-  background: #0a0a0a;
-  position: relative;
-  overflow: hidden;
-}
-
-/* Centered reduced container */
-.hero-content {
-  background: rgba(17,17,17,0.85);
-  padding: 40px;
-  border-radius: 20px;
-  border: 2px solid rgba(0,255,153,0.6);
-  box-shadow: 0 0 25px rgba(0,255,153,0.4), inset 0 0 15px rgba(0,255,153,0.2);
-  max-width: 800px;
-  margin: auto;
-}
-
-/* === GRID BACKGROUND (left to right) === */
-.hero-grid, .hero-grid.clone {
-  position: absolute; top: 0; left: 0;
-  width: 200%; height: 100%;
-  background-image: linear-gradient(#00ff99 1px, transparent 1px),
-                    linear-gradient(90deg, #00ff99 1px, transparent 1px);
-  background-size: 40px 40px;
-  animation: heroGridMove 25s linear infinite;
-  opacity: 0.15; z-index:1;
-}
-@keyframes heroGridMove {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-
-/* === Border Ring === */
-.hero-border-ring {
-  position: absolute;
-  top: 50%; left: 50%;
-  width: 900px; height: 900px;
-  border-radius: 50%;
-  border: 2px solid rgba(0,255,153,0.8);
-  box-shadow: 0 0 20px rgba(0,255,153,0.6), inset 0 0 15px rgba(0,255,153,0.4);
-  transform: translate(-50%, -50%);
-  z-index: 1;
-}
-
-/* === Fast Star around border === */
-.hero-star {
-  position: absolute;
-  top: 50%; left: 50%;
-  width: 14px; height: 14px;
-  background: radial-gradient(circle, #fff 0%, #00ffcc 50%, transparent 70%);
-  border-radius: 50%;
-  box-shadow: 0 0 15px #00ffcc, 0 0 30px #00ffcc;
-  animation: orbit 3s linear infinite; /* High speed */
-  transform-origin: -450px center; /* Orbit radius = half border ring */
-  z-index: 2;
-}
-
-@keyframes orbit {
-  0% { transform: rotate(0deg) translateX(450px) rotate(0deg); }
-  100% { transform: rotate(360deg) translateX(450px) rotate(-360deg); }
-}
-
-/* === Content Parallax === */
-.hero-title, .hero-subtitle {
-  transition: transform 0.2s ease-out;
-}
-</style>
-
-<script>
-// Parallax effect on scroll
-document.addEventListener('scroll', () => {
-  const scroll = window.scrollY;
-  document.querySelector('.hero-title').style.transform = `translateY(${scroll * 0.15}px)`;
-  document.querySelector('.hero-subtitle').style.transform = `translateY(${scroll * 0.1}px)`;
-});
-</script>
-
-
-
-
-<!-- Features Section -->
-<section class="features-section py-5 position-relative overflow-hidden">
-  <!-- Neon Grid Background -->
-  <div class="features-grid"></div>
-  <div class="features-grid clone"></div>
-
-  <!-- Shiny Star -->
-  <div class="border-star"></div>
-
-  <div class="container position-relative text-center" style="z-index:2;">
-    <div class="row g-4 justify-content-center features-slider">
-
-      <!-- Gaming Lounge -->
-      <div class="col-md-4 feature-slide" onclick="window.location.href='gaming.hbs'">
-        <div class="feature-card p-4 shadow-glow neon-pulse">
-          <i class="bi bi-controller fs-1 text-primary neon-icon"></i>
-          <h4 class="fw-bold mt-3 text-white">Gaming Lounge</h4>
-          <p class="text-white-50">Play the latest PlayStation games in a premium setup.</p>
-        </div>
-      </div>
-
-      <!-- Quick Loans -->
-      <div class="col-md-4 feature-slide" onclick="window.location.href='loan.hbs'">
-        <div class="feature-card p-4 shadow-glow neon-pulse">
-          <i class="bi bi-cash-stack fs-1 text-success neon-icon"></i>
-          <h4 class="fw-bold mt-3 text-white">Quick Loans</h4>
-          <p class="text-white-50">Get instant loans on valuable items with ease.</p>
-        </div>
-      </div>
-
-      <!-- Buy & Sell -->
-      <div class="col-md-4 feature-slide" onclick="window.location.href='shop.hbs'">
-        <div class="feature-card p-4 shadow-glow neon-pulse">
-          <i class="bi bi-cart-check fs-1 text-warning neon-icon"></i>
-          <h4 class="fw-bold mt-3 text-white">Buy & Sell</h4>
-          <p class="text-white-50">Purchase or trade used gaming accessories at fair prices.</p>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Slider controls (only visible on mobile) -->
-    <div class="slider-controls d-md-none text-center mt-4">
-      <button class="slider-prev btn btn-outline-light btn-sm me-2">❮</button>
-      <button class="slider-next btn btn-outline-light btn-sm">❯</button>
-      <div class="slider-dots mt-3"></div>
-    </div>
-  </div>
-</section>
-
-<style>
-/* === Features Section Container with Shiny Border === */
-.features-section {
-  background: #0a0a0a;
-  min-height: 60vh; 
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 20px;
-  position: relative;
-  margin: 40px auto;
-  max-width: 95%;
-  box-shadow: 0 0 25px rgba(0,255,153,0.4), inset 0 0 15px rgba(0,255,153,0.3);
-  border: 2px solid rgba(0,255,153,0.7);
-  overflow: hidden;
-}
-.features-section::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 20px;
-  padding: 2px;
-  background: linear-gradient(90deg, #00ff99, #00ffe6, #00ff99);
-  background-size: 200% 200%;
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, 
-                 linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  animation: borderGlow 6s linear infinite;
-}
-@keyframes borderGlow {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-/* === Shiny Star moving along the border === */
-.border-star {
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  background: radial-gradient(circle, #fff 0%, #00ffcc 40%, transparent 70%);
-  border-radius: 50%;
-  box-shadow: 0 0 12px #00ffcc, 0 0 20px #00ffcc;
-  top: 0;
-  left: 0;
-  animation: moveStar 12s linear infinite;
-  z-index: 3;
-}
-@keyframes moveStar {
-  0%   { top: 0; left: 0; }
-  25%  { top: 0; left: 100%; transform: translateX(-100%); }
-  50%  { top: 100%; left: 100%; transform: translate(-100%, -100%); }
-  75%  { top: 100%; left: 0; transform: translateY(-100%); }
-  100% { top: 0; left: 0; }
-}
-
-/* Neon card effect (unchanged) */
-.feature-card {
-  background: rgba(17,17,17,0.9);
-  border: 2px solid #00ff99;
-  border-radius: 12px;
-  transition: transform 0.3s, box-shadow 0.3s;
-  position: relative;
-  overflow: hidden;
-  cursor: pointer;
-}
-.feature-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 0 25px #00ff99, 0 0 50px rgba(0,255,153,0.2);
-}
-.neon-icon { text-shadow: 0 0 5px #00ff99, 0 0 15px rgba(0,255,153,0.5); }
-.shadow-glow { box-shadow: 0 0 15px rgba(0,255,153,0.3); border-radius: 12px; }
-.neon-pulse::before {
-  content: ''; position: absolute; top: 50%; left: 50%;
-  width: 120%; height: 120%;
-  background: radial-gradient(circle, rgba(0,255,153,0.2) 0%, transparent 70%);
-  transform: translate(-50%, -50%) scale(1);
-  border-radius: 15px; animation: pulseGlow 3s ease-in-out infinite; z-index:0;
-}
-@keyframes pulseGlow {
-  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.4; }
-  50% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.6; }
-}
-
-/* Grid background */
-.features-grid, .features-grid.clone {
-  position: absolute; top: 0; left: 0;
-  width: 200%; height: 100%;
-  background-image: linear-gradient(#00ff99 1px, transparent 1px),
-                    linear-gradient(90deg, #00ff99 1px, transparent 1px);
-  background-size: 40px 40px;
-  animation: gridMove 30s linear infinite;
-  opacity: 0.15; z-index:1;
-}
-@keyframes gridMove { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-
-/* ===== Mobile Slider Only ===== */
-@media (max-width: 767px) {
-  .features-slider {
-    display: flex;
-    overflow: hidden;
-    position: relative;
-  }
-  .feature-slide {
-    flex: 0 0 100%;
-    max-width: 100%;
-    transition: transform 0.6s cubic-bezier(.4,.15,.25,1);
-  }
-}
-.slider-dots button {
-  width: 10px; height: 10px; margin: 0 5px; border-radius: 50%;
-  border: none; background: #666; display: inline-block; transition: background 0.3s;
-}
-.slider-dots button.active { background: #00ff99; }
-</style>
-
-<!-- SALE PRODUCTS SECTION -->
-<section class="py-5 bg-dark">
-  <div class="container">
-    <!-- Section Title -->
-    <h2 class="fw-bold text-center text-success mb-4">🔥 On Sale Now</h2>
-    <p class="text-secondary text-center mb-5">Grab the best deals while they last!</p>
-
-    <!-- Carousel -->
-    <div id="saleProductsCarousel" class="carousel slide" data-bs-ride="carousel">
-      <div class="carousel-inner" id="sale-products-container">
-        <!-- Products will be injected here dynamically -->
-      </div>
-
-      <!-- Controls -->
-      <button class="carousel-control-prev" type="button" data-bs-target="#saleProductsCarousel" data-bs-slide="prev">
-        <span class="carousel-control-prev-icon bg-dark rounded-circle p-2"></span>
-      </button>
-      <button class="carousel-control-next" type="button" data-bs-target="#saleProductsCarousel" data-bs-slide="next">
-        <span class="carousel-control-next-icon bg-dark rounded-circle p-2"></span>
-      </button>
-    </div>
-  </div>
-</section>
-
-<script>
-  // Fetch sale products from backend
-  async function fetchSaleProducts() {
+  // Fetch leaderboard once on page load
+  async function loadLeaderboard() {
     try {
-      const res = await fetch("/api/products/sale"); // backend route
-      const products = await res.json();
+      const res = await fetch("/top-leaderboard");
+      const data = await res.json();
+      renderLeaderboard(data);
+    } catch (err) {
+      console.error("Error fetching leaderboard:", err);
+    }
+  }
 
-      const container = document.getElementById("sale-products-container");
-      container.innerHTML = "";
+  // Listen for socket events and refresh leaderboard
+  socket.on("leaderboardUpdate", () => {
+    console.log("📡 Leaderboard update received");
+    loadLeaderboard();
+  });
 
-      products.forEach((product, index) => {
-        container.innerHTML += `
-          <div class="carousel-item ${index === 0 ? "active" : ""}">
-            <div class="row justify-content-center">
-              <div class="col-md-4">
-                <div class="card shadow-lg border-0">
-                  <img src="${product.image}" class="card-img-top" alt="${product.name}">
-                  <div class="card-body text-center">
-                    <h5 class="card-title text-dark">${product.name}</h5>
-                    <p class="text-muted">
-                      <span class="text-decoration-line-through">KSH ${product.originalPrice}</span>
-                      <span class="fw-bold text-success">KSH ${product.salePrice}</span>
-                    </p>
-                    <button class="btn btn-success w-100">
-                      <i class="bi bi-cart"></i> Add to Cart
-                    </button>
-                  </div>
-                </div>
-              </div>
+  // Initial load
+  loadLeaderboard();
+</script>
+
+
+  <!-- Testimonials Section -->
+  <section class="py-5 bg-dark">
+    <div class="container text-center">
+      <h2 class="fw-bold mb-5">💬 What Our Gamers Say</h2>
+
+      <div id="testimonialCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="5000">
+        <div class="carousel-inner">
+          
+          <!-- Testimonial 1 -->
+          <div class="carousel-item active">
+            <div class="card p-4 bg-black mx-auto testimonial-card">
+              <p class="mb-3">"Maximum Gamers has the best gaming environment! Friendly staff and top-quality consoles."</p>
+              <h6 class="fw-bold mt-3">- Alex M.</h6>
+              <div class="text-warning">⭐⭐⭐⭐⭐</div>
             </div>
           </div>
-        `;
-      });
-    } catch (err) {
-      console.error("Error loading sale products:", err);
-    }
-  }
 
-  // Auto-slide every 5s
-  document.addEventListener("DOMContentLoaded", () => {
-    fetchSaleProducts();
-    const carousel = new bootstrap.Carousel("#saleProductsCarousel", {
-      interval: 5000, // 5 seconds
-      ride: "carousel"
-    });
-  });
-</script>
-
-<!-- Cyber-Futuristic Loan Calculator Section -->
-<section class="cyber-loan-section py-5">
-  <!-- Shiny Border Ring -->
-  <div class="loan-border-ring"></div>
-  <div class="loan-border-light"></div>
-
-  <div class="container text-center">
-    <h2 class="loan-heading mb-4 text-center">💰 Loan Calculator
-      <span class="neon-underline"></span>
-    </h2>
-    <form class="row justify-content-center g-3">
-      <div class="col-md-3">
-        <input type="number" class="form-control bg-black text-white" placeholder="Item Value (KES)" id="loanValue">
-      </div>
-      <div class="col-md-3">
-        <input type="number" class="form-control bg-black text-white" placeholder="Duration (Months)" id="loanDuration">
-      </div>
-      <div class="col-md-2">
-        <button type="button" class="btn btn-success w-100" onclick="calculateLoan()">Calculate</button>
-      </div>
-    </form>
-    <div class="mt-4 fw-bold" id="loanResult"></div>
-  </div>
-</section>
-
-<style>
-/* Section base */
-.cyber-loan-section {
-  position: relative;
-  overflow: hidden;
-  background: radial-gradient(circle at top, #0a0a0a, #050505);
-  color: #fff;
-  border-radius: 20px;
-  margin: 40px auto;
-  width: 90%;
-  max-width: 1000px;
-  box-shadow: inset 0 0 20px rgba(0,255,153,0.2), 0 0 25px rgba(0,255,153,0.3);
-}
-
-/* === Shiny Border Ring === */
-.loan-border-ring {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  border-radius: 20px;
-  border: 3px solid rgba(0,255,153,0.7);
-  box-shadow: 0 0 20px rgba(0,255,153,0.5), inset 0 0 15px rgba(0,255,153,0.3);
-  z-index: 1;
-  pointer-events: none;
-}
-
-/* === Moving Shiny Light === */
-.loan-border-light {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  border-radius: 20px;
-  border: 3px solid transparent;
-  box-sizing: border-box;
-  pointer-events: none;
-  z-index: 2;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg,
-    rgba(0,255,153,0.8) 30deg,
-    transparent 60deg
-  );
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  padding: 3px; /* Matches border width */
-  animation: rotateLight 4s linear infinite;
-}
-
-@keyframes rotateLight {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-</style>
-
-<script>
-const loanValueInput = document.getElementById('loanValue');
-const loanDurationInput = document.getElementById('loanDuration');
-
-// Function to calculate and render loan
-function calculateLoan() {
-  const value = parseFloat(loanValueInput.value);
-  const duration = parseInt(loanDurationInput.value);
-
-  if (!value || !duration || value <= 0 || duration <= 0) {
-    document.getElementById('loanResult').innerHTML =
-      `<div class='alert alert-warning mt-3 neon-result'>Please enter valid values.</div>`;
-    return;
-  }
-
-  const interestRate = 0.30; // 30% per month
-  let totalInterest = 0;
-
-  // Build month-by-month table
-  let tableHTML = `
-    <div class="table-responsive mt-3 neon-result">
-      <table class="table table-dark table-striped text-white">
-        <thead>
-          <tr>
-            <th>Month</th>
-            <th>Interest (KES)</th>
-            <th>Principal (KES)</th>
-            <th>Total Due (KES)</th>
-          </tr>
-        </thead>
-        <tbody>
-  `;
-
-  for (let month = 1; month <= duration; month++) {
-    const monthlyInterest = value * interestRate;
-    totalInterest += monthlyInterest;
-    const totalDue = value + totalInterest;
-
-    tableHTML += `
-      <tr style="--i:${month}">
-        <td>${month}</td>
-        <td><span class="count-up" data-target="${monthlyInterest.toFixed(2)}">0</span></td>
-        <td>${value.toFixed(2)}</td>
-        <td><span class="count-up" data-target="${totalDue.toFixed(2)}">0</span></td>
-      </tr>
-    `;
-  }
-
-  tableHTML += `</tbody></table></div>`;
-
-  // Summary
-  const resultHTML = `
-    <div class='alert alert-info mt-3 neon-result'>
-      Estimated Total Repayment: KES ${(value + totalInterest).toFixed(2)} <br>
-      (Principal: KES ${value.toFixed(2)}, Total Interest: KES ${totalInterest.toFixed(2)})
-    </div>
-  `;
-
-  document.getElementById('loanResult').innerHTML = resultHTML + tableHTML;
-
-  // Animate numbers
-  const counters = document.querySelectorAll('.count-up');
-  counters.forEach(counter => {
-    const target = parseFloat(counter.getAttribute('data-target'));
-    let current = 0;
-    const increment = target / 100;
-    const interval = setInterval(() => {
-      current += increment;
-      if (current >= target) {
-        counter.innerText = target.toFixed(2);
-        clearInterval(interval);
-      } else {
-        counter.innerText = current.toFixed(2);
-      }
-    }, 10);
-  });
-}
-
-// Event listeners for real-time calculation
-loanValueInput.addEventListener('input', calculateLoan);
-loanDurationInput.addEventListener('input', calculateLoan);
-</script>
-
-<!-- Testimonials -->
-<section class="py-5 bg-dark">
-  <div class="container text-center">
-    <!-- Section Title -->
-    <h2 class="fw-bold mb-5 text-uppercase" 
-        style="color:#00ff99; font-size:2.2rem; letter-spacing:1px; text-shadow:0 0 8px rgba(0,255,153,0.7);">
-      💬 What Our Gamers Say
-    </h2>
-
-    <!-- Carousel -->
-    <div id="testimonialCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="5000">
-      <div class="carousel-inner">
-        
-        <!-- Testimonial 1 -->
-        <div class="carousel-item active">
-          <div class="card p-4 bg-black mx-auto" style="max-width:600px; border: 2px solid #00ff99; box-shadow:0 0 20px rgba(0,255,153,0.5);">
-            <p class="mb-3" style="font-size:1.1rem; line-height:1.6; color:#f1f1f1;">
-              🎮 "Maximum Gamers has the best gaming environment! Friendly staff and top-quality consoles."
-            </p>
-            <h6 class="fw-bold mt-3" style="color:#00ff99; font-size:1.2rem;">- Alex M.</h6>
-            <div class="text-warning">⭐⭐⭐⭐⭐</div>
+          <!-- Testimonial 2 -->
+          <div class="carousel-item">
+            <div class="card p-4 bg-black mx-auto testimonial-card">
+              <p class="mb-3">"The gaming lounge is so immersive. I love the neon vibe and smooth experience."</p>
+              <h6 class="fw-bold mt-3">- Sarah K.</h6>
+              <div class="text-warning">⭐⭐⭐⭐⭐</div>
+            </div>
           </div>
+
+          <!-- Testimonial 3 -->
+          <div class="carousel-item">
+            <div class="card p-4 bg-black mx-auto testimonial-card">
+              <p class="mb-3">"Affordable prices and excellent customer service. Always my go-to gaming spot!"</p>
+              <h6 class="fw-bold mt-3">- Brian O.</h6>
+              <div class="text-warning">⭐⭐⭐⭐⭐</div>
+            </div>
+          </div>
+
         </div>
 
-        <!-- Testimonial 2 -->
-        <div class="carousel-item">
-          <div class="card p-4 bg-black mx-auto" style="max-width:600px; border: 2px solid #00ff99; box-shadow:0 0 20px rgba(0,255,153,0.5);">
-            <p class="mb-3" style="font-size:1.1rem; line-height:1.6; color:#f1f1f1;">
-              ⚡ "The gaming lounge is so immersive. I love the neon vibe and smooth experience."
-            </p>
-            <h6 class="fw-bold mt-3" style="color:#00ff99; font-size:1.2rem;">- Sarah K.</h6>
-            <div class="text-warning">⭐⭐⭐⭐⭐</div>
+        <div class="mt-4">
+          <div class="carousel-indicators position-static">
+            <button type="button" data-bs-target="#testimonialCarousel" data-bs-slide-to="0" class="active"></button>
+            <button type="button" data-bs-target="#testimonialCarousel" data-bs-slide-to="1"></button>
+            <button type="button" data-bs-target="#testimonialCarousel" data-bs-slide-to="2"></button>
           </div>
-        </div>
-
-        <!-- Testimonial 3 -->
-        <div class="carousel-item">
-          <div class="card p-4 bg-black mx-auto" style="max-width:600px; border: 2px solid #00ff99; box-shadow:0 0 20px rgba(0,255,153,0.5);">
-            <p class="mb-3" style="font-size:1.1rem; line-height:1.6; color:#f1f1f1;">
-              💡 "Affordable prices and excellent customer service. Always my go-to gaming spot!"
-            </p>
-            <h6 class="fw-bold mt-3" style="color:#00ff99; font-size:1.2rem;">- Brian O.</h6>
-            <div class="text-warning">⭐⭐⭐⭐⭐</div>
-          </div>
-        </div>
-
-        <!-- Testimonial 4 -->
-        <div class="carousel-item">
-          <div class="card p-4 bg-black mx-auto" style="max-width:600px; border: 2px solid #00ff99; box-shadow:0 0 20px rgba(0,255,153,0.5);">
-            <p class="mb-3" style="font-size:1.1rem; line-height:1.6; color:#f1f1f1;">
-              🔥 "The setup is world-class! I enjoyed gaming with friends for hours."
-            </p>
-            <h6 class="fw-bold mt-3" style="color:#00ff99; font-size:1.2rem;">- Cynthia L.</h6>
-            <div class="text-warning">⭐⭐⭐⭐⭐</div>
-          </div>
-        </div>
-
-        <!-- Testimonial 5 -->
-        <div class="carousel-item">
-          <div class="card p-4 bg-black mx-auto" style="max-width:600px; border: 2px solid #00ff99; box-shadow:0 0 20px rgba(0,255,153,0.5);">
-            <p class="mb-3" style="font-size:1.1rem; line-height:1.6; color:#f1f1f1;">
-              ⭐ "Maximum Gamers never disappoints! Great place to chill and compete."
-            </p>
-            <h6 class="fw-bold mt-3" style="color:#4a7564; font-size:1.2rem;">- Kevin W.</h6>
-            <div class="text-warning">⭐⭐⭐⭐⭐</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Carousel Indicators -->
-      <div class="mt-4">
-        <div class="carousel-indicators position-static">
-          <button type="button" data-bs-target="#testimonialCarousel" data-bs-slide-to="0" class="active"></button>
-          <button type="button" data-bs-target="#testimonialCarousel" data-bs-slide-to="1"></button>
-          <button type="button" data-bs-target="#testimonialCarousel" data-bs-slide-to="2"></button>
-          <button type="button" data-bs-target="#testimonialCarousel" data-bs-slide-to="3"></button>
-          <button type="button" data-bs-target="#testimonialCarousel" data-bs-slide-to="4"></button>
         </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- Swipe Support Script -->
-<script>
-  const carousel = document.getElementById('testimonialCarousel');
-  let touchStartX = 0;
-  let touchEndX = 0;
+ <!-- Footer -->
+<footer class="bg-dark text-white pt-3 position-relative">
+  <!-- Shiny Line -->
+  <div class="shiny-line"></div>
 
-  carousel.addEventListener('touchstart', e => {
-    touchStartX = e.changedTouches[0].screenX;
-  });
-
-  carousel.addEventListener('touchend', e => {
-    touchEndX = e.changedTouches[0].screenX;
-    if (touchEndX < touchStartX - 50) {
-      bootstrap.Carousel.getInstance(carousel).next();
-    }
-    if (touchEndX > touchStartX + 50) {
-      bootstrap.Carousel.getInstance(carousel).prev();
-    }
-  });
-</script>
-
-<!-- ========================= USER LEADERBOARD ========================= -->
-<section id="leaderboard-home" class="py-5">
-  <div class="container">
-    <h2 class="text-center text-success mb-4">🏆 Leaderboard</h2>
-    
-    <div class="table-responsive">
-      <table class="table table-dark table-striped align-middle leaderboard-table">
-        <thead>
-          <tr class="text-success">
-            <th>Rank</th>
-            <th>Player</th>
-            <th>Score</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- Leaderboard will dynamically populate here -->
-        </tbody>
-      </table>
-    </div>
-  </div>
-</section>
-
-<!-- ===== Styles for Glow ===== -->
-<style>
-  #leaderboard-home .leaderboard-table tbody tr { transition: all 0.3s ease; }
-  #leaderboard-home .leaderboard-table tbody tr:hover {
-    background: rgba(0, 255, 0, 0.1);
-    box-shadow: 0 0 15px rgba(0, 255, 0, 0.6);
-    transform: scale(1.02);
-  }
-  .glow-gold { background: rgba(255, 215, 0, 0.15) !important; box-shadow: 0 0 20px rgba(255, 215, 0, 0.9); font-weight: bold; }
-  .glow-silver { background: rgba(192, 192, 192, 0.15) !important; box-shadow: 0 0 20px rgba(192, 192, 192, 0.9); font-weight: bold; }
-  .glow-bronze { background: rgba(205, 127, 50, 0.15) !important; box-shadow: 0 0 20px rgba(205, 127, 50, 0.9); font-weight: bold; }
-</style>
-
-<!-- ===== Scripts for Real-time Update ===== -->
-<script src="/socket.io/socket.io.js"></script>
-<script>
-const socket = io();
-const tbody = document.querySelector("#leaderboard-home tbody");
-
-// --- Helper to render leaderboard table ---
-async function renderLeaderboardHome() {
-  try {
-    const res = await fetch("/top-leaderboard"); // same endpoint as admin
-    const leaderboard = await res.json();
-    tbody.innerHTML = "";
-    
-    leaderboard.forEach((p, i) => {
-      const tr = document.createElement("tr");
-      tr.className = i===0?"glow-gold":i===1?"glow-silver":i===2?"glow-bronze":"";
-      tr.innerHTML = `
-        <td>${i===0?"🥇 1":i===1?"🥈 2":i===2?"🥉 3":i+1}</td>
-        <td>${p.player}</td>
-        <td>${p.score}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-  } catch(err) { console.error(err); }
-}
-
-// --- Initial render ---
-renderLeaderboardHome();
-
-// --- Real-time update ---
-socket.on("leaderboardUpdate", renderLeaderboardHome);
-</script>
-
-
-
-
-<!-- App-style Footer -->
-<footer class="bg-dark text-white pt-3">
-  <!-- Top line / handle -->
-  <div class="d-flex justify-content-center mb-2">
-    <div style="width:50px; height:5px; background:#555; border-radius:5px;"></div>
-  </div>
-
-  <!-- Branding -->
   <div class="text-center mb-3">
-    <img src="/images/logo.png" alt="Maximum Gamers Logo" style="height:40px;">
     <p class="mt-2 small">Empowering gamers to play, earn, and connect.</p>
   </div>
 
-  <!-- Footer Links Grid -->
   <div class="container">
     <div class="row text-center text-md-start g-3">
       <div class="col-6 col-md-3">
         <h6 class="fw-bold">Discover</h6>
         <ul class="list-unstyled">
-          <li><a href="/gaming" class="text-white text-decoration-none">Gaming Sessions</a></li>
-          <li><a href="/loans" class="text-white text-decoration-none">Quick Loans</a></li>
-          <li><a href="/shop" class="text-white text-decoration-none">Store</a></li>
+          <li><a href="/login" class="text-white text-decoration-none">Gaming Sessions</a></li>
+          <li><a href="/login" class="text-white text-decoration-none">Quick Loans</a></li>
+          <li><a href="/login" class="text-white text-decoration-none">Store</a></li>
         </ul>
       </div>
       <div class="col-6 col-md-3">
-        <h6 class="fw-bold">Company</h6>
+        <h6 class="fw-bold">Our Shop</h6>
         <ul class="list-unstyled">
           <li><a href="/about" class="text-white text-decoration-none">About Us</a></li>
           <li><a href="/contact" class="text-white text-decoration-none">Contact</a></li>
-          <li><a href="/careers" class="text-white text-decoration-none">Careers</a></li>
+          <li><a href="/whatscoming" class="text-white text-decoration-none">What's Coming</a></li>
         </ul>
       </div>
       <div class="col-6 col-md-3">
@@ -935,65 +574,195 @@ socket.on("leaderboardUpdate", renderLeaderboardHome);
       </div>
     </div>
 
-    <!-- Copyright -->
     <div class="mt-4 text-center small">
       &copy; 2025 Maximum Gamers. All Rights Reserved.
     </div>
   </div>
 </footer>
 
-
-<!-- Mobile Bottom Nav -->
-<nav class="navbar bottom-nav d-lg-none">
-  <div class="container d-flex justify-content-around">
-    <a href="/" class="nav-link text-center active"><i class="bi bi-house-door-fill"></i><br>Home</a>
-    <a href="/gaming" class="nav-link text-center"><i class="bi bi-controller"></i><br>Gaming</a>
-    <a href="/loans" class="nav-link text-center"><i class="bi bi-cash-stack"></i><br>Loans</a>
-    <a href="/shop" class="nav-link text-center"><i class="bi bi-cart"></i><br>Shop</a>
-  </div>
-</nav>
-
-<!-- WhatsApp Floating Chat -->
-<div class="chat-widget" onclick="window.open('https://wa.me/254700000000','_blank')">
-  <i class="bi bi-whatsapp"></i>
-</div>
-
+<!-- CSS -->
 <style>
-  .chat-widget {
-    position: fixed;
-    bottom: 70px; /* stays above bottom navbar (adjust if navbar height changes) */
-    right: 20px;
-    background: #25d366;
-    color: white;
-    font-size: 28px;
-    padding: 15px;
-    border-radius: 50%;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-    cursor: pointer;
-    z-index: 1100; /* stays above all sections & navbar */
-    animation: pulseZoom 1.5s infinite ease-in-out;
+  .shiny-line {
+    height: 4px;
+    width: 100%;
+    background: linear-gradient(90deg, #ffd700, #ff8c00, #ffd700);
+    animation: shine 2s linear infinite;
+    margin-bottom: 15px;
+    background-size: 200% 100%;
   }
 
-  .chat-widget:hover {
-    background: #1ebe5d;
-    transform: scale(1.1);
-  }
-
-  @keyframes pulseZoom {
-    0%, 100% {
-      transform: scale(1);
-      box-shadow: 0 0 10px #25d366, 0 0 20px #25d366;
-    }
-    50% {
-      transform: scale(1.15);
-      box-shadow: 0 0 20px #25d366, 0 0 30px #25d366;
-    }
+  @keyframes shine {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 100% 50%; }
   }
 </style>
 
 
-<!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Mobile Bottom Nav -->
+  <nav class="navbar bottom-nav d-lg-none">
+    <div class="container d-flex justify-content-around">
+      <a href="/" class="nav-link text-center active"><i class="bi bi-house-door-fill"></i><br>Home</a>
+      <a href="/gaming" class="nav-link text-center"><i class="bi bi-controller"></i><br>Gaming</a>
+      <a href="/loans" class="nav-link text-center"><i class="bi bi-cash-stack"></i><br>Loans</a>
+      <a href="/shop" class="nav-link text-center"><i class="bi bi-cart"></i><br>Shop</a>
+    </div>
+  </nav>
 
+  <!-- WhatsApp Floating Chat -->
+  <div class="chat-widget" onclick="window.open('https://wa.me/254700000000','_blank')">
+    <i class="bi bi-whatsapp"></i>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <!-- Socket.io -->
+  <script src="/socket.io/socket.io.js"></script>
+  
+  <!-- Custom Scripts -->
+  <script>
+    // Initialize socket connection
+    const socket = io();
+    
+    // Language translations
+    const translations = {
+      EN: {
+        brand: "🎮 Maximum Gamers",
+        signIn: "Sign In",
+        register: "Register",
+        searchPlaceholder: "Search..."
+      },
+      SW: {
+        brand: "🎮 Wachezaji Wakuu",
+        signIn: "Ingia",
+        register: "Jisajili",
+        searchPlaceholder: "Tafuta..."
+      }
+    };
+
+    // Language switcher
+    function switchLanguage() {
+      const selectedLang = document.getElementById("languageSwitcher").value;
+      document.getElementById("brandText").innerText = translations[selectedLang].brand;
+      document.getElementById("signInBtn").innerText = translations[selectedLang].signIn;
+      document.getElementById("registerBtn").innerText = translations[selectedLang].register;
+      document.getElementById("universalSearchInput").setAttribute("placeholder", translations[selectedLang].searchPlaceholder);
+    }
+
+    // Universal search function
+    function universalSearch(event) {
+      event.preventDefault();
+      const input = document.getElementById("universalSearchInput").value.trim().toLowerCase();
+      
+      // Remove old highlights
+      document.querySelectorAll("mark.search-highlight").forEach(el => {
+        el.outerHTML = el.innerText;
+      });
+      
+      if (input === "") return;
+      
+      // Search across all text nodes in body
+      const bodyText = document.body.innerHTML;
+      const regex = new RegExp("(" + input + ")", "gi");
+      document.body.innerHTML = bodyText.replace(regex, '<mark class="search-highlight">$1</mark>');
+    }
+
+    // Top bar messages
+    let messages = [];
+    let currentIndex = 0;
+    const container = document.getElementById("topBarMessages");
+
+    async function fetchTopBarMessages() {
+      const res = await fetch("/top-bar/json");
+      messages = await res.json();
+      renderMessages();
+    }
+
+    function renderMessages() {
+      container.innerHTML = "";
+      messages.forEach((msg, index) => {
+        const span = document.createElement("span");
+        span.classList.add("top-bar-msg");
+        if (index === 0) span.classList.add("active");
+        span.textContent = msg.content;
+        container.appendChild(span);
+      });
+      currentIndex = 0;
+    }
+
+    function nextMessage() {
+      if (messages.length === 0) return;
+      const spans = container.querySelectorAll(".top-bar-msg");
+      spans[currentIndex].classList.remove("active");
+      currentIndex = (currentIndex + 1) % spans.length;
+      spans[currentIndex].classList.add("active");
+    }
+
+    async function initTopBar() {
+      await fetchTopBarMessages();
+      setInterval(nextMessage, 5000);
+    }
+
+    // Socket.IO for real-time updates
+    socket.on("topBarUpdate", async () => {
+      await fetchTopBarMessages();
+    });
+
+    // Sale products carousel
+    async function fetchSaleProducts() {
+      try {
+        const res = await fetch("/api/products/sale");
+        const products = await res.json();
+        const container = document.getElementById("sale-products-container");
+        container.innerHTML = "";
+
+        products.forEach((product, index) => {
+          container.innerHTML += `
+            <div class="carousel-item ${index === 0 ? "active" : ""}">
+              <div class="row justify-content-center">
+                <div class="col-md-4">
+                  <div class="card shadow-lg border-0">
+                    <img src="${product.image}" class="card-img-top" alt="${product.name}">
+                    <div class="card-body text-center">
+                      <h5 class="card-title text-dark">${product.name}</h5>
+                      <p class="text-muted">
+                        <span class="text-decoration-line-through">KSH ${product.originalPrice}</span>
+                        <span class="fw-bold text-success">KSH ${product.salePrice}</span>
+                      </p>
+                      <button class="btn btn-success w-100">
+                        <i class="bi bi-cart"></i> Add to Cart
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+      } catch (err) {
+        console.error("Error loading sale products:", err);
+      }
+    }
+
+
+    // Initialize everything when DOM is loaded
+    document.addEventListener('DOMContentLoaded', () => {
+      initTopBar();
+      fetchSaleProducts();
+      renderLeaderboardHome();
+      
+      // Initialize carousel
+      const carousel = new bootstrap.Carousel("#saleProductsCarousel", {
+        interval: 5000,
+        ride: "carousel"
+      });
+      
+      // Initialize testimonial carousel
+      const testimonialCarousel = new bootstrap.Carousel("#testimonialCarousel");
+      
+      // Refresh leaderboard when admin updates
+      socket.on("leaderboardUpdate", renderLeaderboardHome);
+    });
+  </script>
 </body>
 </html>

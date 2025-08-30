@@ -1,485 +1,322 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Dashboard</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
   <style>
-    body { min-height: 100vh; display: flex; }
-    .sidebar { width: 250px; background: #212529; color: #fff; }
-    .sidebar .nav-link { color: #ddd; }
+    body { min-height: 100vh; display: flex; background-color: #f8f9fa; }
+    .sidebar { width: 250px; background: #212529; color: #fff; transition: all 0.3s; }
+    .sidebar .nav-link { color: #ddd; border-radius: 5px; margin-bottom: 5px; }
     .sidebar .nav-link.active { background: #0d6efd; color: #fff; font-weight: bold; }
-    .content { flex: 1; padding: 20px; }
+    .sidebar .nav-link:hover:not(.active) { background: #343a40; }
+    .content { flex: 1; padding: 20px; transition: all 0.3s; }
     img.thumb { border-radius: 6px; object-fit: cover; }
+    
+    /* Responsive adjustments */
+    @media (max-width: 992px) {
+      .sidebar { width: 80px; }
+      .sidebar .nav-link span { display: none; }
+      .sidebar h4 { font-size: 0; }
+      .sidebar h4:after { content: "⚙️"; font-size: 1.5rem; }
+      .content { margin-left: 0; }
+    }
+    
+    @media (max-width: 768px) {
+      .sidebar { width: 0; overflow: hidden; position: fixed; z-index: 1000; height: 100%; }
+      .content { width: 100%; margin-left: 0 !important; }
+      .sidebar.show { width: 250px; }
+      .menu-toggle { display: block !important; }
+    }
+    
+    /* Leaderboard glow styles */
+    .leaderboard-table tbody tr { transition: all 0.3s ease; }
+    .leaderboard-table tbody tr:hover { background: rgba(0,255,0,0.1); transform: scale(1.02); }
+    .glow-gold   { background: rgba(255,215,0,0.15) !important; box-shadow: 0 0 20px rgba(255,215,0,0.9); font-weight: bold; }
+    .glow-silver { background: rgba(192,192,192,0.15) !important; box-shadow: 0 0 20px rgba(192,192,192,0.9); font-weight: bold; }
+    .glow-bronze { background: rgba(205,127,50,0.15) !important; box-shadow: 0 0 20px rgba(205,127,50,0.9); font-weight: bold; }
+
+    /* Bookings table glow effects */
+    #bookingsTable tbody tr { transition: all 0.3s ease; }
+    #bookingsTable tbody tr.new-booking { background: rgba(0,255,255,0.15); box-shadow: 0 0 15px rgba(0,255,255,0.6); transform: scale(1.02); animation: fadeHighlight 3s forwards; }
+    #bookingsTable tbody tr.updated { background: rgba(255,255,0,0.15); box-shadow: 0 0 15px rgba(255,255,0,0.6); transform: scale(1.02); animation: fadeUpdate 3s forwards; }
+    @keyframes fadeHighlight { to { background: transparent; box-shadow: none; transform: none; } }
+    @keyframes fadeUpdate { to { background: transparent; box-shadow: none; transform: none; } }
+    
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; }
+    ::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #555; }
+    
+    /* Menu toggle button */
+    .menu-toggle { display: none; position: fixed; top: 10px; left: 10px; z-index: 1100; }
+    
+    /* Table responsive adjustments */
+    .table-responsive { overflow-x: auto; }
+    
+    /* Smooth highlight for new messages */
+    .table-success { animation: highlight 2s ease; }
+    @keyframes highlight {
+      0% { background-color: #d4edda; }
+      100% { background-color: transparent; }
+    }
   </style>
 </head>
 <body>
 
+  <!-- Menu Toggle Button (Mobile Only) -->
+  <button class="btn btn-primary menu-toggle" id="menuToggle">
+    <i class="bi bi-list"></i>
+  </button>
+
   <!-- Sidebar -->
-  <div class="sidebar d-flex flex-column p-3">
+  <div class="sidebar d-flex flex-column p-3" id="sidebar">
     <h4 class="text-white mb-4">⚙️ Admin Panel</h4>
     <ul class="nav nav-pills flex-column mb-auto">
-      <li><a href="#users" class="nav-link active" data-bs-toggle="tab"><i class="bi bi-people"></i> Users</a></li>
-      <li><a href="#products" class="nav-link" data-bs-toggle="tab"><i class="bi bi-box-seam"></i> Products</a></li>
-      <li><a href="#loans" class="nav-link" data-bs-toggle="tab"><i class="bi bi-cash-stack"></i> Loans</a></li>
-      <li><a href="#content" class="nav-link" data-bs-toggle="tab"><i class="bi bi-layout-text-sidebar"></i> Banner-Content</a></li>
-      <li><a href="#leaderboard" class="nav-link" data-bs-toggle="tab"><i class="bi bi-box-seam"></i> Leaderboard</a></li>
-      <li><a href="#bookings" class="nav-link" data-bs-toggle="tab"><i class="bi bi-cash-stack"></i> Bookings</a></li>
+      <li><a href="#users" class="nav-link active" data-bs-toggle="tab"><i class="bi bi-people"></i> <span>Users</span></a></li>
+      <li><a href="#products" class="nav-link" data-bs-toggle="tab"><i class="bi bi-box-seam"></i> <span>Products</span></a></li>
+      <li><a href="#loans" class="nav-link" data-bs-toggle="tab"><i class="bi bi-cash-stack"></i> <span>Loans</span></a></li>
+      <li><a href="#content" class="nav-link" data-bs-toggle="tab"><i class="bi bi-layout-text-sidebar"></i> <span>Banner-Content</span></a></li>
+      <li><a href="#leaderboard" class="nav-link" data-bs-toggle="tab"><i class="bi bi-trophy"></i> <span>Leaderboard</span></a></li>
+      <li><a href="#bookings" class="nav-link" data-bs-toggle="tab"><i class="bi bi-calendar-check"></i> <span>Bookings</span></a></li>
+      <li><a href="#messages-tab" class="nav-link" data-bs-toggle="tab"><i class="bi bi-chat-dots"></i> <span>Messages</span></a></li>
     </ul>
-    <hr>
-    <a href="/logout" class="btn btn-sm btn-danger w-100"><i class="bi bi-box-arrow-right"></i> Logout</a>
+    <hr />
+    <a href="/home" class="btn btn-sm btn-danger w-100"><i class="bi bi-box-arrow-right"></i> <span>Logout</span></a>
   </div>
 
   <!-- Main Content -->
-  <div class="content">
+  <div class="content" id="mainContent">
     <div class="tab-content">
 
-      <!-- Users -->
+      <!-- USERS TAB -->
       <div class="tab-pane fade show active" id="users">
-        <h2>👥 Manage Users</h2>
-        <table class="table table-striped mt-3">
-          <thead>
-            <tr>
-              <th>ID</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th class="text-end">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {{#each users}}
-            <tr id="user-{{this._id}}">
-              <td>{{this._id}}</td>
-              <td>{{this.name}}</td>
-              <td>{{this.email}}</td>
-              <td>
-                <span class="badge {{#if (eq this.role 'admin')}}bg-danger{{else}}bg-primary{{/if}}">{{this.role}}</span>
-              </td>
-              <td class="status-col">
-                {{#if this.active}}
-                  <span class="badge bg-success">Active</span>
-                {{else}}
-                  <span class="badge bg-secondary">Suspended</span>
-                {{/if}}
-              </td>
-              <td class="text-end">
-                <div class="dropdown">
-                  <button class="btn btn-sm btn-outline-dark dropdown-toggle" data-bs-toggle="dropdown">Actions</button>
-                  <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="/admin/users/edit/{{this._id}}"><i class="bi bi-pencil"></i> Edit</a></li>
-                    <li>
-                      <button class="dropdown-item toggle-status-btn" data-id="{{this._id}}">
-                        {{#if this.active}}<i class="bi bi-pause"></i> Suspend{{else}}<i class="bi bi-play"></i> Activate{{/if}}
-                      </button>
-                    </li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item text-danger" href="/admin/users/delete/{{this._id}}" onclick="return confirm('Are you sure?')"><i class="bi bi-trash"></i> Delete</a></li>
-                  </ul>
-                </div>
-              </td>
-            </tr>
-            {{/each}}
-          </tbody>
-        </table>
+        <h2 class="mb-4">👥 Manage Users</h2>
+        <div class="table-responsive">
+          <table class="table table-striped table-hover">
+            <thead class="table-dark">
+              <tr><th>ID</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th class="text-end">Actions</th></tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="6" class="text-center">Loading users...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <!-- Products -->
+      <!-- PRODUCTS TAB -->
       <div class="tab-pane fade" id="products">
-        <h2>📦 Manage Products</h2>
-
-        <!-- Add Product -->
-        <form id="addProductForm" action="/admin/products" method="POST" enctype="multipart/form-data" class="mb-4 p-3 border rounded bg-light">
-          <h5>Add New Product</h5>
-          <div class="row g-3">
-            <div class="col-md-3"><input type="text" name="title" class="form-control" placeholder="Product Title" required></div>
-            <div class="col-md-2"><input type="number" name="marketPrice" class="form-control" placeholder="Market Price" required></div>
-            <div class="col-md-2"><input type="number" name="salePrice" class="form-control" placeholder="Sale Price" required></div>
-            <div class="col-md-3"><input type="text" name="description" class="form-control" placeholder="Description" required></div>
-            <div class="col-md-2"><input type="file" name="image" class="form-control" accept="image/*" required></div>
+        <h2 class="mb-4">📦 Manage Products</h2>
+        <div class="card mb-4">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Add New Product</h5>
           </div>
-          <div class="form-check mt-2">
-            <input class="form-check-input" type="checkbox" name="onSale" id="onSaleCheck">
-            <label class="form-check-label" for="onSaleCheck">On Sale</label>
+          <div class="card-body">
+            <form id="addProductForm" action="/admin/products" method="POST" enctype="multipart/form-data">
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label">Product Title</label>
+                  <input type="text" name="title" class="form-control" placeholder="Product Title" required>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label">Market Price</label>
+                  <input type="number" name="marketPrice" class="form-control" placeholder="Market Price" required>
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label">Sale Price</label>
+                  <input type="number" name="salePrice" class="form-control" placeholder="Sale Price" required>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Description</label>
+                  <input type="text" name="description" class="form-control" placeholder="Description" required>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Product Image</label>
+                  <input type="file" name="image" class="form-control" accept="image/*" required>
+                </div>
+                <div class="col-md-2">
+                  <div class="form-check mt-4 pt-2">
+                    <input class="form-check-input" type="checkbox" name="onSale" id="onSaleCheck" />
+                    <label class="form-check-label" for="onSaleCheck">On Sale</label>
+                  </div>
+                </div>
+                <div class="col-md-2">
+                  <button type="submit" class="btn btn-success mt-3 w-100"><i class="bi bi-check2-circle"></i> Add Product</button>
+                </div>
+              </div>
+            </form>
           </div>
-          <button type="submit" class="btn btn-success mt-3"><i class="bi bi-check2-circle"></i> Add Product</button>
-        </form>
+        </div>
 
-        <!-- Product Table -->
-        <table class="table table-striped" id="productsTable">
-          <thead>
-            <tr>
-              <th>ID</th><th>Title</th><th>Market Price</th><th>Sale Price</th><th>Description</th><th>On Sale</th><th>Image</th><th class="text-end">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {{#each products}}
-            <tr id="product-{{this._id}}">
-              <td>{{this._id}}</td>
-              <td>{{this.title}}</td>
-              <td>{{this.marketPrice}}</td>
-              <td>{{this.salePrice}}</td>
-              <td>{{this.description}}</td>
-              <td>
-                {{#if this.onSale}}
-                  <span class="badge bg-success">Yes</span>
-                {{else}}
-                  <span class="badge bg-secondary">No</span>
-                {{/if}}
-              </td>
-              <td><img src="{{this.image}}" width="50" height="50" class="thumb" alt="{{this.title}}"></td>
-              <td class="text-end">
-                <button class="btn btn-sm btn-primary edit-btn" 
-                        data-id="{{this._id}}" 
-                        data-title="{{this.title}}" 
-                        data-market="{{this.marketPrice}}" 
-                        data-sale="{{this.salePrice}}" 
-                        data-description="{{this.description}}" 
-                        data-onsale="{{this.onSale}}" 
-                        data-image="{{this.image}}">
-                  <i class="bi bi-pencil"></i> Edit
-                </button>
-                <button class="btn btn-sm btn-danger delete-btn" data-id="{{this._id}}">
-                  <i class="bi bi-trash"></i> Delete
-                </button>
-              </td>
-            </tr>
-            {{/each}}
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table class="table table-striped table-hover" id="productsTable">
+            <thead class="table-dark">
+              <tr><th>ID</th><th>Title</th><th>Market Price</th><th>Sale Price</th><th>Description</th><th>On Sale</th><th>Image</th><th class="text-end">Actions</th></tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="8" class="text-center">Loading products...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <!-- Loans -->
+      <!-- LOANS TAB -->
       <div class="tab-pane fade" id="loans">
-        <h2>💰 Manage Loans</h2>
-        <div class="alert alert-info">Loan management coming soon...</div>
+        <h2 class="mb-4">💰 Manage Loans</h2>
+        <div class="table-responsive">
+          <table class="table table-striped table-hover align-middle">
+            <thead class="table-dark">
+              <tr>
+                <th>#</th>
+                <th>Image</th>
+                <th>Description</th>
+                <th>Value</th>
+                <th>Requested</th>
+                <th>Months</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="adminLoanTable">
+              <tr><td colspan="8" class="text-center">Loading loans...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <!-- Content -->
+      <!-- BANNER-CONTENT TAB -->
       <div class="tab-pane fade" id="content">
-        <h2>📰 Manage Content</h2>
-        <div class="alert alert-info">Content management coming soon...</div>
+        <h2 class="mb-4">📢 Manage Top Bar Messages</h2>
+        <div class="card mb-4">
+          <div class="card-header bg-info text-white">
+            <h5 class="mb-0">Add/Edit Message</h5>
+          </div>
+          <div class="card-body">
+            <form id="topBarForm" class="row g-3 align-items-end">
+              <input type="hidden" id="topBarId" />
+              <div class="col-md-5">
+                <label class="form-label">Message Content</label>
+                <input type="text" id="topBarContent" class="form-control" placeholder="Message content" required>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Order</label>
+                <input type="number" id="topBarOrder" class="form-control" placeholder="Order" required>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Status</label>
+                <select id="topBarActive" class="form-select">
+                  <option value="true">Active</option>
+                  <option value="false">Inactive</option>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <button type="submit" class="btn btn-success w-100">Save Message</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-striped table-dark" id="topBarTable">
+            <thead><tr><th>Order</th><th>Content</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody>
+              <tr><td colspan="4" class="text-center">Loading messages...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
-<!-- ========================= ADMIN LEADERBOARD ========================= -->
-<div class="tab-pane fade" id="leaderboard">
-  <h2>🏆 Manage Leaderboard</h2>
+      <!-- LEADERBOARD TAB -->
+      <div class="tab-pane fade" id="leaderboard">
+        <h2 class="mb-4">🏆 Manage Leaderboard</h2>
+        <div class="card mb-4">
+          <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0">Add New Player</h5>
+          </div>
+          <div class="card-body">
+            <form id="addLeaderboardForm" class="row g-3 align-items-end">
+              <div class="col-md-5">
+                <label class="form-label">Player Name</label>
+                <input type="text" name="player" class="form-control" placeholder="Player Name" required />
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Score</label>
+                <input type="number" name="score" class="form-control" placeholder="Score" required />
+              </div>
+              <div class="col-md-4">
+                <button type="submit" class="btn btn-success w-100">
+                  <i class="bi bi-plus-circle"></i> Add Player
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
 
-  <!-- ===== Add Player Form ===== -->
-  <form id="addLeaderboardForm" class="mb-4 p-3 border rounded bg-light">
-    <h5>Add New Player</h5>
-    <div class="row g-3">
-      <div class="col-md-6">
-        <input type="text" name="player" class="form-control" placeholder="Player Name" required>
+        <div class="table-responsive">
+          <table class="table table-striped table-hover admin-leaderboard leaderboard-table">
+            <thead class="table-success">
+              <tr>
+                <th>Rank</th>
+                <th>Player</th>
+                <th>Score</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="4" class="text-center">Loading leaderboard...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
-      <div class="col-md-4">
-        <input type="number" name="score" class="form-control" placeholder="Score" required>
+
+      <!-- BOOKINGS TAB -->
+      <div class="tab-pane fade" id="bookings">
+        <h2 class="mb-4">🎮 Manage Game Bookings</h2>
+        <div class="table-responsive">
+          <table class="table table-striped table-hover align-middle" id="bookingsTable">
+            <thead class="table-success">
+              <tr>
+                <th>ID</th><th>User</th><th>Game</th><th>Console</th><th>Date</th><th>Time Slot</th><th>Status</th><th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="8" class="text-center">Loading bookings...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
-      <div class="col-md-2">
-        <button type="submit" class="btn btn-success w-100"><i class="bi bi-plus-circle"></i> Add</button>
+
+      <!-- MESSAGES TAB -->
+      <div class="tab-pane fade" id="messages-tab">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h2 class="mb-0">💬 Messages</h2>
+          <span class="badge bg-success fs-6" id="new-message-count">0</span>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-striped table-hover">
+            <thead class="table-dark">
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Message</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="messages-tbody">
+              <tr><td colspan="5" class="text-center">Loading messages...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
+
     </div>
-  </form>
-
-  <!-- ===== Leaderboard Table ===== -->
-  <div class="table-responsive">
-    <table class="table table-dark table-striped align-middle leaderboard-table">
-      <thead>
-        <tr class="text-success">
-          <th>Rank</th>
-          <th>Player</th>
-          <th>Score</th>
-          <th class="text-end">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Leaderboard will dynamically populate here -->
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<!-- ===== Edit Leaderboard Modal ===== -->
-<div class="modal fade" id="editLeaderboardModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <form id="editLeaderboardForm" class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Edit Player</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <input type="hidden" id="editLeaderboardId">
-        <div class="mb-3">
-          <label>Player</label>
-          <input type="text" id="editPlayer" class="form-control" required>
-        </div>
-        <div class="mb-3">
-          <label>Score</label>
-          <input type="number" id="editScore" class="form-control" required>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="submit" class="btn btn-success">Save Changes</button>
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- ===== Styles for Glow ===== -->
-<style>
-  .leaderboard-table tbody tr { transition: all 0.3s ease; }
-  .leaderboard-table tbody tr:hover {
-    background: rgba(0, 255, 0, 0.1);
-    box-shadow: 0 0 15px rgba(0, 255, 0, 0.6);
-    transform: scale(1.02);
-  }
-  .glow-gold { background: rgba(255, 215, 0, 0.15) !important; box-shadow: 0 0 20px rgba(255, 215, 0, 0.9); font-weight: bold; }
-  .glow-silver { background: rgba(192, 192, 192, 0.15) !important; box-shadow: 0 0 20px rgba(192, 192, 192, 0.9); font-weight: bold; }
-  .glow-bronze { background: rgba(205, 127, 50, 0.15) !important; box-shadow: 0 0 20px rgba(205, 127, 50, 0.9); font-weight: bold; }
-</style>
-
-<!-- ===== Scripts for Dynamic Add/Edit/Delete + Real-time Update ===== -->
-<script src="/socket.io/socket.io.js"></script>
-<script>
-const socket = io();
-const tbody = document.querySelector(".leaderboard-table tbody");
-
-// --- Helper to render leaderboard table ---
-async function renderLeaderboard() {
-  try {
-    const res = await fetch("/top-leaderboard");
-    const leaderboard = await res.json();
-    tbody.innerHTML = "";
-    leaderboard.forEach((p, i) => {
-      const tr = document.createElement("tr");
-      tr.id = `leaderboard-${p._id}`;
-      tr.className = i===0?"glow-gold":i===1?"glow-silver":i===2?"glow-bronze":"";
-      tr.innerHTML = `
-        <td>${i===0?"🥇 1":i===1?"🥈 2":i===2?"🥉 3":i+1}</td>
-        <td>${p.player}</td>
-        <td>${p.score}</td>
-        <td class="text-end">
-          <button class="btn btn-sm btn-primary edit-btn" 
-                  data-id="${p._id}" 
-                  data-player="${p.player}" 
-                  data-score="${p.score}"><i class="bi bi-pencil"></i> Edit</button>
-          <button class="btn btn-sm btn-danger delete-btn" data-id="${p._id}">
-            <i class="bi bi-trash"></i> Delete
-          </button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    // Rebind buttons
-    document.querySelectorAll(".edit-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        document.getElementById("editLeaderboardId").value = btn.dataset.id;
-        document.getElementById("editPlayer").value = btn.dataset.player;
-        document.getElementById("editScore").value = btn.dataset.score;
-        new bootstrap.Modal(document.getElementById("editLeaderboardModal")).show();
-      });
-    });
-
-    document.querySelectorAll(".delete-btn").forEach(btn => {
-      btn.addEventListener("click", async () => {
-        if(!confirm("Are you sure?")) return;
-        await fetch(`/admin/leaderboard/${btn.dataset.id}`, { method: "DELETE" });
-        socket.emit("leaderboardUpdate");
-      });
-    });
-
-  } catch(err){ console.error(err); }
-}
-
-// --- Initial render ---
-renderLeaderboard();
-
-// --- Add Player ---
-document.getElementById("addLeaderboardForm").addEventListener("submit", async e => {
-  e.preventDefault();
-  const player = e.target.player.value;
-  const score = e.target.score.value;
-  await fetch("/admin/leaderboard", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ player, score })
-  });
-  e.target.reset();
-  socket.emit("leaderboardUpdate");
-});
-
-// --- Edit Player ---
-document.getElementById("editLeaderboardForm").addEventListener("submit", async e => {
-  e.preventDefault();
-  const id = document.getElementById("editLeaderboardId").value;
-  const player = document.getElementById("editPlayer").value;
-  const score = document.getElementById("editScore").value;
-  await fetch(`/admin/leaderboard/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ player, score })
-  });
-  bootstrap.Modal.getInstance(document.getElementById("editLeaderboardModal")).hide();
-  socket.emit("leaderboardUpdate");
-});
-
-// --- Real-time update ---
-socket.on("leaderboardUpdate", renderLeaderboard);
-</script>
-
-
-<!-- ========================= ADMIN BOOKINGS ========================= -->
-<div class="tab-pane fade show active" id="bookings">
-  <h2 class="mb-4 text-success">🎮 Manage Game Bookings</h2>
-
-  <!-- ===== Bookings Table ===== -->
-  <div class="table-responsive">
-    <table class="table table-striped align-middle" id="bookingsTable">
-      <thead>
-        <tr class="text-success">
-          <th>ID</th>
-          <th>User</th>
-          <th>Game</th>
-          <th>Console</th>
-          <th>Date</th>
-          <th>Time Slot</th>
-          <th>Status</th>
-          <th class="text-end">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Bookings will dynamically populate here -->
-      </tbody>
-    </table>
   </div>
 
-  <!-- ===== Styles ===== -->
-  <style>
-    #bookingsTable tbody tr { transition: all 0.3s ease; }
-
-    /* New booking glow */
-    #bookingsTable tbody tr.new-booking {
-      background: rgba(0, 255, 255, 0.15);
-      box-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
-      transform: scale(1.02);
-      animation: fadeHighlight 3s forwards;
-    }
-
-    /* Status update glow */
-    #bookingsTable tbody tr.updated {
-      background: rgba(255, 255, 0, 0.15);
-      box-shadow: 0 0 15px rgba(255, 255, 0, 0.6);
-      transform: scale(1.02);
-      animation: fadeUpdate 3s forwards;
-    }
-
-    @keyframes fadeHighlight { to { background: transparent; box-shadow: none; transform: none; } }
-    @keyframes fadeUpdate { to { background: transparent; box-shadow: none; transform: none; } }
-  </style>
-
-  <!-- ===== Scripts ===== -->
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const bookingsTbody = document.querySelector("#bookingsTable tbody");
-      const socket = io();
-
-      // Render or update a single booking row
-      function renderBookingRow(b, isNew = false) {
-        const badgeClass = b.status === "Pending" ? "warning" :
-                           b.status === "Confirmed" ? "success" :
-                           b.status === "Completed" ? "primary" : "secondary";
-
-        let row = document.getElementById(`booking-${b._id}`);
-
-        if (row) {
-          // Update existing row
-          row.querySelector("td:nth-child(3)").textContent = b.game;
-          row.querySelector("td:nth-child(4)").textContent = b.console;
-          row.querySelector("td:nth-child(5)").textContent = new Date(b.date).toLocaleDateString();
-          row.querySelector("td:nth-child(6)").textContent = b.timeSlot;
-
-          const statusSpan = row.querySelector("td:nth-child(7) span");
-          statusSpan.textContent = b.status;
-          statusSpan.className = `badge bg-${badgeClass}`;
-
-          const select = row.querySelector("select.status-select");
-          if (select) select.value = b.status;
-
-          row.classList.add("updated");
-          setTimeout(() => row.classList.remove("updated"), 3000);
-        } else {
-          // Create new row
-          row = document.createElement("tr");
-          row.id = `booking-${b._id}`;
-          if (isNew) row.classList.add("new-booking");
-
-          row.innerHTML = `
-            <td>${b._id}</td>
-            <td>${b.user.name} (${b.user.email})</td>
-            <td>${b.game}</td>
-            <td>${b.console}</td>
-            <td>${new Date(b.date).toLocaleDateString()}</td>
-            <td>${b.timeSlot}</td>
-            <td><span class="badge bg-${badgeClass}">${b.status}</span></td>
-            <td class="text-end">
-              <select class="form-select form-select-sm status-select" data-id="${b._id}">
-                <option value="Pending" ${b.status==="Pending"?"selected":""}>Pending</option>
-                <option value="Confirmed" ${b.status==="Confirmed"?"selected":""}>Confirmed</option>
-                <option value="Completed" ${b.status==="Completed"?"selected":""}>Completed</option>
-                <option value="Cancelled" ${b.status==="Cancelled"?"selected":""}>Cancelled</option>
-              </select>
-            </td>
-          `;
-          bookingsTbody.appendChild(row);
-          setTimeout(() => row.classList.remove("new-booking"), 3000);
-        }
-      }
-
-      // Fetch all bookings from server
-      async function fetchBookings() {
-        try {
-          const res = await fetch("/admin/bookings/json");
-          const data = await res.json();
-
-          // Support both array or { bookings: [...] }
-          const bookings = Array.isArray(data) ? data : data.bookings || [];
-          bookings.forEach(b => renderBookingRow(b));
-        } catch (err) {
-          console.error("Error fetching bookings:", err);
-        }
-      }
-
-      // Initial load
-      fetchBookings();
-
-      // Event delegation for status change
-      bookingsTbody.addEventListener("change", async (e) => {
-        if (!e.target.classList.contains("status-select")) return;
-        const id = e.target.dataset.id;
-        const status = e.target.value;
-
-        try {
-          const res = await fetch(`/admin/bookings/update/${id}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ status })
-          });
-          const data = await res.json();
-          if (data.success) renderBookingRow(data.booking);
-        } catch (err) {
-          console.error(err);
-        }
-      });
-
-      // Socket listeners for real-time updates
-      socket.on("newBooking", b => renderBookingRow(b, true));
-      socket.on("updateBooking", b => renderBookingRow(b));
-    });
-  </script>
-</div>
-
-
-
+  <!-- MODALS -->
   <!-- Edit Product Modal -->
   <div class="modal fade" id="editProductModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -489,13 +326,32 @@ socket.on("leaderboardUpdate", renderLeaderboard);
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <input type="hidden" name="id" id="editProductId">
-          <div class="mb-3"><label>Title</label><input type="text" name="title" id="editTitle" class="form-control" required></div>
-          <div class="mb-3"><label>Market Price</label><input type="number" name="marketPrice" id="editMarket" class="form-control" required></div>
-          <div class="mb-3"><label>Sale Price</label><input type="number" name="salePrice" id="editSale" class="form-control" required></div>
-          <div class="mb-3"><label>Description</label><input type="text" name="description" id="editDescription" class="form-control" required></div>
-          <div class="mb-3"><label>Image</label><input type="file" name="image" id="editImage" class="form-control"></div>
-          <div class="form-check"><input type="checkbox" name="onSale" id="editOnSale" class="form-check-input"><label class="form-check-label" for="editOnSale">On Sale</label></div>
+          <input type="hidden" name="id" id="editProductId" />
+          <div class="mb-3">
+            <label class="form-label">Title</label>
+            <input type="text" name="title" id="editTitle" class="form-control" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Market Price</label>
+            <input type="number" name="marketPrice" id="editMarket" class="form-control" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Sale Price</label>
+            <input type="number" name="salePrice" id="editSale" class="form-control" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Description</label>
+            <input type="text" name="description" id="editDescription" class="form-control" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Image</label>
+            <input type="file" name="image" id="editImage" class="form-control" />
+            <div class="form-text">Leave empty to keep current image</div>
+          </div>
+          <div class="form-check">
+            <input type="checkbox" name="onSale" id="editOnSale" class="form-check-input" />
+            <label class="form-check-label" for="editOnSale">On Sale</label>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="submit" class="btn btn-success">Save Changes</button>
@@ -505,12 +361,847 @@ socket.on("leaderboardUpdate", renderLeaderboard);
     </div>
   </div>
 
+  <!-- Edit Leaderboard Modal -->
+  <div class="modal fade" id="editLeaderboardModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <form id="editLeaderboardForm" class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Edit Player</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="editLeaderboardId" />
+          <div class="mb-3">
+            <label class="form-label">Player Name</label>
+            <input type="text" id="editPlayer" class="form-control" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Score</label>
+            <input type="number" id="editScore" class="form-control" required />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success">Save Changes</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Reply Modal -->
+  <div class="modal fade" id="replyModal" tabindex="-1" aria-labelledby="replyModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="replyModalLabel">Reply to Message</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="reply-form">
+            <div class="mb-3">
+              <label for="reply-text" class="form-label">Reply</label>
+              <textarea class="form-control" id="reply-text" rows="4" required></textarea>
+            </div>
+            <input type="hidden" id="reply-id">
+            <button type="submit" class="btn btn-primary">Send Reply</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/js/admin.js"></script>
+  <script>
+    // Initialize socket connection
+    const socket = io();
+    
+    // DOM elements
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+    
+    // Toggle sidebar on mobile
+    menuToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('show');
+    });
+    
+    // Close sidebar when clicking outside on mobile
+    document.addEventListener('click', (e) => {
+      if (window.innerWidth < 768 && 
+          !sidebar.contains(e.target) && 
+          !menuToggle.contains(e.target) &&
+          sidebar.classList.contains('show')) {
+        sidebar.classList.remove('show');
+      }
+    });
+
+
+
+// ===== USERS TAB =====
+async function loadUsers() {
+  const tbody = document.querySelector('#users tbody');
+  tbody.innerHTML = `<tr><td colspan="6" class="text-center">Loading users...</td></tr>`;
+
+  try {
+    const res = await fetch('/admin/users/json');
+    if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+    const users = await res.json();
+
+    if (!users.length) {
+      tbody.innerHTML = `<tr><td colspan="6" class="text-center">No users found</td></tr>`;
+      return;
+    }
+
+    // Render table rows
+    tbody.innerHTML = users.map(user => {
+      const role = user.role || 'user';
+      const active = user.active ?? true;
+
+      return `
+      <tr id="user-${user._id}">
+        <td>${user._id}</td>
+        <td>${user.name}</td>
+        <td>${user.email}</td>
+        <td><span class="badge ${role === 'admin' ? 'bg-danger' : 'bg-primary'}">${role}</span></td>
+        <td><span class="badge ${active ? 'bg-success' : 'bg-secondary'}">${active ? 'Active' : 'Suspended'}</span></td>
+        <td class="text-end">
+          <div class="dropdown">
+            <button class="btn btn-sm btn-outline-dark dropdown-toggle" data-bs-toggle="dropdown">Actions</button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="/admin/users/edit/${user._id}"><i class="bi bi-pencil"></i> Edit</a></li>
+              <li><button class="dropdown-item toggle-status-btn" data-id="${user._id}">
+                <i class="bi ${active ? 'bi-pause' : 'bi-play'}"></i> ${active ? 'Suspend' : 'Activate'}
+              </button></li>
+              <li><button class="dropdown-item toggle-role-btn" data-id="${user._id}">
+                <i class="bi ${role === 'admin' ? 'bi-person-dash' : 'bi-person-plus'}"></i> ${role === 'admin' ? 'Remove Admin' : 'Make Admin'}
+              </button></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><button class="dropdown-item text-danger delete-user-btn" data-id="${user._id}"><i class="bi bi-trash"></i> Delete</button></li>
+            </ul>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+
+  } catch (err) {
+    console.error('Error loading users:', err);
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error loading users</td></tr>`;
+  }
+}
+
+// ===== Event Delegation for Actions =====
+document.querySelector('#users tbody').addEventListener('click', async (e) => {
+  const toggleBtn = e.target.closest('.toggle-status-btn');
+  const roleBtn = e.target.closest('.toggle-role-btn');
+  const deleteBtn = e.target.closest('.delete-user-btn');
+
+  if (toggleBtn) await handleToggleStatus(toggleBtn);
+  if (roleBtn) await handleToggleRole(roleBtn);
+  if (deleteBtn) await handleDeleteUser(deleteBtn);
+});
+
+// Auto-load users on page load
+document.addEventListener('DOMContentLoaded', loadUsers);
+
+
+// ================== PRODUCTS TAB ==================
+const editProductModal = new bootstrap.Modal(document.getElementById('editProductModal'));
+const productsTableBody = document.querySelector('#productsTable tbody');
+
+// ----------------- Load Products -----------------
+async function loadProducts() {
+  try {
+    const res = await fetch('/admin/products/json');
+    const products = await res.json();
+
+    if (!products.length) {
+      productsTableBody.innerHTML = '<tr><td colspan="8" class="text-center">No products found</td></tr>';
+      return;
+    }
+
+    productsTableBody.innerHTML = products.map(p => `
+      <tr id="product-${p._id}">
+        <td>${p._id}</td>
+        <td>${p.title}</td>
+        <td><span class="text-decoration-line-through text-danger">${p.marketPrice}</span></td>
+        <td>${p.salePrice}</td>
+        <td>${p.description}</td>
+        <td>${p.onSale ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-secondary">No</span>'}</td>
+        <td><img src="${p.image || '/images/placeholder.png'}" width="50" height="50" class="thumb" alt="${p.title}"></td>
+        <td class="text-end">
+          <button class="btn btn-sm btn-primary edit-product-btn me-1"
+                  data-id="${p._id}"
+                  data-title="${p.title}"
+                  data-market="${p.marketPrice}"
+                  data-sale="${p.salePrice}"
+                  data-description="${p.description}"
+                  data-onsale="${p.onSale}">
+            <i class="bi bi-pencil"></i> Edit
+          </button>
+          <button class="btn btn-sm btn-danger delete-product-btn" data-id="${p._id}">
+            <i class="bi bi-trash"></i> Delete
+          </button>
+        </td>
+      </tr>
+    `).join('');
+
+    attachProductEventListeners();
+  } catch (err) {
+    console.error('Error loading products:', err);
+    productsTableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error loading products</td></tr>';
+  }
+}
+
+// ----------------- Attach Edit/Delete Buttons -----------------
+function attachProductEventListeners() {
+  // Edit buttons
+  document.querySelectorAll('.edit-product-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('editProductId').value = btn.dataset.id;
+      document.getElementById('editTitle').value = btn.dataset.title;
+      document.getElementById('editMarket').value = btn.dataset.market;
+      document.getElementById('editSale').value = btn.dataset.sale;
+      document.getElementById('editDescription').value = btn.dataset.description;
+      document.getElementById('editOnSale').checked = btn.dataset.onsale === 'true';
+      editProductModal.show();
+    });
+  });
+
+  // Delete buttons
+  document.querySelectorAll('.delete-product-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Are you sure you want to delete this product?')) return;
+
+      try {
+        const res = await fetch(`/admin/products/delete/${btn.dataset.id}`, { method: 'POST' });
+        if (res.ok) {
+          loadProducts();
+          alert('Product deleted successfully');
+        } else {
+          alert('Failed to delete product');
+        }
+      } catch (err) {
+        console.error('Error deleting product:', err);
+        alert('Failed to delete product');
+      }
+    });
+  });
+}
+
+// ----------------- Add Product -----------------
+document.getElementById('addProductForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const formData = new FormData(e.target);
+
+  try {
+    const res = await fetch('/admin/products', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (res.ok) {
+      e.target.reset();
+      loadProducts();
+      alert('Product added successfully');
+    } else {
+      const err = await res.json();
+      alert('Failed to add product: ' + (err.message || res.statusText));
+    }
+  } catch (err) {
+    console.error('Error adding product:', err);
+    alert('Failed to add product');
+  }
+});
+
+// ----------------- Edit Product -----------------
+document.getElementById('editProductForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const formData = new FormData(e.target);
+  const productId = document.getElementById('editProductId').value;
+
+  try {
+    const res = await fetch(`/admin/products/edit/${productId}`, {
+      method: 'POST',
+      body: formData
+    });
+
+    if (res.ok) {
+      editProductModal.hide();
+      loadProducts();
+      alert('Product updated successfully');
+    } else {
+      const err = await res.json();
+      alert('Failed to update product: ' + (err.message || res.statusText));
+    }
+  } catch (err) {
+    console.error('Error updating product:', err);
+    alert('Failed to update product');
+  }
+});
+
+// ----------------- Initial Load -----------------
+document.addEventListener('DOMContentLoaded', loadProducts);
+
+   
+    
+    // ===== LOANS TAB =====
+    const adminLoanTable = document.getElementById('adminLoanTable');
+    
+    // Render one loan row
+    function renderAdminLoanRow(loan) {
+      return `
+        <tr id="loan-${loan._id}">
+          <td>${loan._id.slice(-4)}</td>
+          <td><img src="/uploads/${loan.itemImage}" width="60" class="rounded"></td>
+          <td>${loan.description}</td>
+          <td>Ksh ${loan.itemValue}</td>
+          <td>Ksh ${loan.loanAmount}</td>
+          <td>${loan.loanPeriod} months</td>
+          <td class="loan-status">
+            <span class="badge ${
+              loan.status === 'Approved' 
+                ? 'bg-success' 
+                : loan.status === 'Rejected' 
+                  ? 'bg-danger' 
+                  : loan.status === 'Visit Shop' 
+                    ? 'bg-info' 
+                    : 'bg-warning'
+            }">
+              ${loan.status}
+            </span>
+          </td>
+          <td>
+            <button class="btn btn-success btn-sm me-1" onclick="updateLoan('${loan._id}','Approved')">Approve</button>
+            <button class="btn btn-info btn-sm me-1" onclick="updateLoan('${loan._id}','Visit Shop')">Visit Shop</button>
+            <button class="btn btn-danger btn-sm" onclick="updateLoan('${loan._id}','Rejected')">Reject</button>
+          </td>
+        </tr>
+      `;
+    }
+    
+    // Load loans initially
+    async function loadAdminLoans() {
+      try {
+        const res = await fetch('/loans/list');
+        const loans = await res.json();
+        
+        if (!loans.length) {
+          adminLoanTable.innerHTML = '<tr><td colspan="8" class="text-center">No loans yet</td></tr>';
+          return;
+        }
+        
+        adminLoanTable.innerHTML = loans.map(renderAdminLoanRow).join('');
+      } catch (error) {
+        console.error('Error loading loans:', error);
+        adminLoanTable.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error loading loans</td></tr>';
+      }
+    }
+    
+    // Admin updates loan status
+    async function updateLoan(id, status) {
+      try {
+        const res = await fetch(`/admin/loans/${id}/status`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status })
+        });
+        
+        const data = await res.json();
+        if (!data.success) {
+          alert('❌ Failed to update loan status');
+        }
+      } catch (error) {
+        console.error('Error updating loan:', error);
+        alert('Failed to update loan status');
+      }
+    }
+    
+    // Real-time: new loan added
+    socket.on('loanCreated', (loan) => {
+      if (!document.getElementById(`loan-${loan._id}`)) {
+        adminLoanTable.innerHTML += renderAdminLoanRow(loan);
+      }
+    });
+    
+    // Real-time: loan updated
+    socket.on('loanUpdated', (loan) => {
+      const row = document.getElementById(`loan-${loan._id}`);
+      if (row) {
+        row.outerHTML = renderAdminLoanRow(loan);
+      }
+    });
+    
+    // ===== TOP BAR =====
+    async function loadTopBar() {
+      try {
+        const res = await fetch('/admin/top-bar/json');
+        const data = await res.json();
+        const tbody = document.querySelector('#topBarTable tbody');
+        
+        if (!data.length) {
+          tbody.innerHTML = '<tr><td colspan="4" class="text-center">No messages found</td></tr>';
+          return;
+        }
+        
+        tbody.innerHTML = data.map(msg => `
+          <tr>
+            <td>${msg.order}</td>
+            <td>${msg.content}</td>
+            <td>${msg.active ? 'Active' : 'Inactive'}</td>
+            <td>
+              <button class="btn btn-sm btn-primary edit-topbar-btn me-1" data-id="${msg._id}">Edit</button>
+              <button class="btn btn-sm btn-danger delete-topbar-btn" data-id="${msg._id}">Delete</button>
+            </td>
+          </tr>
+        `).join('');
+        
+        // Add event listeners to edit buttons
+        document.querySelectorAll('.edit-topbar-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const msg = data.find(m => m._id === btn.dataset.id);
+            document.getElementById('topBarId').value = msg._id;
+            document.getElementById('topBarContent').value = msg.content;
+            document.getElementById('topBarOrder').value = msg.order;
+            document.getElementById('topBarActive').value = msg.active;
+          });
+        });
+        
+        // Add event listeners to delete buttons
+        document.querySelectorAll('.delete-topbar-btn').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            if (confirm('Are you sure you want to delete this message?')) {
+              try {
+                await fetch(`/admin/top-bar/${btn.dataset.id}`, { method: 'DELETE' });
+                loadTopBar();
+              } catch (error) {
+                console.error('Error deleting message:', error);
+                alert('Failed to delete message');
+              }
+            }
+          });
+        });
+      } catch (error) {
+        console.error('Error loading top bar messages:', error);
+        document.querySelector('#topBarTable tbody').innerHTML = 
+          '<tr><td colspan="4" class="text-center text-danger">Error loading messages</td></tr>';
+      }
+    }
+    
+    // Top bar form submission
+    document.getElementById('topBarForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      
+      try {
+        await fetch('/admin/top-bar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: document.getElementById('topBarId').value,
+            content: document.getElementById('topBarContent').value,
+            order: parseInt(document.getElementById('topBarOrder').value),
+            active: document.getElementById('topBarActive').value === 'true'
+          })
+        });
+        
+        e.target.reset();
+        document.getElementById('topBarId').value = '';
+        loadTopBar();
+      } catch (error) {
+        console.error('Error saving top bar message:', error);
+        alert('Failed to save message');
+      }
+    });
+    
+    // ===== LEADERBOARD (ADMIN) =====
+    const lbTbody = document.querySelector('.admin-leaderboard tbody');
+    const editLbModal = new bootstrap.Modal(document.getElementById('editLeaderboardModal'));
+    
+    function placeRowGlowClass(tr, index) {
+      tr.classList.remove('glow-gold', 'glow-silver', 'glow-bronze');
+      if (index === 0) tr.classList.add('glow-gold');
+      else if (index === 1) tr.classList.add('glow-silver');
+      else if (index === 2) tr.classList.add('glow-bronze');
+    }
+    
+    function renderRankBadge(i) {
+      if (i === 0) return '🥇 1';
+      if (i === 1) return '🥈 2';
+      if (i === 2) return '🥉 3';
+      return i + 1;
+    }
+    
+    async function renderLeaderboard() {
+      try {
+        const res = await fetch('/top-leaderboard');
+        const leaderboard = await res.json();
+        
+        if (!leaderboard.length) {
+          lbTbody.innerHTML = '<tr><td colspan="4" class="text-center">No players yet</td></tr>';
+          return;
+        }
+        
+        lbTbody.innerHTML = '';
+        
+        leaderboard.forEach((p, i) => {
+          const tr = document.createElement('tr');
+          tr.id = `leaderboard-${p._id}`;
+          placeRowGlowClass(tr, i);
+          tr.innerHTML = `
+            <td>${renderRankBadge(i)}</td>
+            <td>${p.player}</td>
+            <td>${p.score}</td>
+            <td class="text-end">
+              <button class="btn btn-sm btn-primary edit-leaderboard-btn me-1"
+                      data-id="${p._id}" data-player="${p.player}" data-score="${p.score}">
+                <i class="bi bi-pencil"></i> Edit
+              </button>
+              <button class="btn btn-sm btn-danger delete-leaderboard-btn" data-id="${p._id}">
+                <i class="bi bi-trash"></i> Delete
+              </button>
+            </td>`;
+          lbTbody.appendChild(tr);
+        });
+        
+        bindLeaderboardButtons();
+      } catch (err) {
+        console.error('Error loading leaderboard:', err);
+        lbTbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error loading leaderboard</td></tr>';
+      }
+    }
+    
+    function bindLeaderboardButtons() {
+      document.querySelectorAll('.edit-leaderboard-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.getElementById('editLeaderboardId').value = btn.dataset.id;
+          document.getElementById('editPlayer').value = btn.dataset.player;
+          document.getElementById('editScore').value = btn.dataset.score;
+          editLbModal.show();
+        });
+      });
+      
+      document.querySelectorAll('.delete-leaderboard-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.dataset.id;
+          if (!confirm('Are you sure you want to delete this player?')) return;
+          
+          try {
+            await fetch(`/admin/leaderboard/${id}`, { method: 'DELETE' });
+            socket.emit('leaderboardUpdate');
+          } catch (error) {
+            console.error('Error deleting player:', error);
+            alert('Failed to delete player');
+          }
+        });
+      });
+    }
+    
+    // Add leaderboard form submission
+    document.getElementById('addLeaderboardForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const player = fd.get('player');
+      const score = Number(fd.get('score'));
+      
+      try {
+        const res = await fetch('/admin/leaderboard', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ player, score })
+        });
+        
+        const data = await res.json();
+        if (data.success) {
+          e.target.reset();
+          socket.emit('leaderboardUpdate');
+        } else {
+          alert('Failed to add player');
+        }
+      } catch (err) { 
+        console.error('Error adding player:', err);
+        alert('Failed to add player');
+      }
+    });
+    
+    // Edit leaderboard form submission
+    document.getElementById('editLeaderboardForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const id = document.getElementById('editLeaderboardId').value;
+      const player = document.getElementById('editPlayer').value;
+      const score = Number(document.getElementById('editScore').value);
+      
+      try {
+        const res = await fetch(`/admin/leaderboard/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ player, score })
+        });
+        
+        const data = await res.json();
+        if (data.success) {
+          editLbModal.hide();
+          socket.emit('leaderboardUpdate');
+        } else {
+          alert('Failed to update player');
+        }
+      } catch (err) { 
+        console.error('Error updating player:', err);
+        alert('Failed to update player');
+      }
+    });
+    
+    // ===== BOOKINGS =====
+    const bookingsTbody = document.querySelector('#bookingsTable tbody');
+    
+    function renderBookingRow(b, isNew = false) {
+      const badgeClass = b.status === 'Pending' ? 'warning'
+                        : b.status === 'Confirmed' ? 'success'
+                        : b.status === 'Completed' ? 'primary'
+                        : 'secondary';
+      let row = document.getElementById(`booking-${b._id}`);
+      
+      if (row) {
+        row.querySelector('td:nth-child(3)').textContent = b.game;
+        row.querySelector('td:nth-child(4)').textContent = b.console;
+        row.querySelector('td:nth-child(5)').textContent = new Date(b.date).toLocaleDateString();
+        row.querySelector('td:nth-child(6)').textContent = b.timeSlot;
+        const statusSpan = row.querySelector('td:nth-child(7) span');
+        statusSpan.textContent = b.status;
+        statusSpan.className = `badge bg-${badgeClass}`;
+        row.classList.add('updated');
+        setTimeout(() => row.classList.remove('updated'), 3000);
+      } else {
+        row = document.createElement('tr');
+        row.id = `booking-${b._id}`;
+        if (isNew) row.classList.add('new-booking');
+        row.innerHTML = `
+          <td>${b._id}</td>
+          <td>${b.user.name} (${b.user.email})</td>
+          <td>${b.game}</td>
+          <td>${b.console}</td>
+          <td>${new Date(b.date).toLocaleDateString()}</td>
+          <td>${b.timeSlot}</td>
+          <td><span class="badge bg-${badgeClass}">${b.status}</span></td>
+          <td class="text-end">
+            <select class="form-select form-select-sm status-select" data-id="${b._id}">
+              <option value="Pending"   ${b.status === 'Pending' ? 'selected' : ''}>Pending</option>
+              <option value="Confirmed" ${b.status === 'Confirmed' ? 'selected' : ''}>Confirmed</option>
+              <option value="Completed" ${b.status === 'Completed' ? 'selected' : ''}>Completed</option>
+              <option value="Cancelled" ${b.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
+            </select>
+          </td>`;
+        bookingsTbody.appendChild(row);
+        setTimeout(() => row.classList.remove('new-booking'), 3000);
+      }
+    }
+    
+    async function fetchBookings() {
+      try {
+        const res = await fetch('/admin/bookings/json');
+        const data = await res.json();
+        const bookings = Array.isArray(data) ? data : (data.bookings || []);
+        
+        if (!bookings.length) {
+          bookingsTbody.innerHTML = '<tr><td colspan="8" class="text-center">No bookings found</td></tr>';
+          return;
+        }
+        
+        bookingsTbody.innerHTML = '';
+        bookings.forEach(b => renderBookingRow(b));
+      } catch (error) {
+        console.error('Error loading bookings:', error);
+        bookingsTbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error loading bookings</td></tr>';
+      }
+    }
+    
+    // Booking status change handler
+    bookingsTbody.addEventListener('change', async e => {
+      if (!e.target.classList.contains('status-select')) return;
+      const id = e.target.dataset.id, status = e.target.value;
+      
+      try {
+        const res = await fetch(`/admin/bookings/update/${id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status })
+        });
+        
+        const data = await res.json();
+        if (data.success) {
+          renderBookingRow(data.booking);
+        } else {
+          alert('Failed to update booking status');
+        }
+      } catch (error) {
+        console.error('Error updating booking:', error);
+        alert('Failed to update booking status');
+      }
+    });
+    
+// ===== MESSAGES TAB =====
+const messagesTbody = document.getElementById("messages-tbody");
+const newMessageCount = document.getElementById("new-message-count");
+const replyModal = new bootstrap.Modal(document.getElementById("replyModal"));
+const replyForm = document.getElementById("reply-form");
+const replyText = document.getElementById("reply-text");
+const replyId = document.getElementById("reply-id");
+
+let messages = [];
+
+// Fetch & render messages
+async function loadMessages() {
+  try {
+    // ✅ FIXED: JSON endpoint
+    const res = await fetch("/admin/messages/json");
+    messages = await res.json();
+    renderMessages();
+  } catch (error) {
+    console.error("Error loading messages:", error);
+    messagesTbody.innerHTML =
+      '<tr><td colspan="5" class="text-center text-danger">Error loading messages</td></tr>';
+  }
+}
+
+function renderMessages() {
+  messagesTbody.innerHTML = "";
+
+  if (!messages.length) {
+    messagesTbody.innerHTML =
+      '<tr><td colspan="5" class="text-center">No messages yet</td></tr>';
+    newMessageCount.textContent = "0";
+    return;
+  }
+
+  messages.forEach((msg, i) => {
+    const tr = document.createElement("tr");
+    tr.id = `message-${msg._id}`;
+    tr.innerHTML = `
+      <td>${i + 1}</td>
+      <td>${msg.name}</td>
+      <td>${msg.email}</td>
+      <td>${msg.text}</td>
+      <td>
+        <button class="btn btn-sm btn-success reply-btn me-1" data-id="${msg._id}">Reply</button>
+        <button class="btn btn-sm btn-danger delete-btn" data-id="${msg._id}">Delete</button>
+      </td>
+    `;
+    messagesTbody.appendChild(tr);
+  });
+
+  newMessageCount.textContent = messages.length;
+}
+
+// Real-time new message handling
+socket.on("new-message", (msg) => {
+  messages.push(msg);
+  const tr = document.createElement("tr");
+  tr.id = `message-${msg._id}`;
+  tr.innerHTML = `
+    <td>${messages.length}</td>
+    <td>${msg.name}</td>
+    <td>${msg.email}</td>
+    <td>${msg.text}</td>
+    <td>
+      <button class="btn btn-sm btn-success reply-btn me-1" data-id="${msg._id}">Reply</button>
+      <button class="btn btn-sm btn-danger delete-btn" data-id="${msg._id}">Delete</button>
+    </td>
+  `;
+  messagesTbody.appendChild(tr);
+
+  // Smooth highlight
+  tr.classList.add("table-success");
+  setTimeout(() => tr.classList.remove("table-success"), 2000);
+
+  newMessageCount.textContent = messages.length;
+});
+
+// Reply + Delete handling
+messagesTbody.addEventListener("click", (e) => {
+  if (e.target.classList.contains("reply-btn")) {
+    const id = e.target.dataset.id;
+    replyId.value = id;
+    replyText.value = "";
+    replyModal.show();
+    setTimeout(() => replyText.focus(), 300);
+  }
+
+  if (e.target.classList.contains("delete-btn")) {
+    const id = e.target.dataset.id;
+    if (confirm("Are you sure you want to delete this message?")) {
+      // ✅ FIXED: delete endpoint
+      fetch(`/admin/messages/${id}`, { method: "DELETE" })
+        .then(() => {
+          messages = messages.filter((m) => m._id !== id);
+          renderMessages();
+        })
+        .catch((error) => {
+          console.error("Error deleting message:", error);
+          alert("Failed to delete message");
+        });
+    }
+  }
+});
+
+// Reply form submit
+replyForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const id = replyId.value;
+  const text = replyText.value;
+
+  try {
+    // ✅ FIXED: reply endpoint
+    await fetch(`/admin/messages/reply/${id}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reply: text }),
+    });
+
+    replyModal.hide();
+    alert("Reply sent!");
+  } catch (error) {
+    console.error("Error sending reply:", error);
+    alert("Failed to send reply");
+  }
+});
+
+// Initial load
+loadMessages();
+
+    // ===== INITIAL LOAD =====
+    document.addEventListener('DOMContentLoaded', () => {
+      // Load data for the active tab
+      const activeTab = document.querySelector('.tab-pane.active');
+      if (activeTab) {
+        if (activeTab.id === 'users') loadUsers();
+        if (activeTab.id === 'products') loadProducts();
+        if (activeTab.id === 'loans') loadAdminLoans();
+        if (activeTab.id === 'content') loadTopBar();
+        if (activeTab.id === 'leaderboard') renderLeaderboard();
+        if (activeTab.id === 'bookings') fetchBookings();
+        if (activeTab.id === 'messages-tab') loadMessages();
+      }
+      
+      // Listen for tab changes to load data
+      document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
+        tab.addEventListener('shown.bs.tab', e => {
+          const targetId = e.target.getAttribute('href').substring(1);
+          if (targetId === 'users') loadUsers();
+          if (targetId === 'products') loadProducts();
+          if (targetId === 'loans') loadAdminLoans();
+          if (targetId === 'content') loadTopBar();
+          if (targetId === 'leaderboard') renderLeaderboard();
+          if (targetId === 'bookings') fetchBookings();
+          if (targetId === 'messages-tab') loadMessages();
+        });
+      });
+    });
+    
+    // Real-time updates
+    socket.on('topBarUpdate', loadTopBar);
+    socket.on('leaderboardUpdate', renderLeaderboard);
+    socket.on('newBooking', b => renderBookingRow(b, true));
+    socket.on('updateBooking', b => renderBookingRow(b));
+  </script>
 </body>
 </html>
-
-
-

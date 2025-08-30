@@ -1,0 +1,46 @@
+{{!-- messages.hbs --}}
+{{> header }}
+
+<div class="container my-5">
+  <h2>Your Messages</h2>
+
+  <form id="messageForm">
+    <textarea name="message" class="form-control mb-2" placeholder="Type your message..." required></textarea>
+    <button type="submit" class="btn btn-primary">Send</button>
+  </form>
+
+  <ul id="messagesList" class="list-group mt-3">
+    {{#each messages}}
+      <li class="list-group-item">
+        <strong>{{sender.name}}</strong>: {{content}} <small class="text-muted">{{createdAt}}</small>
+      </li>
+    {{/each}}
+  </ul>
+</div>
+
+<script>
+  const form = document.getElementById("messageForm");
+  const list = document.getElementById("messagesList");
+
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const content = form.message.value.trim();
+    if (!content) return;
+
+    const res = await fetch("/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content })
+    });
+    const data = await res.json();
+    if (data.success) {
+      const li = document.createElement("li");
+      li.className = "list-group-item";
+      li.textContent = data.message.content;
+      list.prepend(li);
+      form.reset();
+    }
+  });
+</script>
+
+{{> footer }}
