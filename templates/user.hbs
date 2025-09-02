@@ -28,6 +28,7 @@
       color: var(--text-light);
       padding-bottom: 70px;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      overflow-x: hidden;
     }
     
     /* Navigation Styles */
@@ -127,7 +128,22 @@
     
     /* Section Spacing */
     section {
-      padding: 3rem 0;
+      padding: 2rem 0;
+    }
+    
+    /* Hero Section Styles */
+    .hero-section {
+      min-height: 60vh;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .hero-title {
+      font-size: 2.5rem;
+    }
+    
+    .hero-subtitle {
+      font-size: 1.2rem;
     }
     
     /* Responsive Adjustments */
@@ -140,75 +156,228 @@
         font-size: 2rem;
       }
       
+      .hero-subtitle {
+        font-size: 1rem;
+      }
+      
       section {
-        padding: 2rem 0;
+        padding: 1.5rem 0;
+      }
+      
+      .btn-lg {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
       }
     }
+    
+    @media (max-width: 576px) {
+      .hero-title {
+        font-size: 1.75rem;
+      }
+      
+      .hero-subtitle {
+        font-size: 0.9rem;
+      }
+      
+      .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+      }
+      
+      .d-flex.gap-3 {
+        flex-direction: column;
+      }
+      
+      .feature-card {
+        margin-bottom: 1rem;
+      }
+    }
+    
+    /* Top Bar Messages */
+    #topBar {
+      height: 30px;
+      overflow: hidden;
+    }
+    
+    @keyframes scrollLeft {
+      0%   { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
+    }
+    
+    /* Loan Calculator Table */
+    .table-responsive {
+      overflow-x: auto;
+    }
+    
+    /* Testimonial Cards */
+    .testimonial-card {
+      max-width: 500px;
+      border: 1px solid var(--secondary-color);
+      border-radius: 10px;
+    }
+    
+    /* Footer Styles */
+    .shiny-line {
+      height: 4px;
+      width: 100%;
+      background: linear-gradient(90deg, #ffd700, #ff8c00, #ffd700);
+      animation: shine 2s linear infinite;
+      margin-bottom: 15px;
+      background-size: 200% 100%;
+    }
+    
+    @keyframes shine {
+      0% {
+        background-position: 0% 50%;
+      }
+      100% {
+        background-position: 100% 50%;
+      }
+    }
+    
+    footer a {
+      transition: color 0.3s ease;
+    }
+    
+    footer a:hover {
+      color: var(--secondary-color) !important;
+    }
+        /* Pulse / Zoom Animation */
+@keyframes pulseZoom {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.login-box {
+  text-decoration: none;
+  animation: pulseZoom 2s infinite;
+  transition: transform 0.2s ease-in-out;
+}
+
+.login-box:hover {
+  transform: scale(1.15);
+  background-color: #ffc107; /* keep warning color on hover */
+}
+/* Back to Top Arrow */
+.back-to-top {
+  position: fixed;
+  bottom: 120px;
+  left: 20px; /* Changed from right to left */
+  width: 50px;
+  height: 50px;
+  background: var(--primary-color);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  z-index: 999;
+  box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+}
+
+.back-to-top.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.back-to-top:hover {
+  background: #0b5ed7;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 15px rgba(13, 110, 253, 0.4);
+}
   </style>
 </head>
 <body>
 
-  <!-- Main Navigation -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top shadow-sm">
-    <div class="container">
-      <a class="navbar-brand fw-bold" href="/">
-        <img src="/images/logo.png" alt="Maximum Gamers Logo" class="me-2">
-        Maximum Gamers
-      </a>
+  <!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark px-3 sticky-top">
+  <div class="container-fluid">
+    <!-- Brand with improved styling -->
+    <a class="navbar-brand fw-bold fs-3 d-none d-lg-block" href="#">
+      <span class="text-primary">Maximum</span> <span class="text-success">Gamers</span>
+    </a>
+    
+    <!-- Small screen brand -->
+    <a class="navbar-brand d-lg-none fw-bold fs-4" href="#">
+      <span class="text-primary">M</span><span class="text-success">G</span>
+    </a>
 
-      <!-- Cart Icon -->
-      <a class="nav-link position-relative me-3" href="/cart">
-        <i class="bi bi-cart-fill fs-5"></i>
-        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-          0
-          <span class="visually-hidden">items in cart</span>
-        </span>
-      </a>
+    <!-- Hamburger -->
+    <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileMenu">
+      <span class="navbar-toggler-icon"></span>
+    </button>
 
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      
-      <div class="collapse navbar-collapse" id="mainNav">
-        <ul class="navbar-nav ms-auto align-items-center">
-          <li class="nav-item"><a class="nav-link active" href="/">Home</a></li>
-          <li class="nav-item"><a class="nav-link" href="/gaming">Gaming</a></li>
-          <li class="nav-item"><a class="nav-link" href="/loans">Loans</a></li>
-          <li class="nav-item"><a class="nav-link" href="/shop">Shop</a></li>
-          <li class="nav-item"><a class="nav-link" href="/blog">Blog</a></li>
-          <li class="nav-item"><a class="nav-link" href="/contact">Contact</a></li>
-          <li class="nav-item"><a class="nav-link" href="/about">About</a></li>
-        </ul>
-      </div>
+    <!-- Full nav (hidden on small screens) -->
+    <div class="collapse navbar-collapse d-none d-lg-flex justify-content-center">
+      <ul class="navbar-nav">
+        <li class="nav-item"><a class="nav-link" href="/user">Home</a></li>
+        <li class="nav-item"><a class="nav-link" href="/shop">Shop</a></li>
+        <li class="nav-item"><a class="nav-link" href="/gaming">Booking</a></li>
+        <li class="nav-item"><a class="nav-link" href="/loans">Loans</a></li>
+        <li class="nav-item"><a class="nav-link" href="/contact">Contact</a></li>
+        <li class="nav-item"><a class="nav-link" href="/profile">Profile</a></li>
+        <li class="nav-item"><a class="nav-link" href="/about">About</a></li>
+        <li class="nav-item"><a class="nav-link" href="/blog">Blog</a></li>
+      </ul>
     </div>
-  </nav>
+  </div>
+</nav>
 
+<!-- OFFCANVAS MENU (Mobile Sidebar) -->
+<div class="offcanvas offcanvas-end bg-dark text-white" tabindex="-1" id="mobileMenu">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title">
+      <span class="text-primary">Maximum</span> <span class="text-success">Gamers</span>
+    </h5>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body d-flex flex-column">
+    <ul class="navbar-nav flex-grow-1">
+      <li class="nav-item"><a class="nav-link text-white" href="/">Home</a></li>
+      <li class="nav-item"><a class="nav-link text-white" href="/shop">Shop</a></li>
+      <li class="nav-item"><a class="nav-link text-white" href="/booking">Booking</a></li>
+      <li class="nav-item"><a class="nav-link text-white" href="/loans">Loans</a></li>
+      <li class="nav-item"><a class="nav-link text-white" href="/contact">Contact</a></li>
+      <li class="nav-item"><a class="nav-link text-white" href="/profile">Profile</a></li>
+      <li class="nav-item"><a class="nav-link text-white" href="/about">About</a></li>
+       <li class="nav-item"><a class="nav-link text-white" href="/blog">Blog</a></li>
+    </ul>
+    <a href="/home" class="btn btn-danger mt-auto">Logout</a>
+  </div>
+</div>
+  
   <!-- Top Bar Messages -->
-<div id="topBar" class="bg-dark text-white text-center py-1">
+<div id="topBar" class="bg-dark text-white text-center sticky-top" style="height:30px; z-index: 1030;">
   <div id="topBarMessages" 
        class="d-flex justify-content-center align-items-center" 
-       style="overflow:hidden; height:30px; position: relative;">
-    <!-- Messages will be injected dynamically here -->
+       style="overflow:hidden; height:100%; position: relative;">
+    <!-- Messages injected dynamically -->
   </div>
 </div>
 
 <script>
   async function displayTopBar() {
     try {
-      // 🚨 Important: fetch from frontend route, not admin
       const res = await fetch('/top-bar/active');
       const data = await res.json();
       const container = document.getElementById('topBarMessages');
 
-      if (!data.length) {
+      const messages = data.success ? data.messages : [];
+
+      if (!messages.length) {
         container.innerHTML = `<span>No announcements</span>`;
         return;
       }
 
-      // Marquee-style auto scroll
       container.innerHTML = `
         <div style="white-space: nowrap; animation: scrollLeft 15s linear infinite;">
-          ${data.map(msg => `<span class="mx-4">${msg.content}</span>`).join("")}
+          ${messages.map(msg => `<span class="mx-4">${msg.content}</span>`).join("")}
         </div>
       `;
     } catch (err) {
@@ -218,68 +387,46 @@
     }
   }
 
-  // Animation for smooth scroll
-  const style = document.createElement("style");
-  style.innerHTML = `
-    @keyframes scrollLeft {
-      0%   { transform: translateX(100%); }
-      100% { transform: translateX(-100%); }
-    }
-  `;
-  document.head.appendChild(style);
-
-  displayTopBar();
+  // Call once when page loads
+  document.addEventListener("DOMContentLoaded", () => {
+    displayTopBar();
+  });
 </script>
+
 
   <!-- Hero Section -->
   <section class="hero-section position-relative text-center text-white d-flex align-items-center justify-content-center">
-    <div class="hero-grid"></div>
-    <div class="hero-grid clone"></div>
-
-    <!-- Border Ring -->
-    <div class="hero-border-ring"></div>
-    
-    <!-- Moving Star -->
-    <div class="hero-star"></div>
-
-    <!-- Content -->
     <div class="container hero-content position-relative">
       <h1 class="display-4 fw-bold hero-title">Welcome to Maximum Gamers</h1>
-      <p class="lead hero-subtitle">Book gaming sessions, apply for instant loans, and shop for gaming gear.</p>
+      <p class="lead hero-subtitle">Level Up Your Gaming – Book Sessions, Borrow on Valuable Items, and Shop New or Pre-Loved Gear!</p>
       <div class="d-flex justify-content-center gap-3 mt-4 flex-wrap">
-        <a href="/booking" class="btn btn-success btn-lg shadow">🎮 Book a Gaming Session</a>
-        <a href="/loans/apply" class="btn btn-outline-light btn-lg shadow">💰 Apply for a Loan</a>
+        <a href="/gaming" class="btn btn-success btn-lg shadow">🎮 Book a Gaming Session</a>
+        <a href="/loans" class="btn btn-outline-light btn-lg shadow">💰 Apply for a Loan</a>
       </div>
-      <div class="mt-4 p-2 bg-warning text-dark fw-bold rounded d-inline-block shadow">
-        🔥 Flash Sale: Get 1 Hour Free on Weekends!
-      </div>
-    </div>
-  </section>
 
-  <!-- Features Section -->
-  <section class="features-section py-5 position-relative overflow-hidden">
-    <div class="features-grid"></div>
-    <div class="features-grid clone"></div>
+<!-- Scroll to Features Link -->
+<a href="#features" class="mt-4 p-2 bg-warning text-dark fw-bold rounded d-inline-block shadow login-box">
+  Scroll to see more...
+</a>
 
-    <!-- Shiny Star -->
-    <div class="border-star"></div>
+<!-- Features Section -->
+<section id="features" class="features-section py-5 position-relative overflow-hidden">
+  <div class="container position-relative text-center">
+    <h2 class="mb-5">Our Services</h2>
+    <div class="row g-4 justify-content-center">
 
-    <div class="container position-relative text-center">
-      <h2 class="mb-5">Our Services</h2>
-      <div class="row g-4 justify-content-center">
-
-        <!-- Gaming Lounge -->
-        <div class="col-md-4">
-          <div class="feature-card p-4 text-center h-100">
-            <i class="bi bi-controller fs-1 text-primary mb-3"></i>
-            <h4 class="fw-bold">Gaming Lounge</h4>
-            <p>Play the latest PlayStation games in a premium setup.</p>
-            <a href="/gaming" class="btn btn-outline-primary mt-2">Explore</a>
-          </div>
+              <!-- Gaming Lounge -->
+      <div class="col-md-4">
+        <div class="feature-card p-4 text-center h-100">
+          <i class="bi bi-controller fs-1 text-primary mb-3"></i>
+          <h4 class="fw-bold">Gaming Lounge</h4>
+          <p>Play the latest PlayStation games in a premium setup.</p>
+          <a href="/gaming" class="btn btn-outline-primary mt-2">Explore</a>
         </div>
-
-        <!-- Quick Loans -->
-        <div class="col-md-4">
+      </div>
+      
+      <!-- Quick Loans -->
+        <div class="col-md-4 col-sm-6">
           <div class="feature-card p-4 text-center h-100">
             <i class="bi bi-cash-stack fs-1 text-success mb-3"></i>
             <h4 class="fw-bold">Quick Loans</h4>
@@ -289,7 +436,7 @@
         </div>
 
         <!-- Buy & Sell -->
-        <div class="col-md-4">
+        <div class="col-md-4 col-sm-6">
           <div class="feature-card p-4 text-center h-100">
             <i class="bi bi-cart-check fs-1 text-warning mb-3"></i>
             <h4 class="fw-bold">Buy & Sell</h4>
@@ -302,72 +449,268 @@
     </div>
   </section>
 
-  <!-- Sale Products Section -->
-  <section class="py-5 bg-dark">
-    <div class="container">
-      <h2 class="fw-bold text-center text-success mb-4">🔥 On Sale Now</h2>
-      <p class="text-center text-muted mb-5">Grab the best deals while they last!</p>
+<!-- Sale Products Section -->
+<section class="py-5 bg-dark">
+  <div class="container">
+    <h2 class="fw-bold text-center text-success mb-4">🔥 On Sale Now</h2>
+    <p class="text-center text-muted mb-5">Grab the best deals while they last!</p>
 
-      <div id="saleProductsCarousel" class="carousel slide" data-bs-ride="carousel">
-        <div class="carousel-inner" id="sale-products-container">
-          <!-- Products will be injected here dynamically -->
-        </div>
-
-        <button class="carousel-control-prev" type="button" data-bs-target="#saleProductsCarousel" data-bs-slide="prev">
-          <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-          <span class="visually-hidden">Previous</span>
-        </button>
-        <button class="carousel-control-next" type="button" data-bs-target="#saleProductsCarousel" data-bs-slide="next">
-          <span class="carousel-control-next-icon" aria-hidden="true"></span>
-          <span class="visually-hidden">Next</span>
-        </button>
+    <div id="saleProductsCarousel" class="carousel slide" data-bs-ride="carousel">
+      <div class="carousel-inner" id="sale-products-container">
+        <!-- Products will be injected here dynamically -->
       </div>
+
+      <!-- Controls -->
+      <button class="carousel-control-prev" type="button" data-bs-target="#saleProductsCarousel" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Previous</span>
+      </button>
+      <button class="carousel-control-next" type="button" data-bs-target="#saleProductsCarousel" data-bs-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Next</span>
+      </button>
     </div>
-  </section>
+    
+    <!-- Visit Shop Button -->
+    <div class="text-center mt-4">
+      <a href="/shop" class="btn btn-outline-light btn-lg">Visit Shop <i class="bi bi-arrow-right ms-2"></i></a>
+    </div>
+  </div>
+</section>
+
+<script>
+  // Reusable cart hook
+  function hookCartButtons(selector) {
+    document.querySelectorAll(selector).forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        const title = btn.dataset.title;
+        const salePrice = parseFloat(btn.dataset.price);
+        // Add to cart logic here
+        console.log("Added to cart:", {id, title, salePrice});
+        updateCartBadge();
+      });
+    });
+  }
+
+  async function loadSaleProducts() {
+    try {
+      const res = await fetch('/products/json');
+      const products = await res.json();
+      const container = document.getElementById('sale-products-container');
+
+      if (!products.length) {
+        container.innerHTML = `
+          <div class="carousel-item active text-center py-5">
+            <h5 class="text-muted">No products available</h5>
+          </div>`;
+        return;
+      }
+
+      // Split products into groups of 3 (desktop view)
+      const chunkSize = window.innerWidth < 768 ? 1 : 3;
+      const productChunks = [];
+      for (let i = 0; i < products.length; i += chunkSize) {
+        productChunks.push(products.slice(i, i + chunkSize));
+      }
+
+      // Build carousel slides
+      container.innerHTML = productChunks.map((group, idx) => `
+        <div class="carousel-item ${idx === 0 ? 'active' : ''}">
+          <div class="row justify-content-center">
+            ${group.map(p => `
+              <div class="col-12 col-sm-6 col-lg-4 mb-4">
+                <div class="card shadow-sm h-100 border-0">
+                  <img src="${p.image || '/images/placeholder.png'}" 
+                       class="card-img-top" 
+                       alt="${p.title}" 
+                       style="height:220px; object-fit:cover; border-radius:0.5rem 0.5rem 0 0;">
+                  <div class="card-body d-flex flex-column">
+                    <h5 class="card-title text-truncate">${p.title}</h5>
+                    <p class="card-text small text-muted text-truncate">${p.description}</p>
+                    <p class="mb-2">
+                      <span class="text-danger text-decoration-line-through">Ksh ${p.marketPrice}</span>
+                      <span class="fw-bold text-success ms-2">Ksh ${p.salePrice}</span>
+                    </p>
+                    <button class="btn btn-success mt-auto add-to-cart" 
+                            data-id="${p._id}" 
+                            data-title="${p.title}" 
+                            data-price="${p.salePrice}">
+                      <i class="bi bi-cart-plus"></i> Add to Cart
+                    </button>
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+
+      // Hook up cart buttons for this section
+      hookCartButtons('#sale-products-container .add-to-cart');
+
+    } catch (err) {
+      console.error('Error loading sale products:', err);
+      document.getElementById('sale-products-container').innerHTML = `
+        <div class="carousel-item active text-center py-5">
+          <h5 class="text-danger">Error loading products</h5>
+        </div>`;
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', loadSaleProducts);
+  window.addEventListener('resize', loadSaleProducts);
+</script>
 
   <!-- Loan Calculator Section -->
-  <section class="cyber-loan-section py-5">
-    <div class="loan-border-ring"></div>
-    <div class="loan-border-light"></div>
-
-    <div class="container text-center">
-      <h2 class="mb-4">💰 Loan Calculator</h2>
-      <form class="row justify-content-center g-3">
-        <div class="col-md-3">
-          <input type="number" class="form-control bg-black text-white" placeholder="Item Value (KES)" id="loanValue">
-        </div>
-        <div class="col-md-3">
-          <input type="number" class="form-control bg-black text-white" placeholder="Duration (Months)" id="loanDuration">
-        </div>
-        <div class="col-md-2">
-          <button type="button" class="btn btn-success w-100" onclick="calculateLoan()">Calculate</button>
-        </div>
-      </form>
-      <div class="mt-4 fw-bold" id="loanResult"></div>
+<section class="cyber-loan-section py-5">
+  <div class="container text-center">
+    <h2 class="mb-4">💰 Loan Calculator</h2>
+    <form class="row justify-content-center g-3">
+      <div class="col-md-3 col-sm-6">
+        <input type="number" class="form-control bg-black text-white" placeholder="Item Value (KES)" id="loanValue">
+      </div>
+      <div class="col-md-3 col-sm-6">
+        <input type="number" class="form-control bg-black text-white" placeholder="Duration (Months)" id="loanDuration">
+      </div>
+      <div class="col-md-2 col-sm-12">
+        <button type="button" class="btn btn-success w-100" onclick="calculateLoan()">Calculate</button>
+      </div>
+    </form>
+    <div class="mt-4 fw-bold" id="loanResult"></div>
+    
+    <!-- Apply Loan Button -->
+    <div class="mt-4">
+      <a href="/loans" class="btn btn-primary btn-lg">Apply for a Loan <i class="bi bi-arrow-right ms-2"></i></a>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- Leaderboard Section -->
-  <section id="leaderboard-home" class="py-5 bg-dark text-light">
-    <div class="container">
-      <h2 class="text-center text-success mb-4">🏆 Leaderboard</h2>
-      
-      <div class="table-responsive">
-        <table class="table table-dark table-striped align-middle leaderboard-table">
-          <thead class="table-success text-dark">
+<script>
+  function calculateLoan() {
+    const value = parseFloat(document.getElementById('loanValue').value);
+    const duration = parseInt(document.getElementById('loanDuration').value);
+
+    if (!value || !duration || value <= 0 || duration <= 0) {
+      document.getElementById('loanResult').innerHTML =
+        `<div class='alert alert-warning mt-3'>Please enter valid values.</div>`;
+      return;
+    }
+
+    const interestRate = 0.30; // 30% per month
+    let totalInterest = 0;
+
+    // Build month-by-month table
+    let tableHTML = `
+      <div class="table-responsive mt-3">
+        <table class="table table-dark table-striped text-white">
+          <thead>
             <tr>
-              <th>Rank</th>
-              <th>Player</th>
-              <th>Score</th>
+              <th>Month</th>
+              <th>Interest (KES)</th>
+              <th>Principal (KES)</th>
+              <th>Total Due (KES)</th>
             </tr>
           </thead>
-          <tbody id="leaderboardBody">
-            <!-- Leaderboard will dynamically populate here -->
-          </tbody>
-        </table>
+          <tbody>
+    `;
+
+    for (let month = 1; month <= duration; month++) {
+      const monthlyInterest = value * interestRate;
+      totalInterest += monthlyInterest;
+      const totalDue = value + totalInterest;
+
+      tableHTML += `
+        <tr>
+          <td>${month}</td>
+          <td>${monthlyInterest.toFixed(2)}</td>
+          <td>${value.toFixed(2)}</td>
+          <td>${totalDue.toFixed(2)}</td>
+        </tr>
+      `;
+    }
+
+    tableHTML += `</tbody></table></div>`;
+
+    // Summary
+    const resultHTML = `
+      <div class='alert alert-info mt-3'>
+        Estimated Total Repayment: KES ${(value + totalInterest).toFixed(2)} <br>
+        (Principal: KES ${value.toFixed(2)}, Total Interest: KES ${totalInterest.toFixed(2)})
       </div>
+    `;
+
+    document.getElementById('loanResult').innerHTML = resultHTML + tableHTML;
+  }
+</script>
+
+ <!-- Leaderboard Section -->
+<section id="leaderboard-home" class="py-5 bg-dark text-light">
+  <div class="container">
+    <h2 class="text-center text-success mb-4">🏆 Leaderboard</h2>
+
+    <div class="table-responsive">
+      <table class="table table-dark table-striped align-middle leaderboard-table">
+        <thead class="table-success text-dark">
+          <tr>
+            <th>Rank</th>
+            <th>Player</th>
+            <th>Score</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboardBody">
+          <!-- Leaderboard will dynamically populate here -->
+        </tbody>
+      </table>
     </div>
-  </section>
+    
+    <!-- Send Complaint Button -->
+    <div class="text-center mt-4">
+      <a href="/contact" class="btn btn-outline-warning">
+        <i class="bi bi-exclamation-triangle me-2"></i>Send Complaint
+      </a>
+    </div>
+  </div>
+</section>
+
+<script>
+  const leaderboardBody = document.getElementById("leaderboardBody");
+
+  // Render leaderboard
+  function renderLeaderboard(players) {
+    leaderboardBody.innerHTML = "";
+
+    if (!players.length) {
+      leaderboardBody.innerHTML = `<tr><td colspan="3" class="text-center">No players yet</td></tr>`;
+      return;
+    }
+
+    players.forEach((p, i) => {
+      let rankIcon = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1;
+      leaderboardBody.innerHTML += `
+        <tr>
+          <td>${rankIcon}</td>
+          <td>${p.player}</td>
+          <td>${p.score}</td>
+        </tr>`;
+    });
+  }
+
+  // Fetch leaderboard once on page load
+  async function loadLeaderboard() {
+    try {
+      const res = await fetch("/top-leaderboard");
+      const data = await res.json();
+      renderLeaderboard(data);
+    } catch (err) {
+      console.error("Error fetching leaderboard:", err);
+      leaderboardBody.innerHTML = `<tr><td colspan="3" class="text-center text-danger">Error loading leaderboard</td></tr>`;
+    }
+  }
+
+  // Initial load
+  loadLeaderboard();
+</script>
 
   <!-- Testimonials Section -->
   <section class="py-5 bg-dark">
@@ -376,7 +719,7 @@
 
       <div id="testimonialCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="5000">
         <div class="carousel-inner">
-          
+
           <!-- Testimonial 1 -->
           <div class="carousel-item active">
             <div class="card p-4 bg-black mx-auto testimonial-card">
@@ -418,13 +761,11 @@
   </section>
 
   <!-- Footer -->
-  <footer class="bg-dark text-white pt-3">
-    <div class="d-flex justify-content-center mb-2">
-      <div class="footer-handle"></div>
-    </div>
+  <footer class="bg-dark text-white pt-3 position-relative">
+    <!-- Shiny Line -->
+    <div class="shiny-line"></div>
 
     <div class="text-center mb-3">
-      <img src="/images/logo.png" alt="Maximum Gamers Logo" class="footer-logo">
       <p class="mt-2 small">Empowering gamers to play, earn, and connect.</p>
     </div>
 
@@ -439,11 +780,11 @@
           </ul>
         </div>
         <div class="col-6 col-md-3">
-          <h6 class="fw-bold">Company</h6>
+          <h6 class="fw-bold">Our Shop</h6>
           <ul class="list-unstyled">
             <li><a href="/about" class="text-white text-decoration-none">About Us</a></li>
             <li><a href="/contact" class="text-white text-decoration-none">Contact</a></li>
-            <li><a href="/careers" class="text-white text-decoration-none">Careers</a></li>
+            <li><a href="/whatscoming" class="text-white text-decoration-none">What's Coming</a></li>
           </ul>
         </div>
         <div class="col-6 col-md-3">
@@ -474,9 +815,9 @@
   <nav class="navbar bottom-nav d-lg-none">
     <div class="container d-flex justify-content-around">
       <a href="/" class="nav-link text-center active"><i class="bi bi-house-door-fill"></i><br>Home</a>
-      <a href="/gaming" class="nav-link text-center"><i class="bi bi-controller"></i><br>Gaming</a>
-      <a href="/loans" class="nav-link text-center"><i class="bi bi-cash-stack"></i><br>Loans</a>
-      <a href="/shop" class="nav-link text-center"><i class="bi bi-cart"></i><br>Shop</a>
+      <a href="/login" class="nav-link text-center"><i class="bi bi-controller"></i><br>Gaming</a>
+      <a href="/login" class="nav-link text-center"><i class="bi bi-cash-stack"></i><br>Loans</a>
+      <a href="/login" class="nav-link text-center"><i class="bi bi-cart"></i><br>Shop</a>
     </div>
   </nav>
 
@@ -487,15 +828,9 @@
 
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  
-  <!-- Socket.io -->
-  <script src="/socket.io/socket.io.js"></script>
-  
+
   <!-- Custom Scripts -->
   <script>
-    // Initialize socket connection
-    const socket = io();
-    
     // Language translations
     const translations = {
       EN: {
@@ -525,195 +860,64 @@
     function universalSearch(event) {
       event.preventDefault();
       const input = document.getElementById("universalSearchInput").value.trim().toLowerCase();
-      
+
       // Remove old highlights
       document.querySelectorAll("mark.search-highlight").forEach(el => {
         el.outerHTML = el.innerText;
       });
-      
+
       if (input === "") return;
-      
+
       // Search across all text nodes in body
       const bodyText = document.body.innerHTML;
       const regex = new RegExp("(" + input + ")", "gi");
       document.body.innerHTML = bodyText.replace(regex, '<mark class="search-highlight">$1</mark>');
     }
 
-    // Top bar messages
-    let messages = [];
-    let currentIndex = 0;
-    const container = document.getElementById("topBarMessages");
-
-    async function fetchTopBarMessages() {
-      const res = await fetch("/top-bar/json");
-      messages = await res.json();
-      renderMessages();
-    }
-
-    function renderMessages() {
-      container.innerHTML = "";
-      messages.forEach((msg, index) => {
-        const span = document.createElement("span");
-        span.classList.add("top-bar-msg");
-        if (index === 0) span.classList.add("active");
-        span.textContent = msg.content;
-        container.appendChild(span);
-      });
-      currentIndex = 0;
-    }
-
-    function nextMessage() {
-      if (messages.length === 0) return;
-      const spans = container.querySelectorAll(".top-bar-msg");
-      spans[currentIndex].classList.remove("active");
-      currentIndex = (currentIndex + 1) % spans.length;
-      spans[currentIndex].classList.add("active");
-    }
-
-    async function initTopBar() {
-      await fetchTopBarMessages();
-      setInterval(nextMessage, 5000);
-    }
-
-    // Socket.IO for real-time updates
-    socket.on("topBarUpdate", async () => {
-      await fetchTopBarMessages();
-    });
-
-    // Sale products carousel
-    async function fetchSaleProducts() {
-      try {
-        const res = await fetch("/api/products/sale");
-        const products = await res.json();
-        const container = document.getElementById("sale-products-container");
-        container.innerHTML = "";
-
-        products.forEach((product, index) => {
-          container.innerHTML += `
-            <div class="carousel-item ${index === 0 ? "active" : ""}">
-              <div class="row justify-content-center">
-                <div class="col-md-4">
-                  <div class="card shadow-lg border-0">
-                    <img src="${product.image}" class="card-img-top" alt="${product.name}">
-                    <div class="card-body text-center">
-                      <h5 class="card-title text-dark">${product.name}</h5>
-                      <p class="text-muted">
-                        <span class="text-decoration-line-through">KSH ${product.originalPrice}</span>
-                        <span class="fw-bold text-success">KSH ${product.salePrice}</span>
-                      </p>
-                      <button class="btn btn-success w-100">
-                        <i class="bi bi-cart"></i> Add to Cart
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          `;
-        });
-      } catch (err) {
-        console.error("Error loading sale products:", err);
-      }
-    }
-
-    // Loan calculator
-    function calculateLoan() {
-      const value = parseFloat(document.getElementById('loanValue').value);
-      const duration = parseInt(document.getElementById('loanDuration').value);
-
-      if (!value || !duration || value <= 0 || duration <= 0) {
-        document.getElementById('loanResult').innerHTML =
-          `<div class='alert alert-warning mt-3'>Please enter valid values.</div>`;
-        return;
-      }
-
-      const interestRate = 0.30; // 30% per month
-      let totalInterest = 0;
-
-      // Build month-by-month table
-      let tableHTML = `
-        <div class="table-responsive mt-3">
-          <table class="table table-dark table-striped text-white">
-            <thead>
-              <tr>
-                <th>Month</th>
-                <th>Interest (KES)</th>
-                <th>Principal (KES)</th>
-                <th>Total Due (KES)</th>
-              </tr>
-            </thead>
-            <tbody>
-      `;
-
-      for (let month = 1; month <= duration; month++) {
-        const monthlyInterest = value * interestRate;
-        totalInterest += monthlyInterest;
-        const totalDue = value + totalInterest;
-
-        tableHTML += `
-          <tr>
-            <td>${month}</td>
-            <td>${monthlyInterest.toFixed(2)}</td>
-            <td>${value.toFixed(2)}</td>
-            <td>${totalDue.toFixed(2)}</td>
-          </tr>
-        `;
-      }
-
-      tableHTML += `</tbody></table></div>`;
-
-      // Summary
-      const resultHTML = `
-        <div class='alert alert-info mt-3'>
-          Estimated Total Repayment: KES ${(value + totalInterest).toFixed(2)} <br>
-          (Principal: KES ${value.toFixed(2)}, Total Interest: KES ${totalInterest.toFixed(2)})
-        </div>
-      `;
-
-      document.getElementById('loanResult').innerHTML = resultHTML + tableHTML;
-    }
-
-    // Leaderboard
-    async function renderLeaderboardHome() {
-      try {
-        const res = await fetch("/api/leaderboard");
-        const leaderboard = await res.json();
-        const tbody = document.getElementById("leaderboardBody");
-        tbody.innerHTML = "";
-
-        leaderboard.forEach((p, i) => {
-          const tr = document.createElement("tr");
-          tr.className = i===0?"glow-gold":i===1?"glow-silver":i===2?"glow-bronze":"";
-          tr.innerHTML = `
-            <td>${i===0?"🥇 1":i===1?"🥈 2":i===2?"🥉 3":i+1}</td>
-            <td>${p.player}</td>
-            <td>${p.score}</td>
-          `;
-          tbody.appendChild(tr);
-        });
-      } catch(err) { 
-        console.error("Error loading leaderboard:", err); 
-      }
-    }
-
     // Initialize everything when DOM is loaded
     document.addEventListener('DOMContentLoaded', () => {
-      initTopBar();
-      fetchSaleProducts();
-      renderLeaderboardHome();
-      
+      displayTopBar();
+      loadSaleProducts();
+      loadLeaderboard();
+
       // Initialize carousel
       const carousel = new bootstrap.Carousel("#saleProductsCarousel", {
         interval: 5000,
         ride: "carousel"
       });
-      
+
       // Initialize testimonial carousel
       const testimonialCarousel = new bootstrap.Carousel("#testimonialCarousel");
-      
-      // Refresh leaderboard when admin updates
-      socket.on("leaderboardUpdate", renderLeaderboardHome);
     });
+
+    // Back to Top functionality
+function initBackToTop() {
+  const backToTopButton = document.getElementById('backToTop');
+  
+  // Show/hide button based on scroll position
+  window.addEventListener('scroll', () => {
+    if (window.pageYOffset > 300) {
+      backToTopButton.classList.add('show');
+    } else {
+      backToTopButton.classList.remove('show');
+    }
+  });
+  
+  // Scroll to top when clicked
+  backToTopButton.addEventListener('click', () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  });
+}
+
+// Initialize back to top button when DOM is loaded
+document.addEventListener('DOMContentLoaded', initBackToTop);
   </script>
+  <!-- Back to Top Arrow -->
+<div id="backToTop" class="back-to-top">
+  <i class="bi bi-arrow-up-circle-fill"></i>
+</div>
 </body>
 </html>

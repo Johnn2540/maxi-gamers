@@ -12,6 +12,8 @@
     .market-price { text-decoration: line-through; color: red; }
     .sale-price { font-weight: bold; font-size: 1.2em; }
     .add-to-cart { width: 100%; }
+
+    /* Cart Sidebar */
     #cart-sidebar {
       position: fixed;
       right: 0;
@@ -29,6 +31,7 @@
     #cart-sidebar h4 { margin-bottom: 1rem; }
     .cart-item { border-bottom: 1px solid #ddd; padding: 0.5rem 0; }
     .cart-item:last-child { border-bottom: none; }
+
     #cart-toggle {
       position: fixed;
       right: 320px;
@@ -38,6 +41,64 @@
   </style>
 </head>
 <body>
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-3">
+    <div class="container-fluid">
+      <!-- Small screen brand -->
+      <a class="navbar-brand d-lg-none fw-bold" href="#">Maximum Gamers</a>
+
+      <!-- Cart + Toggler (always visible on small screens) -->
+      <div class="d-flex align-items-center ms-auto">
+        <!-- Cart Button with Dynamic Badge -->
+        <a href="javascript:void(0)" id="navbar-cart-btn" class="btn position-relative me-2">
+          <i class="bi bi-cart3 fs-5 text-white"></i>
+          <span id="cart-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+            0
+          </span>
+        </a>
+
+        <!-- Hamburger -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileMenu">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+      </div>
+
+      <!-- Full nav (hidden on small screens) -->
+      <div class="collapse navbar-collapse d-none d-lg-flex justify-content-center">
+        <ul class="navbar-nav">
+          <li class="nav-item"><a class="nav-link" href="/user">Home</a></li>
+          <li class="nav-item"><a class="nav-link active" href="/shop">Shop</a></li>
+          <li class="nav-item"><a class="nav-link" href="/gaming">Booking</a></li>
+          <li class="nav-item"><a class="nav-link" href="/loans">Loans</a></li>
+          <li class="nav-item"><a class="nav-link" href="/contact">Contact</a></li>
+          <li class="nav-item"><a class="nav-link" href="/profile">Profile</a></li>
+          <li class="nav-item"><a class="nav-link" href="/about">About</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- OFFCANVAS MENU (Mobile Sidebar) -->
+  <div class="offcanvas offcanvas-end bg-dark text-white" tabindex="-1" id="mobileMenu">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title">Menu</h5>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body d-flex flex-column">
+      <ul class="navbar-nav flex-grow-1">
+        <li class="nav-item"><a class="nav-link text-white" href="/user">Home</a></li>
+        <li class="nav-item"><a class="nav-link text-white active" href="/shop">Shop</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/gaming">Booking</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/loans">Loans</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/contact">Contact</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/profile">Profile</a></li>
+        <li class="nav-item"><a class="nav-link text-white" href="/about">About</a></li>
+      </ul>
+      <a href="/login" class="btn btn-danger mt-auto">Logout</a>
+    </div>
+  </div>
+
+  <!-- SHOP CONTENT -->
   <div class="container my-5">
     <h1 class="text-center mb-4">🛒 Our Products</h1>
     <div class="row" id="shop-products">
@@ -45,10 +106,12 @@
     </div>
   </div>
 
+  <!-- Floating Cart Toggle Button -->
   <button class="btn btn-primary" id="cart-toggle">
     <i class="bi bi-cart"></i> Cart (<span id="cart-count">0</span>)
   </button>
 
+  <!-- Cart Sidebar -->
   <div id="cart-sidebar">
     <h4>🛍 Your Cart</h4>
     <div id="cart-items"></div>
@@ -58,6 +121,7 @@
     <button class="btn btn-secondary w-100 mt-2" id="close-cart">Close</button>
   </div>
 
+  <!-- Scripts -->
   <script>
     const cart = [];
 
@@ -65,11 +129,13 @@
       const itemsContainer = document.getElementById('cart-items');
       const totalEl = document.getElementById('cart-total');
       const countEl = document.getElementById('cart-count');
+      const badgeEl = document.getElementById('cart-badge');
 
       if (!cart.length) {
         itemsContainer.innerHTML = '<p>Your cart is empty</p>';
         totalEl.textContent = '0';
         countEl.textContent = '0';
+        badgeEl.textContent = '0';
         return;
       }
 
@@ -87,6 +153,7 @@
 
       totalEl.textContent = total;
       countEl.textContent = cart.length;
+      badgeEl.textContent = cart.length;
 
       // Remove item event
       document.querySelectorAll('.remove-item').forEach(btn => {
@@ -147,8 +214,12 @@
       }
     }
 
-    // Toggle cart
+    // Toggle cart (floating button + navbar button)
     document.getElementById('cart-toggle').addEventListener('click', () => {
+      const sidebar = document.getElementById('cart-sidebar');
+      sidebar.style.display = sidebar.style.display === 'block' ? 'none' : 'block';
+    });
+    document.getElementById('navbar-cart-btn').addEventListener('click', () => {
       const sidebar = document.getElementById('cart-sidebar');
       sidebar.style.display = sidebar.style.display === 'block' ? 'none' : 'block';
     });
@@ -158,11 +229,12 @@
     });
 
     document.getElementById('checkout-btn').addEventListener('click', () => {
-      alert('Proceeding to checkout...'); 
-      // Here, you can integrate your payment API
+      alert('Proceeding to checkout...');
     });
 
     window.addEventListener('DOMContentLoaded', loadProducts);
   </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

@@ -20,7 +20,9 @@ const userSchema = new mongoose.Schema({
   role: { type: String, enum: ["user", "admin"], default: "user" },
   active: { type: Boolean, default: true },
   studentId: { type: String },
-});
+  image: { type: String, default: null }, // 🆕 Profile image URL/path
+}, { timestamps: true });
+
 
 // PRODUCT SCHEMA
 const productSchema = new mongoose.Schema({

@@ -63,6 +63,15 @@
       0% { background-color: #d4edda; }
       100% { background-color: transparent; }
     }
+
+    /* Mobile optimizations */
+    @media (max-width: 576px) {
+      .content { padding: 15px 10px; }
+      h2 { font-size: 1.5rem; }
+      .card-body { padding: 1rem; }
+      .btn-sm { padding: 0.25rem 0.5rem; font-size: 0.75rem; }
+      .table td, .table th { padding: 0.5rem; }
+    }
   </style>
 </head>
 <body>
@@ -98,10 +107,10 @@
         <div class="table-responsive">
           <table class="table table-striped table-hover">
             <thead class="table-dark">
-              <tr><th>ID</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th class="text-end">Actions</th></tr>
+              <tr><th>ID</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Created</th><th class="text-end">Actions</th></tr>
             </thead>
-            <tbody>
-              <tr><td colspan="6" class="text-center">Loading users...</td></tr>
+            <tbody id="users-table-body">
+              <tr><td colspan="7" class="text-center">Loading users...</td></tr>
             </tbody>
           </table>
         </div>
@@ -229,7 +238,7 @@
         </div>
       </div>
 
-      <!-- LEADERBOARD TAB -->
+      <!-- LEADERboard TAB -->
       <div class="tab-pane fade" id="leaderboard">
         <h2 class="mb-4">🏆 Manage Leaderboard</h2>
         <div class="card mb-4">
@@ -410,6 +419,19 @@
     </div>
   </div>
 
+  <!-- Toast Notification -->
+  <div class="toast-container position-fixed top-0 end-0 p-3">
+    <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="toast-header">
+        <strong id="toast-title" class="me-auto">Notification</strong>
+        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+      <div class="toast-body" id="toast-message">
+        Operation completed successfully.
+      </div>
+    </div>
+  </div>
+
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
@@ -437,237 +459,369 @@
       }
     });
 
-
-
-// ===== USERS TAB =====
-async function loadUsers() {
-  const tbody = document.querySelector('#users tbody');
-  tbody.innerHTML = `<tr><td colspan="6" class="text-center">Loading users...</td></tr>`;
-
-  try {
-    const res = await fetch('/admin/users/json');
-    if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
-    const users = await res.json();
-
-    if (!users.length) {
-      tbody.innerHTML = `<tr><td colspan="6" class="text-center">No users found</td></tr>`;
-      return;
-    }
-
-    // Render table rows
-    tbody.innerHTML = users.map(user => {
-      const role = user.role || 'user';
-      const active = user.active ?? true;
-
-      return `
-      <tr id="user-${user._id}">
-        <td>${user._id}</td>
-        <td>${user.name}</td>
-        <td>${user.email}</td>
-        <td><span class="badge ${role === 'admin' ? 'bg-danger' : 'bg-primary'}">${role}</span></td>
-        <td><span class="badge ${active ? 'bg-success' : 'bg-secondary'}">${active ? 'Active' : 'Suspended'}</span></td>
-        <td class="text-end">
-          <div class="dropdown">
-            <button class="btn btn-sm btn-outline-dark dropdown-toggle" data-bs-toggle="dropdown">Actions</button>
-            <ul class="dropdown-menu dropdown-menu-end">
-              <li><a class="dropdown-item" href="/admin/users/edit/${user._id}"><i class="bi bi-pencil"></i> Edit</a></li>
-              <li><button class="dropdown-item toggle-status-btn" data-id="${user._id}">
-                <i class="bi ${active ? 'bi-pause' : 'bi-play'}"></i> ${active ? 'Suspend' : 'Activate'}
-              </button></li>
-              <li><button class="dropdown-item toggle-role-btn" data-id="${user._id}">
-                <i class="bi ${role === 'admin' ? 'bi-person-dash' : 'bi-person-plus'}"></i> ${role === 'admin' ? 'Remove Admin' : 'Make Admin'}
-              </button></li>
-              <li><hr class="dropdown-divider"></li>
-              <li><button class="dropdown-item text-danger delete-user-btn" data-id="${user._id}"><i class="bi bi-trash"></i> Delete</button></li>
-            </ul>
-          </div>
-        </td>
-      </tr>`;
-    }).join('');
-
-  } catch (err) {
-    console.error('Error loading users:', err);
-    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error loading users</td></tr>`;
-  }
-}
-
-// ===== Event Delegation for Actions =====
-document.querySelector('#users tbody').addEventListener('click', async (e) => {
-  const toggleBtn = e.target.closest('.toggle-status-btn');
-  const roleBtn = e.target.closest('.toggle-role-btn');
-  const deleteBtn = e.target.closest('.delete-user-btn');
-
-  if (toggleBtn) await handleToggleStatus(toggleBtn);
-  if (roleBtn) await handleToggleRole(roleBtn);
-  if (deleteBtn) await handleDeleteUser(deleteBtn);
-});
-
-// Auto-load users on page load
-document.addEventListener('DOMContentLoaded', loadUsers);
-
-
-// ================== PRODUCTS TAB ==================
-const editProductModal = new bootstrap.Modal(document.getElementById('editProductModal'));
-const productsTableBody = document.querySelector('#productsTable tbody');
-
-// ----------------- Load Products -----------------
-async function loadProducts() {
-  try {
-    const res = await fetch('/admin/products/json');
-    const products = await res.json();
-
-    if (!products.length) {
-      productsTableBody.innerHTML = '<tr><td colspan="8" class="text-center">No products found</td></tr>';
-      return;
-    }
-
-    productsTableBody.innerHTML = products.map(p => `
-      <tr id="product-${p._id}">
-        <td>${p._id}</td>
-        <td>${p.title}</td>
-        <td><span class="text-decoration-line-through text-danger">${p.marketPrice}</span></td>
-        <td>${p.salePrice}</td>
-        <td>${p.description}</td>
-        <td>${p.onSale ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-secondary">No</span>'}</td>
-        <td><img src="${p.image || '/images/placeholder.png'}" width="50" height="50" class="thumb" alt="${p.title}"></td>
-        <td class="text-end">
-          <button class="btn btn-sm btn-primary edit-product-btn me-1"
-                  data-id="${p._id}"
-                  data-title="${p.title}"
-                  data-market="${p.marketPrice}"
-                  data-sale="${p.salePrice}"
-                  data-description="${p.description}"
-                  data-onsale="${p.onSale}">
-            <i class="bi bi-pencil"></i> Edit
-          </button>
-          <button class="btn btn-sm btn-danger delete-product-btn" data-id="${p._id}">
-            <i class="bi bi-trash"></i> Delete
-          </button>
-        </td>
-      </tr>
-    `).join('');
-
-    attachProductEventListeners();
-  } catch (err) {
-    console.error('Error loading products:', err);
-    productsTableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error loading products</td></tr>';
-  }
-}
-
-// ----------------- Attach Edit/Delete Buttons -----------------
-function attachProductEventListeners() {
-  // Edit buttons
-  document.querySelectorAll('.edit-product-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.getElementById('editProductId').value = btn.dataset.id;
-      document.getElementById('editTitle').value = btn.dataset.title;
-      document.getElementById('editMarket').value = btn.dataset.market;
-      document.getElementById('editSale').value = btn.dataset.sale;
-      document.getElementById('editDescription').value = btn.dataset.description;
-      document.getElementById('editOnSale').checked = btn.dataset.onsale === 'true';
-      editProductModal.show();
+    // ===== USERS TAB =====
+    const UsersManager = (() => {
+      // Current admin ID (would normally come from server-side session)
+      const ADMIN_ID = 'current-admin-id';
+      
+      // DOM elements
+      const usersTableBody = document.getElementById('users-table-body');
+      
+      // Toast notification
+      const toastEl = document.getElementById('liveToast');
+      const toastTitle = document.getElementById('toast-title');
+      const toastMessage = document.getElementById('toast-message');
+      const toast = new bootstrap.Toast(toastEl);
+      
+      // Show notification
+      function showNotification(title, message, type = 'success') {
+        toastTitle.textContent = title;
+        toastMessage.textContent = message;
+        toastEl.className = `toast ${type === 'error' ? 'bg-danger text-white' : 'bg-success text-white'}`;
+        toast.show();
+      }
+      
+      // Format date
+      function formatDate(dateString) {
+        const options = { year: 'numeric', month: 'short', day: 'numeric' };
+        return new Date(dateString).toLocaleDateString(undefined, options);
+      }
+      
+      // Load users from server
+      async function loadUsers() {
+        try {
+          const res = await fetch('/admin/users/json');
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const users = await res.json();
+          
+          if (!users.length) {
+            usersTableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4">No users found</td></tr>';
+            return;
+          }
+          
+          renderUsers(users);
+        } catch (err) {
+          console.error('Error loading users:', err);
+          usersTableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger">Error loading users</td></tr>';
+        }
+      }
+      
+      // Render users table
+      function renderUsers(users) {
+        usersTableBody.innerHTML = users.map(user => {
+          const role = user.role || 'user';
+          const active = user.active ?? true;
+          const createdAt = user.createdAt ? formatDate(user.createdAt) : 'N/A';
+          
+          return `
+          <tr id="user-${user._id}">
+            <td>${user._id.substring(user._id.length - 6)}</td>
+            <td>${user.name}</td>
+            <td>${user.email}</td>
+            <td><span class="badge ${role === 'admin' ? 'bg-danger' : 'bg-primary'}">${role}</span></td>
+            <td><span class="badge ${active ? 'bg-success' : 'bg-secondary'}">${active ? 'Active' : 'Suspended'}</span></td>
+            <td>${createdAt}</td>
+            <td class="text-end">
+              <div class="dropdown">
+                <button class="btn btn-sm btn-outline-dark dropdown-toggle" data-bs-toggle="dropdown">Actions</button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                  <li><a class="dropdown-item" href="/admin/users/edit/${user._id}"><i class="bi bi-pencil"></i> Edit</a></li>
+                  <li><button class="dropdown-item toggle-status-btn" data-id="${user._id}">
+                    <i class="bi ${active ? 'bi-pause' : 'bi-play'}"></i> ${active ? 'Suspend' : 'Activate'}
+                  </button></li>
+                  <li><button class="dropdown-item toggle-role-btn" data-id="${user._id}">
+                    <i class="bi ${role === 'admin' ? 'bi-person-dash' : 'bi-person-plus'}"></i> ${role === 'admin' ? 'Remove Admin' : 'Make Admin'}
+                  </button></li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li><button class="dropdown-item text-danger delete-user-btn" data-id="${user._id}"><i class="bi bi-trash"></i> Delete</button></li>
+                </ul>
+              </div>
+            </td>
+          </tr>`;
+        }).join('');
+        
+        // Add event listeners to buttons
+        attachEventListeners();
+      }
+      
+      // Attach event listeners to buttons
+      function attachEventListeners() {
+        // Toggle status buttons
+        document.querySelectorAll('.toggle-status-btn').forEach(btn => {
+          btn.addEventListener('click', () => handleToggleStatus(btn.dataset.id));
+        });
+        
+        // Toggle role buttons
+        document.querySelectorAll('.toggle-role-btn').forEach(btn => {
+          btn.addEventListener('click', () => handleToggleRole(btn.dataset.id));
+        });
+        
+        // Delete user buttons
+        document.querySelectorAll('.delete-user-btn').forEach(btn => {
+          btn.addEventListener('click', () => handleDeleteUser(btn.dataset.id));
+        });
+      }
+      
+      // Handle toggle status
+      async function handleToggleStatus(userId) {
+        if (userId === ADMIN_ID) {
+          showNotification('Error', 'Cannot change your own status', 'error');
+          return;
+        }
+        
+        try {
+          const res = await fetch(`/admin/users/toggle/${userId}`, { method: 'POST' });
+          const data = await res.json();
+          
+          if (data.success) {
+            const row = document.querySelector(`#user-${userId}`);
+            const badge = row.querySelector('td:nth-child(5) .badge');
+            const btn = row.querySelector('.toggle-status-btn');
+            
+            badge.className = `badge ${data.active ? 'bg-success' : 'bg-secondary'}`;
+            badge.textContent = data.active ? 'Active' : 'Suspended';
+            btn.innerHTML = `<i class="bi ${data.active ? 'bi-pause' : 'bi-play'}"></i> ${data.active ? 'Suspend' : 'Activate'}`;
+            
+            showNotification('Success', `User ${data.active ? 'activated' : 'suspended'} successfully`);
+          } else {
+            showNotification('Error', data.message, 'error');
+          }
+        } catch (err) {
+          console.error('Error toggling user status:', err);
+          showNotification('Error', 'Failed to update user status', 'error');
+        }
+      }
+      
+      // Handle toggle role
+      async function handleToggleRole(userId) {
+        if (userId === ADMIN_ID) {
+          showNotification('Error', 'Cannot change your own role', 'error');
+          return;
+        }
+        
+        try {
+          const res = await fetch(`/admin/users/role/${userId}`, { method: 'POST' });
+          const data = await res.json();
+          
+          if (data.success) {
+            const row = document.querySelector(`#user-${userId}`);
+            const badge = row.querySelector('td:nth-child(4) .badge');
+            const btn = row.querySelector('.toggle-role-btn');
+            
+            badge.className = `badge ${data.role === 'admin' ? 'bg-danger' : 'bg-primary'}`;
+            badge.textContent = data.role;
+            btn.innerHTML = `<i class="bi ${data.role === 'admin' ? 'bi-person-dash' : 'bi-person-plus'}"></i> ${data.role === 'admin' ? 'Remove Admin' : 'Make Admin'}`;
+            
+            showNotification('Success', `User role updated to ${data.role}`);
+          } else {
+            showNotification('Error', data.message, 'error');
+          }
+        } catch (err) {
+          console.error('Error toggling user role:', err);
+          showNotification('Error', 'Failed to update user role', 'error');
+        }
+      }
+      
+      // Handle delete user
+      async function handleDeleteUser(userId) {
+        if (userId === ADMIN_ID) {
+          showNotification('Error', 'Cannot delete your own account', 'error');
+          return;
+        }
+        
+        if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+          return;
+        }
+        
+        try {
+          const res = await fetch(`/admin/users/delete/${userId}`, { method: 'POST' });
+          const data = await res.json();
+          
+          if (data.success) {
+            document.querySelector(`#user-${userId}`).remove();
+            showNotification('Success', 'User deleted successfully');
+          } else {
+            showNotification('Error', data.message || 'Failed to delete user', 'error');
+          }
+        } catch (err) {
+          console.error('Error deleting user:', err);
+          showNotification('Error', 'Failed to delete user', 'error');
+        }
+      }
+      
+      // Public methods
+      return {
+        init: function() {
+          loadUsers();
+        }
+      };
+    })();
+    
+    // Initialize the users manager when the page loads
+    document.addEventListener('DOMContentLoaded', () => {
+      UsersManager.init();
     });
-  });
 
-  // Delete buttons
-  document.querySelectorAll('.delete-product-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      if (!confirm('Are you sure you want to delete this product?')) return;
+    // ================== PRODUCTS TAB ==================
+    const editProductModal = new bootstrap.Modal(document.getElementById('editProductModal'));
+    const productsTableBody = document.querySelector('#productsTable tbody');
+
+    // ----------------- Load Products -----------------
+    async function loadProducts() {
+      try {
+        const res = await fetch('/admin/products/json');
+        const products = await res.json();
+
+        if (!products.length) {
+          productsTableBody.innerHTML = '<tr><td colspan="8" class="text-center">No products found</td></tr>';
+          return;
+        }
+
+        productsTableBody.innerHTML = products.map(p => `
+          <tr id="product-${p._id}">
+            <td>${p._id}</td>
+            <td>${p.title}</td>
+            <td><span class="text-decoration-line-through text-danger">${p.marketPrice}</span></td>
+            <td>${p.salePrice}</td>
+            <td>${p.description}</td>
+            <td>${p.onSale ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-secondary">No</span>'}</td>
+            <td><img src="${p.image || '/images/placeholder.png'}" width="50" height="50" class="thumb" alt="${p.title}"></td>
+            <td class="text-end">
+              <button class="btn btn-sm btn-primary edit-product-btn me-1"
+                      data-id="${p._id}"
+                      data-title="${p.title}"
+                      data-market="${p.marketPrice}"
+                      data-sale="${p.salePrice}"
+                      data-description="${p.description}"
+                      data-onsale="${p.onSale}">
+                <i class="bi bi-pencil"></i> Edit
+              </button>
+              <button class="btn btn-sm btn-danger delete-product-btn" data-id="${p._id}">
+                <i class="bi bi-trash"></i> Delete
+              </button>
+            </td>
+          </tr>
+        `).join('');
+
+        attachProductEventListeners();
+      } catch (err) {
+        console.error('Error loading products:', err);
+        productsTableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error loading products</td></tr>';
+      }
+    }
+
+    // ----------------- Attach Edit/Delete Buttons -----------------
+    function attachProductEventListeners() {
+      // Edit buttons
+      document.querySelectorAll('.edit-product-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.getElementById('editProductId').value = btn.dataset.id;
+          document.getElementById('editTitle').value = btn.dataset.title;
+          document.getElementById('editMarket').value = btn.dataset.market;
+          document.getElementById('editSale').value = btn.dataset.sale;
+          document.getElementById('editDescription').value = btn.dataset.description;
+          document.getElementById('editOnSale').checked = btn.dataset.onsale === 'true';
+          editProductModal.show();
+        });
+      });
+
+      // Delete buttons
+      document.querySelectorAll('.delete-product-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Are you sure you want to delete this product?')) return;
+
+          try {
+            const res = await fetch(`/admin/products/delete/${btn.dataset.id}`, { method: 'POST' });
+            if (res.ok) {
+              loadProducts();
+              alert('Product deleted successfully');
+            } else {
+              alert('Failed to delete product');
+            }
+          } catch (err) {
+            console.error('Error deleting product:', err);
+            alert('Failed to delete product');
+          }
+        });
+      });
+    }
+
+    // ----------------- Add Product -----------------
+    document.getElementById('addProductForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
 
       try {
-        const res = await fetch(`/admin/products/delete/${btn.dataset.id}`, { method: 'POST' });
+        const res = await fetch('/admin/products', {
+          method: 'POST',
+          body: formData
+        });
+
         if (res.ok) {
+          e.target.reset();
           loadProducts();
-          alert('Product deleted successfully');
+          alert('Product added successfully');
         } else {
-          alert('Failed to delete product');
+          const err = await res.json();
+          alert('Failed to add product: ' + (err.message || res.statusText));
         }
       } catch (err) {
-        console.error('Error deleting product:', err);
-        alert('Failed to delete product');
+        console.error('Error adding product:', err);
+        alert('Failed to add product');
       }
     });
-  });
-}
 
-// ----------------- Add Product -----------------
-document.getElementById('addProductForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  const formData = new FormData(e.target);
+    // ----------------- Edit Product -----------------
+    document.getElementById('editProductForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const productId = document.getElementById('editProductId').value;
 
-  try {
-    const res = await fetch('/admin/products', {
-      method: 'POST',
-      body: formData
+      try {
+        const res = await fetch(`/admin/products/edit/${productId}`, {
+          method: 'POST',
+          body: formData
+        });
+
+        if (res.ok) {
+          editProductModal.hide();
+          loadProducts();
+          alert('Product updated successfully');
+        } else {
+          const err = await res.json();
+          alert('Failed to update product: ' + (err.message || res.statusText));
+        }
+      } catch (err) {
+        console.error('Error updating product:', err);
+        alert('Failed to update product');
+      }
     });
 
-    if (res.ok) {
-      e.target.reset();
-      loadProducts();
-      alert('Product added successfully');
-    } else {
-      const err = await res.json();
-      alert('Failed to add product: ' + (err.message || res.statusText));
-    }
-  } catch (err) {
-    console.error('Error adding product:', err);
-    alert('Failed to add product');
-  }
-});
+    // ----------------- Initial Load -----------------
+    document.addEventListener('DOMContentLoaded', loadProducts);
 
-// ----------------- Edit Product -----------------
-document.getElementById('editProductForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  const formData = new FormData(e.target);
-  const productId = document.getElementById('editProductId').value;
-
-  try {
-    const res = await fetch(`/admin/products/edit/${productId}`, {
-      method: 'POST',
-      body: formData
-    });
-
-    if (res.ok) {
-      editProductModal.hide();
-      loadProducts();
-      alert('Product updated successfully');
-    } else {
-      const err = await res.json();
-      alert('Failed to update product: ' + (err.message || res.statusText));
-    }
-  } catch (err) {
-    console.error('Error updating product:', err);
-    alert('Failed to update product');
-  }
-});
-
-// ----------------- Initial Load -----------------
-document.addEventListener('DOMContentLoaded', loadProducts);
-
-   
-    
     // ===== LOANS TAB =====
-    const adminLoanTable = document.getElementById('adminLoanTable');
-    
+    const adminLoanTable = document.getElementById("adminLoanTable");
+
     // Render one loan row
     function renderAdminLoanRow(loan) {
       return `
         <tr id="loan-${loan._id}">
           <td>${loan._id.slice(-4)}</td>
-          <td><img src="/uploads/${loan.itemImage}" width="60" class="rounded"></td>
+          <td>${loan.itemImage ? `<img src="/uploads/${loan.itemImage}" width="60" class="rounded">` : "—"}</td>
           <td>${loan.description}</td>
           <td>Ksh ${loan.itemValue}</td>
           <td>Ksh ${loan.loanAmount}</td>
           <td>${loan.loanPeriod} months</td>
           <td class="loan-status">
             <span class="badge ${
-              loan.status === 'Approved' 
-                ? 'bg-success' 
-                : loan.status === 'Rejected' 
-                  ? 'bg-danger' 
-                  : loan.status === 'Visit Shop' 
-                    ? 'bg-info' 
-                    : 'bg-warning'
+              loan.status === "Approved"
+                ? "bg-success"
+                : loan.status === "Rejected"
+                ? "bg-danger"
+                : loan.status === "Visit Shop"
+                ? "bg-info"
+                : "bg-warning"
             }">
               ${loan.status}
             </span>
@@ -680,59 +834,66 @@ document.addEventListener('DOMContentLoaded', loadProducts);
         </tr>
       `;
     }
-    
+
     // Load loans initially
     async function loadAdminLoans() {
       try {
-        const res = await fetch('/loans/list');
+        const res = await fetch("/admin/loans/json");
         const loans = await res.json();
-        
+
         if (!loans.length) {
-          adminLoanTable.innerHTML = '<tr><td colspan="8" class="text-center">No loans yet</td></tr>';
+          adminLoanTable.innerHTML =
+            '<tr><td colspan="8" class="text-center">No loans yet</td></tr>';
           return;
         }
-        
-        adminLoanTable.innerHTML = loans.map(renderAdminLoanRow).join('');
+
+        adminLoanTable.innerHTML = loans.map(renderAdminLoanRow).join("");
       } catch (error) {
-        console.error('Error loading loans:', error);
-        adminLoanTable.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error loading loans</td></tr>';
+        console.error("Error loading loans:", error);
+        adminLoanTable.innerHTML =
+          '<tr><td colspan="8" class="text-center text-danger">Error loading loans</td></tr>';
       }
     }
-    
+
     // Admin updates loan status
     async function updateLoan(id, status) {
       try {
         const res = await fetch(`/admin/loans/${id}/status`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status })
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status }),
         });
-        
+
         const data = await res.json();
-        if (!data.success) {
-          alert('❌ Failed to update loan status');
+        if (data.success) {
+          loadAdminLoans(); // Reload to see the updated status
+        } else {
+          alert("❌ Failed to update loan status");
         }
       } catch (error) {
-        console.error('Error updating loan:', error);
-        alert('Failed to update loan status');
+        console.error("Error updating loan:", error);
+        alert("Failed to update loan status");
       }
     }
-    
+
     // Real-time: new loan added
-    socket.on('loanCreated', (loan) => {
+    socket.on("loanCreated", (loan) => {
       if (!document.getElementById(`loan-${loan._id}`)) {
-        adminLoanTable.innerHTML += renderAdminLoanRow(loan);
+        adminLoanTable.innerHTML =
+          renderAdminLoanRow(loan) + adminLoanTable.innerHTML; // prepend newest
       }
     });
-    
+
     // Real-time: loan updated
-    socket.on('loanUpdated', (loan) => {
+    socket.on("loanUpdated", (loan) => {
       const row = document.getElementById(`loan-${loan._id}`);
       if (row) {
         row.outerHTML = renderAdminLoanRow(loan);
+      } else {
+        loadAdminLoans(); // fallback if row not present
       }
     });
-    
+
     // ===== TOP BAR =====
     async function loadTopBar() {
       try {
@@ -749,7 +910,7 @@ document.addEventListener('DOMContentLoaded', loadProducts);
           <tr>
             <td>${msg.order}</td>
             <td>${msg.content}</td>
-            <td>${msg.active ? 'Active' : 'Inactive'}</td>
+            <td>${msg.active ? '✅ Active' : '❌ Inactive'}</td>
             <td>
               <button class="btn btn-sm btn-primary edit-topbar-btn me-1" data-id="${msg._id}">Edit</button>
               <button class="btn btn-sm btn-danger delete-topbar-btn" data-id="${msg._id}">Delete</button>
@@ -757,7 +918,7 @@ document.addEventListener('DOMContentLoaded', loadProducts);
           </tr>
         `).join('');
         
-        // Add event listeners to edit buttons
+        // Edit handler
         document.querySelectorAll('.edit-topbar-btn').forEach(btn => {
           btn.addEventListener('click', () => {
             const msg = data.find(m => m._id === btn.dataset.id);
@@ -768,7 +929,7 @@ document.addEventListener('DOMContentLoaded', loadProducts);
           });
         });
         
-        // Add event listeners to delete buttons
+        // Delete handler
         document.querySelectorAll('.delete-topbar-btn').forEach(btn => {
           btn.addEventListener('click', async () => {
             if (confirm('Are you sure you want to delete this message?')) {
@@ -788,8 +949,8 @@ document.addEventListener('DOMContentLoaded', loadProducts);
           '<tr><td colspan="4" class="text-center text-danger">Error loading messages</td></tr>';
       }
     }
-    
-    // Top bar form submission
+
+    // Handle form submission
     document.getElementById('topBarForm').addEventListener('submit', async e => {
       e.preventDefault();
       
@@ -813,7 +974,12 @@ document.addEventListener('DOMContentLoaded', loadProducts);
         alert('Failed to save message');
       }
     });
-    
+
+    // ✅ Listen to socket for real-time refresh
+    socket.on("topBarUpdated", () => {
+      loadTopBar();
+    });
+
     // ===== LEADERBOARD (ADMIN) =====
     const lbTbody = document.querySelector('.admin-leaderboard tbody');
     const editLbModal = new bootstrap.Modal(document.getElementById('editLeaderboardModal'));
@@ -1039,141 +1205,135 @@ document.addEventListener('DOMContentLoaded', loadProducts);
       }
     });
     
-// ===== MESSAGES TAB =====
-const messagesTbody = document.getElementById("messages-tbody");
-const newMessageCount = document.getElementById("new-message-count");
-const replyModal = new bootstrap.Modal(document.getElementById("replyModal"));
-const replyForm = document.getElementById("reply-form");
-const replyText = document.getElementById("reply-text");
-const replyId = document.getElementById("reply-id");
+    // ===== MESSAGES TAB =====
+    const messagesTbody = document.getElementById("messages-tbody");
+    const newMessageCount = document.getElementById("new-message-count");
+    const replyModal = new bootstrap.Modal(document.getElementById("replyModal"));
+    const replyForm = document.getElementById("reply-form");
+    const replyText = document.getElementById("reply-text");
+    const replyId = document.getElementById("reply-id");
 
-let messages = [];
+    let messages = [];
 
-// Fetch & render messages
-async function loadMessages() {
-  try {
-    // ✅ FIXED: JSON endpoint
-    const res = await fetch("/admin/messages/json");
-    messages = await res.json();
-    renderMessages();
-  } catch (error) {
-    console.error("Error loading messages:", error);
-    messagesTbody.innerHTML =
-      '<tr><td colspan="5" class="text-center text-danger">Error loading messages</td></tr>';
-  }
-}
-
-function renderMessages() {
-  messagesTbody.innerHTML = "";
-
-  if (!messages.length) {
-    messagesTbody.innerHTML =
-      '<tr><td colspan="5" class="text-center">No messages yet</td></tr>';
-    newMessageCount.textContent = "0";
-    return;
-  }
-
-  messages.forEach((msg, i) => {
-    const tr = document.createElement("tr");
-    tr.id = `message-${msg._id}`;
-    tr.innerHTML = `
-      <td>${i + 1}</td>
-      <td>${msg.name}</td>
-      <td>${msg.email}</td>
-      <td>${msg.text}</td>
-      <td>
-        <button class="btn btn-sm btn-success reply-btn me-1" data-id="${msg._id}">Reply</button>
-        <button class="btn btn-sm btn-danger delete-btn" data-id="${msg._id}">Delete</button>
-      </td>
-    `;
-    messagesTbody.appendChild(tr);
-  });
-
-  newMessageCount.textContent = messages.length;
-}
-
-// Real-time new message handling
-socket.on("new-message", (msg) => {
-  messages.push(msg);
-  const tr = document.createElement("tr");
-  tr.id = `message-${msg._id}`;
-  tr.innerHTML = `
-    <td>${messages.length}</td>
-    <td>${msg.name}</td>
-    <td>${msg.email}</td>
-    <td>${msg.text}</td>
-    <td>
-      <button class="btn btn-sm btn-success reply-btn me-1" data-id="${msg._id}">Reply</button>
-      <button class="btn btn-sm btn-danger delete-btn" data-id="${msg._id}">Delete</button>
-    </td>
-  `;
-  messagesTbody.appendChild(tr);
-
-  // Smooth highlight
-  tr.classList.add("table-success");
-  setTimeout(() => tr.classList.remove("table-success"), 2000);
-
-  newMessageCount.textContent = messages.length;
-});
-
-// Reply + Delete handling
-messagesTbody.addEventListener("click", (e) => {
-  if (e.target.classList.contains("reply-btn")) {
-    const id = e.target.dataset.id;
-    replyId.value = id;
-    replyText.value = "";
-    replyModal.show();
-    setTimeout(() => replyText.focus(), 300);
-  }
-
-  if (e.target.classList.contains("delete-btn")) {
-    const id = e.target.dataset.id;
-    if (confirm("Are you sure you want to delete this message?")) {
-      // ✅ FIXED: delete endpoint
-      fetch(`/admin/messages/${id}`, { method: "DELETE" })
-        .then(() => {
-          messages = messages.filter((m) => m._id !== id);
-          renderMessages();
-        })
-        .catch((error) => {
-          console.error("Error deleting message:", error);
-          alert("Failed to delete message");
-        });
+    // Fetch & render messages
+    async function loadMessages() {
+      try {
+        const res = await fetch("/admin/messages/json");
+        messages = await res.json();
+        renderMessages();
+      } catch (error) {
+        console.error("Error loading messages:", error);
+        messagesTbody.innerHTML =
+          '<tr><td colspan="5" class="text-center text-danger">Error loading messages</td></tr>';
+      }
     }
-  }
-});
 
-// Reply form submit
-replyForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const id = replyId.value;
-  const text = replyText.value;
+    function renderMessages() {
+      messagesTbody.innerHTML = "";
 
-  try {
-    // ✅ FIXED: reply endpoint
-    await fetch(`/admin/messages/reply/${id}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ reply: text }),
+      if (!messages.length) {
+        messagesTbody.innerHTML =
+          '<tr><td colspan="5" class="text-center">No messages yet</td></tr>';
+        newMessageCount.textContent = "0";
+        return;
+      }
+
+      messages.forEach((msg, i) => {
+        const tr = document.createElement("tr");
+        tr.id = `message-${msg._id}`;
+        tr.innerHTML = `
+          <td>${i + 1}</td>
+          <td>${msg.name}</td>
+          <td>${msg.email}</td>
+          <td>${msg.text}</td>
+          <td>
+            <button class="btn btn-sm btn-success reply-btn me-1" data-id="${msg._id}">Reply</button>
+            <button class="btn btn-sm btn-danger delete-btn" data-id="${msg._id}">Delete</button>
+          </td>
+        `;
+        messagesTbody.appendChild(tr);
+      });
+
+      newMessageCount.textContent = messages.length;
+    }
+
+    // Real-time new message handling
+    socket.on("new-message", (msg) => {
+      messages.push(msg);
+      const tr = document.createElement("tr");
+      tr.id = `message-${msg._id}`;
+      tr.innerHTML = `
+        <td>${messages.length}</td>
+        <td>${msg.name}</td>
+        <td>${msg.email}</td>
+        <td>${msg.text}</td>
+        <td>
+          <button class="btn btn-sm btn-success reply-btn me-1" data-id="${msg._id}">Reply</button>
+          <button class="btn btn-sm btn-danger delete-btn" data-id="${msg._id}">Delete</button>
+        </td>
+      `;
+      messagesTbody.appendChild(tr);
+
+      // Smooth highlight
+      tr.classList.add("table-success");
+      setTimeout(() => tr.classList.remove("table-success"), 2000);
+
+      newMessageCount.textContent = messages.length;
     });
 
-    replyModal.hide();
-    alert("Reply sent!");
-  } catch (error) {
-    console.error("Error sending reply:", error);
-    alert("Failed to send reply");
-  }
-});
+    // Reply + Delete handling
+    messagesTbody.addEventListener("click", (e) => {
+      if (e.target.classList.contains("reply-btn")) {
+        const id = e.target.dataset.id;
+        replyId.value = id;
+        replyText.value = "";
+        replyModal.show();
+        setTimeout(() => replyText.focus(), 300);
+      }
 
-// Initial load
-loadMessages();
+      if (e.target.classList.contains("delete-btn")) {
+        const id = e.target.dataset.id;
+        if (confirm("Are you sure you want to delete this message?")) {
+          fetch(`/admin/messages/${id}`, { method: "DELETE" })
+            .then(() => {
+              messages = messages.filter((m) => m._id !== id);
+              renderMessages();
+            })
+            .catch((error) => {
+              console.error("Error deleting message:", error);
+              alert("Failed to delete message");
+            });
+        }
+      }
+    });
+
+    // Reply form submit
+    replyForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const id = replyId.value;
+      const text = replyText.value;
+
+      try {
+        await fetch(`/admin/messages/reply/${id}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reply: text }),
+        });
+
+        replyModal.hide();
+        alert("Reply sent!");
+      } catch (error) {
+        console.error("Error sending reply:", error);
+        alert("Failed to send reply");
+      }
+    });
 
     // ===== INITIAL LOAD =====
     document.addEventListener('DOMContentLoaded', () => {
       // Load data for the active tab
       const activeTab = document.querySelector('.tab-pane.active');
       if (activeTab) {
-        if (activeTab.id === 'users') loadUsers();
+        if (activeTab.id === 'users') UsersManager.init();
         if (activeTab.id === 'products') loadProducts();
         if (activeTab.id === 'loans') loadAdminLoans();
         if (activeTab.id === 'content') loadTopBar();
@@ -1186,7 +1346,7 @@ loadMessages();
       document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
         tab.addEventListener('shown.bs.tab', e => {
           const targetId = e.target.getAttribute('href').substring(1);
-          if (targetId === 'users') loadUsers();
+          if (targetId === 'users') UsersManager.init();
           if (targetId === 'products') loadProducts();
           if (targetId === 'loans') loadAdminLoans();
           if (targetId === 'content') loadTopBar();

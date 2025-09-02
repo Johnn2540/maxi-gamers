@@ -2,17 +2,102 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Apply for a Loan | Maximum Gamers</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+  <style>
+    .shiny-line {
+      height: 4px;
+      width: 100%;
+      background: linear-gradient(90deg, #ffd700, #ff8c00, #ffd700);
+      animation: shine 2s linear infinite;
+      margin-bottom: 15px;
+      background-size: 200% 100%;
+    }
+    
+    @keyframes shine {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 100% 50%; }
+    }
+    
+    footer a {
+      transition: color 0.3s ease;
+    }
+    
+    footer a:hover {
+      color: #00ff99 !important;
+    }
+    
+    /* Mobile optimizations */
+    @media (max-width: 768px) {
+      .container {
+        padding: 15px;
+      }
+      
+      h1 {
+        font-size: 1.75rem;
+      }
+      
+      .table th, .table td {
+        padding: 0.5rem;
+        font-size: 0.875rem;
+      }
+      
+      .alert ul {
+        padding-left: 1rem;
+      }
+      
+      .card {
+        padding: 1rem !important;
+      }
+    }
+    
+    @media (max-width: 576px) {
+      h1 {
+        font-size: 1.5rem;
+      }
+      
+      h3 {
+        font-size: 1.25rem;
+      }
+      
+      .alert {
+        padding: 0.75rem;
+      }
+      
+      .table-responsive {
+        font-size: 0.8rem;
+      }
+      
+      .badge {
+        font-size: 0.7rem;
+      }
+    }
+  </style>
 </head>
-<body class="bg-light">
+<body class="bg-light d-flex flex-column min-vh-100">
 
-  <div class="container py-5">
+  <div class="container py-5 flex-grow-1">
     <h1 class="mb-4 text-center text-primary">💰 Apply for a Loan</h1>
 
+    <!-- Intro Section -->
+    <div class="alert alert-info shadow-sm mb-4">
+      <h5 class="fw-bold">Welcome to Maximum Gamers Loan Services</h5>
+      <p class="mb-2">
+        Thank you for trusting us with your valuable items. Our quick-loan service is designed to help you access instant cash by using your gaming consoles, accessories, or other items as collateral.
+      </p>
+      <p class="mb-1 fw-bold">📌 Loan Status Explained:</p>
+      <ul class="mb-0">
+        <li><span class="badge bg-warning">Pending</span> — Your application is under review.</li>
+        <li><span class="badge bg-info">Visit Shop</span> — Please bring the item to our shop for final verification.</li>
+        <li><span class="badge bg-success">Approved</span> — Congratulations! Your loan is ready to be disbursed.</li>
+        <li><span class="badge bg-danger">Rejected</span> — Unfortunately, your item did not qualify. You may try again with a different item.</li>
+      </ul>
+    </div>
+
     <!-- Loan Application Form -->
-    <div class="card shadow p-4">
+    <div class="card shadow p-4 mb-5">
       <form id="loanForm" enctype="multipart/form-data">
         <div class="mb-3">
           <label class="form-label">Upload Image of Item</label>
@@ -44,108 +129,169 @@
     <!-- User Loan Status Updates -->
     <div class="mt-5">
       <h3 class="text-primary">📋 Your Loan Applications</h3>
-      <table class="table table-bordered table-striped mt-3">
-        <thead>
-          <tr>
-            <th>Item</th>
-            <th>Description</th>
-            <th>Value</th>
-            <th>Requested</th>
-            <th>Months</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody id="loanList">
-          <tr><td colspan="6" class="text-center">No loans yet</td></tr>
-        </tbody>
-      </table>
+      <div class="table-responsive">
+        <table class="table table-bordered table-striped mt-3 align-middle">
+          <thead class="table-dark text-center">
+            <tr>
+              <th>Item</th>
+              <th>Description</th>
+              <th>Value</th>
+              <th>Requested</th>
+              <th>Months</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="loanList">
+            <tr><td colspan="6" class="text-center">No loans yet</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
+  <!-- Footer -->
+  <footer class="bg-dark text-white pt-3 position-relative mt-auto">
+    <!-- Shiny Line -->
+    <div class="shiny-line"></div>
+
+    <div class="text-center mb-3">
+      <p class="mt-2 small">Empowering gamers to play, earn, and connect.</p>
+    </div>
+
+    <div class="container">
+      <div class="row text-center text-md-start g-3">
+        <div class="col-6 col-md-3">
+          <h6 class="fw-bold">Discover</h6>
+          <ul class="list-unstyled">
+            <li><a href="/gaming" class="text-white text-decoration-none">Gaming Sessions</a></li>
+            <li><a href="/loans" class="text-white text-decoration-none">Quick Loans</a></li>
+            <li><a href="/shop" class="text-white text-decoration-none">Store</a></li>
+          </ul>
+        </div>
+        <div class="col-6 col-md-3">
+          <h6 class="fw-bold">Our Shop</h6>
+          <ul class="list-unstyled">
+            <li><a href="/about" class="text-white text-decoration-none">About Us</a></li>
+            <li><a href="/contact" class="text-white text-decoration-none">Contact</a></li>
+            <li><a href="/whatscoming" class="text-white text-decoration-none">What's Coming</a></li>
+          </ul>
+        </div>
+        <div class="col-6 col-md-3">
+          <h6 class="fw-bold">Connect</h6>
+          <ul class="list-unstyled">
+            <li><a href="#" class="text-white text-decoration-none">Instagram</a></li>
+            <li><a href="#" class="text-white text-decoration-none">Twitter</a></li>
+            <li><a href="#" class="text-white text-decoration-none">Facebook</a></li>
+          </ul>
+        </div>
+        <div class="col-6 col-md-3">
+          <h6 class="fw-bold">Legal</h6>
+          <ul class="list-unstyled">
+            <li><a href="/privacy-policy" class="text-white text-decoration-none">Privacy Policy</a></li>
+            <li><a href="/terms" class="text-white text-decoration-none">Terms & Conditions</a></li>
+            <li><a href="/refund-policy" class="text-white text-decoration-none">Refund Policy</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="mt-4 text-center small">
+        &copy; 2025 Maximum Gamers. All Rights Reserved.
+      </div>
+    </div>
+  </footer>
+
   <script src="/socket.io/socket.io.js"></script>
-<script>
-  const socket = io();
-  const loanForm = document.getElementById("loanForm");
-  const loanStatus = document.getElementById("loanStatus");
-  const loanList = document.getElementById("loanList");
+  <script>
+    const socket = io();
+    const loanForm = document.getElementById("loanForm");
+    const loanStatus = document.getElementById("loanStatus");
+    const loanList = document.getElementById("loanList");
 
-  // Replace this with the actual logged-in user's ID and role
-  const currentUserId = "{{USER_ID}}"; // pass from backend template
-  const currentUserRole = "user";      // or "admin"
+    // Submit loan application
+    loanForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const formData = new FormData(loanForm);
 
-  // Initialize socket with user info
-  socket.emit("init", { userId: currentUserId, role: currentUserRole });
+      fetch("/loans", { method: "POST", body: formData, headers: { Accept: "application/json" } })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            loanStatus.innerHTML = `<div class="alert alert-success">✅ Loan submitted successfully!</div>`;
+            loanForm.reset();
+            fetchLoans(); // refresh immediately
+          } else {
+            loanStatus.innerHTML = `<div class="alert alert-danger">❌ ${data.message || "Failed to submit loan. Try again."}</div>`;
+          }
+        })
+        .catch(() => {
+          loanStatus.innerHTML = `<div class="alert alert-danger">❌ Failed to submit loan. Try again.</div>`;
+        });
+    });
 
-  // Submit loan application
-  loanForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const formData = new FormData(loanForm);
-
-    fetch("/loans", { method: "POST", body: formData, headers: { Accept: "application/json" } })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          loanStatus.innerHTML = `<div class="alert alert-success">✅ Loan submitted successfully!</div>`;
-          loanForm.reset();
-          // Notify server via socket
-          socket.emit("newLoan", { ...data.loan, user: currentUserId });
-        } else {
-          loanStatus.innerHTML = `<div class="alert alert-danger">❌ ${data.message || "Failed to submit loan. Try again."}</div>`;
-        }
-      })
-      .catch(() => {
-        loanStatus.innerHTML = `<div class="alert alert-danger">❌ Failed to submit loan. Try again.</div>`;
-      });
-  });
-
-  // Listen for loan updates (both new loans & status updates)
-  socket.on("loansList", (loans) => renderLoans(loans));
-  socket.on("loanUpdated", (loan) => {
-    // Update only the loan that changed
-    const rows = loanList.querySelectorAll("tr");
-    let updated = false;
-    rows.forEach(row => {
-      if (row.dataset.id === loan._id) {
-        row.innerHTML = renderLoanRow(loan);
-        updated = true;
+    // Real-time: new loan added
+    socket.on("loanCreated", (loan) => {
+      if (loan.user === window.currentUserId) {
+        fetchLoans();
       }
     });
-    if (!updated) {
-      // If loan not in table yet, re-render all
-      fetch("/loans/list").then(res => res.json()).then(data => renderLoans(data));
+
+    // Real-time: loan status updated
+    socket.on("loanUpdated", (loan) => {
+      const row = loanList.querySelector(`tr[data-id="${loan._id}"]`);
+      if (row) {
+        row.innerHTML = renderLoanRow(loan);
+      } else {
+        fetchLoans();
+      }
+    });
+
+    // Render loans table
+    function renderLoans(loans) {
+      if (!loans || !loans.length) {
+        loanList.innerHTML = `<tr><td colspan="6" class="text-center">No loans yet</td></tr>`;
+        return;
+      }
+      loanList.innerHTML = loans
+        .map(loan => `<tr data-id="${loan._id}">${renderLoanRow(loan)}</tr>`)
+        .join("");
     }
-  });
 
-  // Render loans table
-  function renderLoans(loans) {
-    if (!loans || !loans.length) {
-      loanList.innerHTML = `<tr><td colspan="6" class="text-center">No loans yet</td></tr>`;
-      return;
+    function renderLoanRow(loan) {
+      return `
+        <td>${loan.itemImage ? `<img src="/uploads/${loan.itemImage}" class="img-fluid rounded" width="60">` : "—"}</td>
+        <td>${loan.description}</td>
+        <td>Ksh ${loan.itemValue}</td>
+        <td>Ksh ${loan.loanAmount}</td>
+        <td>${loan.loanPeriod}</td>
+        <td>
+          <span class="badge ${
+            loan.status === "Approved"
+              ? "bg-success"
+              : loan.status === "Rejected"
+              ? "bg-danger"
+              : loan.status === "Visit Shop"
+              ? "bg-info"
+              : "bg-warning"
+          }">
+            ${loan.status}
+          </span>
+        </td>
+      `;
     }
-    loanList.innerHTML = loans.map(loan => `<tr data-id="${loan._id}">${renderLoanRow(loan)}</tr>`).join("");
-  }
 
-  function renderLoanRow(loan) {
-    return `
-      <td><img src="/uploads/${loan.itemImage}" width="60"></td>
-      <td>${loan.description}</td>
-      <td>Ksh ${loan.itemValue}</td>
-      <td>Ksh ${loan.loanAmount}</td>
-      <td>${loan.loanPeriod}</td>
-      <td>
-        <span class="badge ${loan.status === 'Approved' ? 'bg-success' : loan.status === 'Rejected' ? 'bg-danger' : 'bg-warning'}">
-          ${loan.status}
-        </span>
-      </td>
-    `;
-  }
+    // Fetch loans list for logged-in user
+    function fetchLoans() {
+      fetch("/loans/list")
+        .then(res => res.json())
+        .then(data => renderLoans(data))
+        .catch(() => {
+          loanList.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error loading loans</td></tr>`;
+        });
+    }
 
-  // Request initial loans via fetch
-  fetch("/loans/list")
-    .then(res => res.json())
-    .then(data => renderLoans(data))
-    .catch(() => console.log("Failed to load loans"));
-</script>
+    // Initial load
+    fetchLoans();
+  </script>
 
 </body>
 </html>

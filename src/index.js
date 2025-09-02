@@ -39,6 +39,7 @@ const upload = multer({ storage });
 app.set("view engine", "hbs");
 app.set("views", path.join(__dirname, "../templates"));
 
+
 // ================== HBS HELPERS ==================
 hbs.registerHelper("eq", (a, b) => a === b);
 hbs.registerHelper("ne", (a, b) => a !== b);
@@ -167,7 +168,6 @@ app.get("/admin/users/json", async (req, res) => {
 });
 
 
-
 // ================== ADMIN PRODUCTS JSON ==================
 app.get("/admin/products/json", async (req, res) => {
   if (!req.session.user || req.session.user.role !== "admin") 
@@ -192,6 +192,7 @@ app.get("/products/json", async (req, res) => {
     res.status(500).json({ success: false, message: "Failed to fetch products" });
   }
 });
+
 
 // --------- TOP LEADERBOARD ---------
 app.get("/top-leaderboard", async (req, res) => {
@@ -291,19 +292,25 @@ app.post("/admin/products/delete/:id", async (req, res) => {
 });
 
 // ================== USER LOANS ==================
+
+// Render user's loans page (HTML)
 app.get("/loans", async (req, res) => {
   try {
-    const loans = await Loan.find({ user: req.session.user?.id }); // only show current user's applications
+    if (!req.session.user) return res.redirect("/login");
+
+    const loans = await Loan.find({ user: req.session.user.id }).sort({ createdAt: -1 });
     res.render("loans", { loans });
   } catch (err) {
-    res.status(500).send(err.message);
+    console.error("Error loading user loans:", err);
+    res.status(500).send("Failed to load loans");
   }
 });
 
+// Create new loan
 app.post("/loans", upload.single("itemImage"), async (req, res) => {
   try {
     if (!req.session.user) {
-      if (req.headers.accept.includes("application/json")) {
+      if (req.headers.accept?.includes("application/json")) {
         return res.status(403).json({ success: false, message: "Login required" });
       }
       return res.redirect("/login");
@@ -319,43 +326,85 @@ app.post("/loans", upload.single("itemImage"), async (req, res) => {
       status: "Pending",
     });
 
-    io.emit("loanUpdate", loan);
+    // ✅ broadcast new loan to admins (match frontend listener)
+    io.emit("loanCreated", loan);
 
-    // 👉 If request came from fetch (AJAX), respond JSON
-    if (req.headers.accept.includes("application/json")) {
+    if (req.headers.accept?.includes("application/json")) {
       return res.json({ success: true, loan });
     }
 
-    // 👉 Otherwise, redirect (for normal form POST)
     res.redirect("/loans");
   } catch (err) {
     console.error("Loan submission error:", err);
-    if (req.headers.accept.includes("application/json")) {
+    if (req.headers.accept?.includes("application/json")) {
       return res.status(500).json({ success: false, message: err.message });
     }
     res.status(500).send("Failed to submit loan");
   }
 });
 
+// Fetch logged-in user's loans (AJAX/json)
 app.get("/loans/list", async (req, res) => {
   try {
-    const loans = await Loan.find({ user: req.session.user.id });
+    if (!req.session.user) return res.json([]);
+    const loans = await Loan.find({ user: req.session.user.id }).sort({ createdAt: -1 });
     res.json(loans);
   } catch (err) {
+    console.error("Error fetching user loans:", err);
     res.status(500).json([]);
   }
 });
 
-app.post("/admin/loans/:id/status", async (req, res) => {
-  if (!req.session.user || req.session.user.role !== "admin") 
+
+// ================== ADMIN LOANS ==================
+
+// Render admin loans page
+app.get("/admin/loans", async (req, res) => {
+  if (!req.session.user || req.session.user.role !== "admin") {
+    return res.status(403).send("Access Denied");
+  }
+  try {
+    const loans = await Loan.find().populate("user", "name email").sort({ createdAt: -1 });
+    res.render("admin-loans", { loans });
+  } catch (err) {
+    console.error("Error loading admin loans:", err);
+    res.status(500).send("Failed to load loans");
+  }
+});
+
+// JSON for admin fetch/AJAX
+app.get("/admin/loans/json", async (req, res) => {
+  if (!req.session.user || req.session.user.role !== "admin") {
     return res.status(403).json({ success: false, message: "Access denied" });
+  }
+  try {
+    const loans = await Loan.find().populate("user", "name email").sort({ createdAt: -1 });
+    res.json(loans); // always array
+  } catch (err) {
+    console.error("Error fetching admin loans:", err);
+    res.status(500).json([]);
+  }
+});
+
+// Admin update loan status
+app.post("/admin/loans/:id/status", async (req, res) => {
+  if (!req.session.user || req.session.user.role !== "admin") {
+    return res.status(403).json({ success: false, message: "Access denied" });
+  }
 
   const { status } = req.body;
   try {
-    const loan = await Loan.findByIdAndUpdate(req.params.id, { status }, { new: true });
+    const loan = await Loan.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    ).populate("user", "name email");
+
     if (!loan) return res.status(404).json({ success: false, message: "Loan not found" });
 
-    io.emit("loanUpdated", loan); // broadcast to all clients
+    // ✅ broadcast update (match frontend listener)
+    io.emit("loanUpdated", loan);
+
     res.json({ success: true, loan });
   } catch (err) {
     console.error("Loan update error:", err);
@@ -363,159 +412,6 @@ app.post("/admin/loans/:id/status", async (req, res) => {
   }
 });
 
-// ================== ADMIN LOANS ==================
-app.get("/admin/loans", async (req, res) => {
-  if (!req.session.user || req.session.user.role !== "admin") 
-    return res.status(403).send("Access Denied");
-  try {
-    const loans = await Loan.find().populate("user", "name email");
-    res.render("admin-loans", { loans });
-  } catch (err) {
-    res.status(500).send(err.message);
-  }
-});
-
-// Reject Loan
-app.post("/admin/loans/reject/:id", async (req, res) => {
-  await Loan.findByIdAndUpdate(req.params.id, { status: "Rejected" });
-  io.emit("loanStatusUpdate", { id: req.params.id, status: "Rejected" });
-  res.redirect("/admin/loans");
-});
-
-// Request Shop Visit
-app.post("/admin/loans/visit/:id", async (req, res) => {
-  await Loan.findByIdAndUpdate(req.params.id, { status: "Visit Shop" });
-  io.emit("loanStatusUpdate", { id: req.params.id, status: "Visit Shop" });
-  res.redirect("/admin/loans");
-});
-
-io.on("connection", (socket) => {
-  console.log("✅ Admin/User connected:", socket.id);
-
-  // When a user creates a loan
-  socket.on("newLoan", async (loanData) => {
-    try {
-      const newLoan = new Loan(loanData);
-      await newLoan.save();
-
-      // Broadcast to ALL (admins + users)
-      io.emit("loan:new", newLoan);
-    } catch (err) {
-      console.error("❌ Loan creation error:", err);
-      socket.emit("loanError", "Failed to submit loan.");
-    }
-  });
-
-  // When an admin updates loan status
-  socket.on("updateLoanStatus", async ({ loanId, status }) => {
-    try {
-      const loan = await Loan.findByIdAndUpdate(
-        loanId,
-        { status },
-        { new: true }
-      );
-
-      if (loan) {
-        io.emit("loan:update", loan); // broadcast update
-      }
-    } catch (err) {
-      console.error("❌ Loan update error:", err);
-      socket.emit("loanError", "Failed to update loan status.");
-    }
-  });
-
-  socket.on("disconnect", () => {
-    console.log("❌ Client disconnected:", socket.id);
-  });
-});
-
-// ================== MESSAGES ROUTES ==================
-// GET all messages (admin view)
-app.get("/admin/messages", async (req, res) => {
-  if (!req.session.user || req.session.user.role !== "admin")
-    return res.status(403).send("Access Denied");
-  try {
-    const messages = await Message.find()
-      .populate("sender", "name email")
-      .sort({ createdAt: -1 });
-    res.render("admin-messages", { messages });
-  } catch (err) {
-    res.status(500).send(err.message);
-  }
-});
-
-// GET messages for the current user
-app.get("/messages", async (req, res) => {
-  if (!req.session.user) return res.redirect("/login");
-  try {
-    const messages = await Message.find({ sender: req.session.user.id }).sort({ createdAt: -1 });
-    res.render("messages", { messages });
-  } catch (err) {
-    res.status(500).send(err.message);
-  }
-});
-
-// POST a new message (user sends)
-app.post("/messages", async (req, res) => {
-  try {
-    if (!req.session.user) return res.status(403).json({ success: false, message: "Login required" });
-    const { content } = req.body;
-    const newMessage = await Message.create({
-      sender: req.session.user.id,
-      content,
-      status: "Pending"
-    });
-
-    io.emit("newMessage", newMessage); // broadcast to admins
-    if (req.headers.accept.includes("application/json")) {
-      return res.json({ success: true, message: newMessage });
-    }
-    res.redirect("/messages");
-  } catch (err) {
-    console.error("Message error:", err);
-    if (req.headers.accept.includes("application/json")) {
-      return res.status(500).json({ success: false, message: err.message });
-    }
-    res.status(500).send("Failed to send message");
-  }
-});
-
-// POST reply to a message (admin)
-app.post("/admin/messages/reply/:id", async (req, res) => {
-  if (!req.session.user || req.session.user.role !== "admin")
-    return res.status(403).json({ success: false, message: "Access denied" });
-
-  try {
-    const { reply } = req.body;
-    const message = await Message.findById(req.params.id);
-    if (!message) return res.status(404).json({ success: false, message: "Message not found" });
-
-    message.reply = reply;
-    message.status = "Replied";
-    await message.save();
-
-    io.emit("messageReplied", message); // broadcast to sender
-    res.json({ success: true, message });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
-
-// DELETE a message (admin)
-app.post("/admin/messages/delete/:id", async (req, res) => {
-  if (!req.session.user || req.session.user.role !== "admin")
-    return res.status(403).json({ success: false, message: "Access denied" });
-
-  try {
-    const message = await Message.findByIdAndDelete(req.params.id);
-    if (!message) return res.status(404).json({ success: false, message: "Message not found" });
-
-    io.emit("messageDeleted", message._id); // notify front-end
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
 
 // ================== USER AUTH ==================
 app.post("/signup", async (req, res) => {
@@ -581,58 +477,104 @@ app.post("/admin/users/toggle/:id", async (req, res) => {
 });
 
 // ================== GAMING BOOKINGS ==================
+
+// User creates a new booking
 app.post("/gaming/book", async (req, res) => {
   try {
-    if (!req.session.user) return res.status(403).json({ success: false, message: "Login required" });
+    if (!req.session.user) {
+      return res.status(403).json({ success: false, message: "Login required" });
+    }
+
     const { game, console, date, timeSlot } = req.body;
-    const booking = await Booking.create({ user: req.session.user.id, game, console, date, timeSlot });
-    const populatedBooking = await Booking.findById(booking._id).populate("user", "name email");
+    const booking = await Booking.create({
+      user: req.session.user.id,
+      game,
+      console,
+      date,
+      timeSlot
+    });
+
+    const populatedBooking = await Booking.findById(booking._id)
+      .populate("user", "name email");
+
+    // Notify all admins/clients via socket.io
     io.emit("newBooking", { ...populatedBooking.toObject(), isNew: true });
+
     res.json({ success: true, booking: populatedBooking });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error("Error creating booking:", err);
+    res.status(500).json({ success: false, message: "Failed to create booking" });
   }
 });
 
+// Admin updates booking status
 app.post("/admin/bookings/update/:id", async (req, res) => {
   try {
-    if (!req.session.user || req.session.user.role !== "admin") return res.status(403).json({ success: false, message: "Access denied" });
+    if (!req.session.user || req.session.user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Access denied" });
+    }
+
     const { status } = req.body;
     const booking = await Booking.findById(req.params.id);
-    if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: "Booking not found" });
+    }
+
     booking.status = status;
     await booking.save();
-    const populatedBooking = await Booking.findById(booking._id).populate("user", "name email");
+
+    const populatedBooking = await Booking.findById(booking._id)
+      .populate("user", "name email");
+
+    // Notify all clients about update
     io.emit("updateBooking", populatedBooking);
+
     res.json({ success: true, booking: populatedBooking });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error("Error updating booking:", err);
+    res.status(500).json({ success: false, message: "Failed to update booking" });
   }
 });
 
-// Fetch bookings JSON
+// Admin fetch all bookings
 app.get("/admin/bookings/json", async (req, res) => {
   try {
-    if (!req.session.user || req.session.user.role !== "admin") return res.status(403).json({ success: false, message: "Access denied" });
-    const bookings = await Booking.find().populate("user", "name email").sort({ createdAt: -1 });
+    if (!req.session.user || req.session.user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Access denied" });
+    }
+
+    const bookings = await Booking.find()
+      .populate("user", "name email")
+      .sort({ createdAt: -1 });
+
     const now = new Date();
-    const bookingsWithFlag = bookings.map(b => ({ ...b.toObject(), isNew: (now - b.createdAt) / 1000 < 10 }));
-    res.json(bookingsWithFlag);
+    const bookingsWithFlag = bookings.map(b => ({
+      ...b.toObject(),
+      isNew: (now - b.createdAt) / 1000 < 10
+    }));
+
+    res.json(bookingsWithFlag); // always array
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error("Error fetching admin bookings:", err);
+    res.status(500).json([]); // keep array shape
   }
 });
 
-
+// User fetch their own bookings
 app.get("/gaming/bookings/json", async (req, res) => {
   try {
     if (!req.session.user) {
       return res.status(403).json({ success: false, message: "Login required" });
     }
-    const bookings = await Booking.find({ user: req.session.user.id }).sort({ createdAt: -1 });
-    res.json(bookings);
+
+    const bookings = await Booking.find({ user: req.session.user.id })
+      .sort({ createdAt: -1 });
+
+    res.json(bookings); // always array
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    console.error("Error fetching user bookings:", err);
+    res.status(500).json([]); // keep array shape
   }
 });
 
@@ -755,19 +697,8 @@ app.delete("/admin/messages/:id", async (req, res) => {
   }
 });
 
+
 // ================== TOP BAR MESSAGES ==================
-
-// --- USER: fetch active top bar messages ---
-app.get("/top-bar/active", async (req, res) => {
-  try {
-    const messages = await TopBarMessage.find({ active: true }).sort({ order: 1 });
-    res.json({ success: true, messages });
-  } catch (err) {
-    console.error("Error fetching active top bar messages:", err);
-    res.status(500).json({ success: false, messages: [] });
-  }
-});
-
 // --- ADMIN: create/update top bar message ---
 app.post("/admin/top-bar", async (req, res) => {
   if (!req.session.user || req.session.user.role !== "admin")
@@ -778,12 +709,16 @@ app.post("/admin/top-bar", async (req, res) => {
   try {
     let message;
     if (id) {
-      message = await TopBarMessage.findByIdAndUpdate(id, { content, order, active }, { new: true });
+      message = await TopBarMessage.findByIdAndUpdate(
+        id,
+        { content, order, active },
+        { new: true }
+      );
     } else {
       message = await TopBarMessage.create({ content, order, active });
     }
 
-    io.emit("topBarMessageUpdate", message);
+    io.emit("topBarUpdate"); // 🔄 unified event
     res.json({ success: true, message });
   } catch (err) {
     console.error("Error saving top bar message:", err);
@@ -798,15 +733,96 @@ app.delete("/admin/top-bar/:id", async (req, res) => {
 
   try {
     const deletedMessage = await TopBarMessage.findByIdAndDelete(req.params.id);
-    if (!deletedMessage) return res.status(404).json({ success: false, message: "Message not found" });
+    if (!deletedMessage)
+      return res.status(404).json({ success: false, message: "Message not found" });
 
-    io.emit("topBarMessageDeleted", deletedMessage._id);
+    io.emit("topBarUpdate"); // 🔄 same event for delete
     res.json({ success: true });
   } catch (err) {
     console.error("Error deleting top bar message:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
+// --- ADMIN: get all top bar messages as JSON ---
+app.get("/admin/top-bar/json", async (req, res) => {
+  if (!req.session.user || req.session.user.role !== "admin")
+    return res.status(403).json({ success: false, message: "Access denied" });
+
+  try {
+    const messages = await TopBarMessage.find().sort({ order: 1 });
+    res.json(messages);
+  } catch (err) {
+    console.error("Error fetching top bar messages:", err);
+    res.status(500).json([]);
+  }
+});
+// --- USER: fetch active top bar messages ---
+app.get("/top-bar/active", async (req, res) => {
+  try {
+    const messages = await TopBarMessage.find({ active: true }).sort({ order: 1 });
+    res.json({ success: true, messages });
+  } catch (err) {
+    console.error("Error fetching active top bar messages:", err);
+    res.status(500).json({ success: false, messages: [] });
+  }
+});
+
+
+// ================== USER PROFILE ==================
+
+// Render profile page
+app.get("/profile", async (req, res) => {
+  if (!req.session.user) return res.redirect("/login");
+
+  try {
+    const user = await User.findById(req.session.user.id);
+    if (!user) return res.status(404).send("User not found");
+    res.render("profile", { user, title: "Profile" });
+  } catch (err) {
+    console.error("Error loading profile:", err);
+    res.status(500).send("Failed to load profile");
+  }
+});
+
+// Update profile details (with optional image upload)
+app.post("/profile/update", upload.single("image"), async (req, res) => {
+  if (!req.session.user) return res.status(403).send("Login required");
+
+  const { name, phone, studentId } = req.body;
+
+  try {
+    const updateData = { name, phone, studentId };
+
+    // If a new image is uploaded, save it
+    if (req.file) {
+      updateData.image = "/uploads/" + req.file.filename;
+    }
+
+    await User.findByIdAndUpdate(req.session.user.id, updateData, { new: true });
+
+    res.redirect("/profile");
+  } catch (err) {
+    console.error("Profile update error:", err);
+    res.status(500).send("Failed to update profile");
+  }
+});
+
+// Remove profile image
+app.get("/profile/remove-image", async (req, res) => {
+  if (!req.session.user) return res.status(403).send("Login required");
+
+  try {
+    const user = await User.findById(req.session.user.id);
+    user.image = null; // reset to null
+    await user.save();
+    res.redirect("/profile");
+  } catch (err) {
+    console.error("Remove image error:", err);
+    res.status(500).send("Failed to remove image");
+  }
+});
+
+
 
 // ================== OTHER PAGES ==================
 const pages = ["user","signup","login","reset-password","gaming","loans","shop","blog","contact","about","privacy-policy","terms","profile","home","whatscoming","refund-policy"];
