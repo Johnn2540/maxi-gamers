@@ -902,7 +902,7 @@ app.get("/profile/remove-image", async (req, res) => {
 
 
 // ================== OTHER PAGES ==================
-const pages = ["user","signup","login","reset-password","gaming","loans","shop","blog","contact","about","privacy-policy","terms","profile","home","whatscoming","refund-policy"];
+const pages = ["user","signup","login","reset-password","gaming","loans","shop","blog","contact","about","privacy-policy","terms","profile","home","whatscoming","refund-policy","terms"];
 pages.forEach(page => app.get("/"+page, (req,res)=>res.render(page)));
 
 // ================== START SERVER ==================
