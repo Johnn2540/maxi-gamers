@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-require("dotenv").config(); // Load environment variables from .env
+require("dotenv").config();
 
 // ------------------ CONNECT TO MONGODB ------------------
 const MONGO_URI =
