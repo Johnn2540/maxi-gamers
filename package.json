@@ -16,5 +16,8 @@
     "url": "https://github.com/Johnn2540/Login_Project/issues"
   },
   "homepage": "https://github.com/Johnn2540/Login_Project#readme",
-  "description": ""
+  "description": "",
+  "dependencies": {
+    "mongodb": "^6.19.0"
+  }
 }

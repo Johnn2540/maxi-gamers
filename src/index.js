@@ -28,6 +28,45 @@ app.use(session({
   cookie: { secure: process.env.NODE_ENV === "production", httpOnly: true }
 }));
 
+
+// ================== AUTH MIDDLEWARE ==================
+async function ensureAuthenticated(req, res, next) {
+  if (!req.session.user) {
+    return res.redirect("/login"); // Not logged in
+  }
+
+  try {
+    const user = await User.findById(req.session.user.id);
+
+    if (!user) {
+      req.session.destroy(() => res.redirect("/login"));
+      return;
+    }
+
+    if (user.active === false) {
+      req.session.destroy(() =>
+        res.status(403).send("Your account is suspended.")
+      );
+      return;
+    }
+
+    req.user = user; // attach full user for later use
+    next();
+  } catch (err) {
+    console.error("Auth check error:", err);
+    res.status(500).send("Internal server error");
+  }
+}
+
+function requireAdmin(req, res, next) {
+  if (!req.user || req.user.role !== "admin") {
+    return res.status(403).send("Access denied");
+  }
+  next();
+}
+
+
+
 // ================== MULTER UPLOAD ==================
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, path.join(__dirname, "../public/uploads")),
@@ -86,72 +125,60 @@ app.get("/admin", async (req, res) => {
   }
 });
 
-// ================== USERS MANAGEMENT ==================
+// ================== ADMIN USER ROUTES ==================
+
+// Get all users (JSON for admin panel)
+app.get("/admin/users/json", ensureAuthenticated, requireAdmin, async (req, res) => {
+  try {
+    const users = await User.find().sort({ createdAt: -1 });
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
 
 // Toggle user active/suspended
-app.post("/admin/users/toggle/:id", async (req, res) => {
-  if (!req.session.user || req.session.user.role !== "admin") 
-    return res.status(403).json({ success: false, message: "Access denied" });
-
+app.post("/admin/users/toggle/:id", ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
-    // Prevent admin from deactivating themselves
-    if (user._id.equals(req.session.user.id)) {
-      return res.status(400).json({ success: false, message: "Cannot change your own status" });
-    }
-
     user.active = !user.active;
     await user.save();
+
     res.json({ success: true, active: user.active });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// Promote or demote user to admin
-app.post("/admin/users/role/:id", async (req, res) => {
-  if (!req.session.user || req.session.user.role !== "admin") 
-    return res.status(403).json({ success: false, message: "Access denied" });
-
+// Toggle role (admin <-> user)
+app.post("/admin/users/role/:id", ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
-    // Prevent admin from changing their own role
-    if (user._id.equals(req.session.user.id)) {
-      return res.status(400).json({ success: false, message: "Cannot change your own role" });
-    }
-
     user.role = user.role === "admin" ? "user" : "admin";
     await user.save();
+
     res.json({ success: true, role: user.role });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// Delete a user
-app.post("/admin/users/delete/:id", async (req, res) => {
-  if (!req.session.user || req.session.user.role !== "admin") 
-    return res.status(403).json({ success: false, message: "Access denied" });
-
+// Delete user
+app.post("/admin/users/delete/:id", ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
+    const user = await User.findByIdAndDelete(req.params.id);
     if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
-    // Prevent admin from deleting themselves
-    if (user._id.equals(req.session.user.id)) {
-      return res.status(400).json({ success: false, message: "Cannot delete your own account" });
-    }
-
-    await user.remove();
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 });
+
 // ===== ADMIN: fetch all users JSON =====
 app.get("/admin/users/json", async (req, res) => {
   if (!req.session.user || req.session.user.role !== "admin") {
@@ -414,67 +441,117 @@ app.post("/admin/loans/:id/status", async (req, res) => {
 
 
 // ================== USER AUTH ==================
+// ================== SIGNUP ==================
 app.post("/signup", async (req, res) => {
   try {
     const { name, email, phone, password, studentId } = req.body;
-    if (await User.findOne({ $or: [{ email }, { phone }] }))
+
+    if (await User.findOne({ $or: [{ email }, { phone }] })) {
       return res.status(400).send("User already exists");
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    await User.create({ name, email, phone, password: hashedPassword, role: "user", studentId });
+
+    await User.create({
+      name,
+      email,
+      phone,
+      password: hashedPassword,
+      role: "user",
+      studentId,
+      active: true, // ✅ ensure new users are active by default
+    });
+
     res.redirect("/user");
   } catch (err) {
     res.status(500).send(err.message);
   }
 });
 
+// ================== LOGIN ==================
 app.post("/login", async (req, res) => {
   try {
     const { name, password, role } = req.body;
     const user = await User.findOne({ name });
+
     if (!user) return res.status(400).send("User not found");
-    if (!(await bcrypt.compare(password, user.password))) return res.status(400).send("Invalid password");
-    if (role !== user.role) return res.status(403).send("Not authorized");
+
+    // 🔴 Block suspended users
+    if (user.active === false) {
+      return res.status(403).send("Your account is suspended. Please contact admin.");
+    }
+
+    if (!(await bcrypt.compare(password, user.password))) {
+      return res.status(400).send("Invalid password");
+    }
+
+    if (role !== user.role) {
+      return res.status(403).send("Not authorized");
+    }
 
     req.session.user = { id: user._id, name: user.name, role: user.role };
+
     res.redirect(role === "admin" ? "/admin" : "/user");
   } catch (err) {
     res.status(500).send(err.message);
   }
 });
 
-// Reset password
+// ================== RESET PASSWORD ==================
 app.post("/reset-password", async (req, res) => {
   try {
     const { name, email, newPassword, confirmPassword } = req.body;
-    if (newPassword !== confirmPassword) return res.status(400).send("Passwords do not match");
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).send("Passwords do not match");
+    }
 
     const user = await User.findOne({ name, email });
-    if (!user) return res.status(400).send("Invalid username or email");
+    if (!user) {
+      return res.status(400).send("Invalid username or email");
+    }
+
+    // 🔴 Block suspended users from resetting password
+    if (user.active === false) {
+      return res.status(403).send("Your account is suspended. Please contact admin.");
+    }
 
     user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
 
-    const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: "1h" });
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
     res.redirect(`/user?token=${token}`);
   } catch (err) {
     res.status(500).send(err.message);
   }
 });
 
-// Toggle user status
+// ================== TOGGLE USER STATUS ==================
 app.post("/admin/users/toggle/:id", async (req, res) => {
   try {
-    if (!req.session.user || req.session.user.role !== "admin") return res.status(403).json({ success: false, message: "Access denied" });
+    if (!req.session.user || req.session.user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Access denied" });
+    }
+
     const user = await User.findById(req.params.id);
-    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
     user.active = !user.active;
     await user.save();
+
     res.json({ success: true, active: user.active });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 });
+
 
 // ================== GAMING BOOKINGS ==================
 
