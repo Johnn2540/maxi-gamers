@@ -441,6 +441,7 @@ app.post("/admin/loans/:id/status", async (req, res) => {
 
 
 // ================== USER AUTH ==================
+
 // ================== SIGNUP ==================
 app.post("/signup", async (req, res) => {
   try {
@@ -459,10 +460,11 @@ app.post("/signup", async (req, res) => {
       password: hashedPassword,
       role: "user",
       studentId,
-      active: true, // ✅ ensure new users are active by default
+      active: true, // ✅ ensure active by default
     });
 
-    res.redirect("/user");
+    req.flash("success_msg", "Signup successful! Please login.");
+    res.redirect("/login");
   } catch (err) {
     res.status(500).send(err.message);
   }
@@ -471,27 +473,25 @@ app.post("/signup", async (req, res) => {
 // ================== LOGIN ==================
 app.post("/login", async (req, res) => {
   try {
-    const { name, password, role } = req.body;
+    const { name, password } = req.body;
     const user = await User.findOne({ name });
 
     if (!user) return res.status(400).send("User not found");
 
-    // 🔴 Block suspended users
-    if (user.active === false) {
+    if (!user.active) {
       return res.status(403).send("Your account is suspended. Please contact admin.");
     }
 
-    if (!(await bcrypt.compare(password, user.password))) {
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
       return res.status(400).send("Invalid password");
     }
 
-    if (role !== user.role) {
-      return res.status(403).send("Not authorized");
-    }
-
+    // ✅ Store session
     req.session.user = { id: user._id, name: user.name, role: user.role };
 
-    res.redirect(role === "admin" ? "/admin" : "/user");
+    // ✅ Redirect based on actual role, not submitted role
+    res.redirect(user.role === "admin" ? "/admin" : "/user");
   } catch (err) {
     res.status(500).send(err.message);
   }
@@ -511,21 +511,15 @@ app.post("/reset-password", async (req, res) => {
       return res.status(400).send("Invalid username or email");
     }
 
-    // 🔴 Block suspended users from resetting password
-    if (user.active === false) {
+    if (!user.active) {
       return res.status(403).send("Your account is suspended. Please contact admin.");
     }
 
     user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
 
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      JWT_SECRET,
-      { expiresIn: "1h" }
-    );
-
-    res.redirect(`/user?token=${token}`);
+    req.flash("success_msg", "Password updated. Please login.");
+    res.redirect("/login");
   } catch (err) {
     res.status(500).send(err.message);
   }
@@ -551,6 +545,7 @@ app.post("/admin/users/toggle/:id", async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 });
+
 
 
 // ================== GAMING BOOKINGS ==================
