@@ -449,39 +449,48 @@ app.post("/signup", async (req, res) => {
 // ================== LOGIN ==================
 app.post("/login", async (req, res) => {
   try {
-    const { name, role, password } = req.body;
+    const { name, password } = req.body;
 
-    // Look up user by both name and role
-    const user = await User.findOne({ name, role });
+    // Check if both fields are provided
+    if (!name || !password) {
+      return res.status(400).send("Username and password are required");
+    }
 
+    // Find user by username
+    const user = await User.findOne({ name });
     if (!user) {
-      return res.status(400).send("User not found or role mismatch");
+      return res.status(400).send("User not found");
     }
 
+    // Check if user is active
     if (!user.active) {
-      return res
-        .status(403)
-        .send("Your account is suspended. Please contact admin.");
+      return res.status(403).send("Your account is suspended. Please contact admin.");
     }
 
+    // Verify password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).send("Invalid password");
     }
 
-    // Save role in session
-    req.session.user = { id: user._id, name: user.name, role: user.role };
+    // Save session with DB role
+    req.session.user = {
+      id: user._id,
+      name: user.name,
+      role: user.role
+    };
 
     // Redirect based on role
-    if (user.role === "admin") {
-      res.redirect("/admin");
-    } else {
-      res.redirect("/user");
-    }
+    return user.role === "admin"
+      ? res.redirect("/admin")
+      : res.redirect("/user");
+      
   } catch (err) {
-    res.status(500).send(err.message);
+    console.error("Login error:", err);
+    res.status(500).send("Internal server error");
   }
 });
+
 
 
 // ================== RESET PASSWORD ==================

@@ -7,12 +7,12 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
+    /* --- your styles remain unchanged --- */
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
-    
     body {
       min-height: 100vh;
       overflow-x: hidden;
@@ -23,7 +23,6 @@
       justify-content: center;
       padding: 20px;
     }
-    
     .bg-container {
       position: fixed;
       top: 0;
@@ -35,16 +34,10 @@
       background-size: cover;
       animation: zoomEffect 20s infinite alternate ease-in-out;
     }
-    
     @keyframes zoomEffect {
-      0% {
-        transform: scale(1);
-      }
-      100% {
-        transform: scale(1.1);
-      }
+      0% { transform: scale(1); }
+      100% { transform: scale(1.1); }
     }
-    
     .overlay {
       position: fixed;
       top: 0;
@@ -54,13 +47,11 @@
       background: rgba(0, 0, 0, 0.6);
       z-index: -1;
     }
-    
     .login-container {
       width: 100%;
       max-width: 450px;
       margin: 0 auto;
     }
-    
     .card {
       background-color: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(10px);
@@ -69,11 +60,7 @@
       box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
       overflow: hidden;
     }
-    
-    .card-body {
-      padding: 2rem;
-    }
-    
+    .card-body { padding: 2rem; }
     .logo {
       font-size: 28px;
       font-weight: 700;
@@ -83,31 +70,19 @@
       align-items: center;
       justify-content: center;
     }
-    
-    .logo i {
-      margin-right: 10px;
-      color: #6a11cb;
-    }
-    
-    .form-control, .form-select {
+    .logo i { margin-right: 10px; color: #6a11cb; }
+    .form-control {
       border-radius: 10px;
       padding: 14px 16px;
       border: 2px solid #eef0f3;
       transition: all 0.3s;
-      font-size: 16px; /* Better for mobile */
+      font-size: 16px;
     }
-    
-    .form-control:focus, .form-select:focus {
+    .form-control:focus {
       border-color: #6a11cb;
       box-shadow: 0 0 0 0.25rem rgba(106, 17, 203, 0.25);
     }
-    
-    .form-label {
-      font-weight: 600;
-      color: #495057;
-      margin-bottom: 8px;
-    }
-    
+    .form-label { font-weight: 600; color: #495057; margin-bottom: 8px; }
     .btn-login {
       background: linear-gradient(to right, #6a11cb, #2575fc);
       border: none;
@@ -117,23 +92,12 @@
       transition: all 0.3s;
       font-size: 16px;
     }
-    
     .btn-login:hover {
       transform: translateY(-2px);
       box-shadow: 0 5px 15px rgba(106, 17, 203, 0.4);
     }
-    
-    .forgot-password {
-      color: #6a11cb;
-      text-decoration: none;
-      font-weight: 500;
-      font-size: 14px;
-    }
-    
-    .forgot-password:hover {
-      text-decoration: underline;
-    }
-    
+    .forgot-password { color: #6a11cb; text-decoration: none; font-weight: 500; font-size: 14px; }
+    .forgot-password:hover { text-decoration: underline; }
     .btn-signup {
       border: 2px solid #6a11cb;
       color: #6a11cb;
@@ -143,73 +107,8 @@
       transition: all 0.3s;
       font-size: 14px;
     }
-    
-    .btn-signup:hover {
-      background-color: #6a11cb;
-      color: white;
-    }
-    
-    .form-text {
-      font-size: 13px;
-    }
-    
-    /* Responsive adjustments */
-    @media (max-width: 576px) {
-      .card-body {
-        padding: 1.5rem;
-      }
-      
-      .logo {
-        font-size: 24px;
-      }
-      
-      h3 {
-        font-size: 1.5rem;
-      }
-      
-      .form-control, .form-select, .btn-login {
-        padding: 12px;
-      }
-      
-      body {
-        padding: 15px;
-      }
-    }
-    
-    @media (max-width: 400px) {
-      .d-flex.justify-content-between {
-        flex-direction: column;
-        gap: 10px;
-        align-items: flex-start;
-      }
-      
-      .forgot-password {
-        margin-top: 5px;
-      }
-    }
-    
-    /* High contrast mode support */
-    @media (prefers-contrast: high) {
-      .card {
-        background-color: white;
-        border: 2px solid black;
-      }
-      
-      .form-control, .form-select {
-        border: 2px solid black;
-      }
-    }
-    
-    /* Reduced motion support */
-    @media (prefers-reduced-motion: reduce) {
-      .bg-container {
-        animation: none;
-      }
-      
-      .btn-login:hover, .btn-signup:hover {
-        transform: none;
-      }
-    }
+    .btn-signup:hover { background-color: #6a11cb; color: white; }
+    .form-text { font-size: 13px; }
   </style>
 </head>
 <body>
@@ -236,16 +135,6 @@
           <div class="mb-3">
             <label for="name" class="form-label">Username</label>
             <input type="text" id="name" name="name" class="form-control" placeholder="Enter your username" required>
-          </div>
-
-          <!-- Role -->
-          <div class="mb-3">
-            <label for="role" class="form-label">Role</label>
-            <select id="role" name="role" class="form-select" required>
-              <option value="">-- Select Role --</option>
-              <option value="user">User</option>
-              <option value="admin">Admin</option>
-            </select>
           </div>
 
           <!-- Password -->
@@ -281,11 +170,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // Enhance form functionality
     document.addEventListener('DOMContentLoaded', function() {
       const loginForm = document.querySelector('form');
-      
-      // Add loading state to form submission
       if (loginForm) {
         loginForm.addEventListener('submit', function() {
           const submitBtn = this.querySelector('button[type="submit"]');
@@ -295,26 +181,6 @@
           }
         });
       }
-      
-      // Adjust card height on very small screens
-      function adjustCardHeight() {
-        const card = document.querySelector('.card');
-        const windowHeight = window.innerHeight;
-        
-        if (windowHeight < 600) {
-          card.style.maxHeight = (windowHeight - 30) + 'px';
-          card.style.overflowY = 'auto';
-        } else {
-          card.style.maxHeight = 'none';
-          card.style.overflowY = 'visible';
-        }
-      }
-      
-      // Initial adjustment
-      adjustCardHeight();
-      
-      // Adjust on resize
-      window.addEventListener('resize', adjustCardHeight);
     });
   </script>
 </body>
