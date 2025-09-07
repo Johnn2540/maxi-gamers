@@ -5,7 +5,7 @@ const bcrypt = require("bcrypt");
 const path = require("path");
 const hbs = require("hbs");
 const session = require("express-session");
-const flash = require("connect-flash"); // Added flash middleware
+const flash = require("connect-flash");
 const multer = require("multer");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -29,12 +29,12 @@ app.use(session({
   cookie: { secure: process.env.NODE_ENV === "production", httpOnly: true }
 }));
 
-app.use(flash()); // Add flash middleware
+app.use(flash());
 
 // ================== AUTH MIDDLEWARE ==================
 async function ensureAuthenticated(req, res, next) {
   if (!req.session.user) {
-    return res.redirect("/login"); // Not logged in
+    return res.redirect("/login");
   }
 
   try {
@@ -52,7 +52,7 @@ async function ensureAuthenticated(req, res, next) {
       return;
     }
 
-    req.user = user; // attach full user for later use
+    req.user = user;
     next();
   } catch (err) {
     console.error("Auth check error:", err);
@@ -110,8 +110,8 @@ app.get("/", async (req, res) => {
 });
 
 // --------- ADMIN DASHBOARD ---------
-app.get("/admin", async (req, res) => {
-  if (!req.session.user || req.session.user.role !== "admin") return res.status(403).send("Access Denied");
+// FIXED: Use authentication middleware instead of direct session check
+app.get("/admin", ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
     const [users, products, leaderboard] = await Promise.all([
       User.find(),
@@ -125,8 +125,6 @@ app.get("/admin", async (req, res) => {
 });
 
 // ================== ADMIN USER ROUTES ==================
-
-// Get all users (JSON for admin panel) - REMOVED DUPLICATE
 app.get("/admin/users/json", ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
     const users = await User.find().sort({ createdAt: -1 });
@@ -179,10 +177,7 @@ app.post("/admin/users/delete/:id", ensureAuthenticated, requireAdmin, async (re
 });
 
 // ================== ADMIN PRODUCTS JSON ==================
-app.get("/admin/products/json", async (req, res) => {
-  if (!req.session.user || req.session.user.role !== "admin") 
-    return res.status(403).json({ success: false, message: "Access denied" });
-
+app.get("/admin/products/json", ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
     const products = await Product.find();
     res.json(products);
@@ -214,7 +209,7 @@ app.get("/top-leaderboard", async (req, res) => {
 });
 
 // ================== ADMIN LEADERBOARD ROUTES ==================
-app.post("/admin/leaderboard", async (req, res) => {
+app.post("/admin/leaderboard", ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
     const { player, score } = req.body;
     if (!player || score == null) {
@@ -230,7 +225,7 @@ app.post("/admin/leaderboard", async (req, res) => {
   }
 });
 
-app.put("/admin/leaderboard/:id", async (req, res) => {
+app.put("/admin/leaderboard/:id", ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
     const { player, score } = req.body;
     await Leaderboard.findByIdAndUpdate(req.params.id, { player, score });
@@ -241,7 +236,7 @@ app.put("/admin/leaderboard/:id", async (req, res) => {
   }
 });
 
-app.delete("/admin/leaderboard/:id", async (req, res) => {
+app.delete("/admin/leaderboard/:id", ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
     await Leaderboard.findByIdAndDelete(req.params.id);
     io.emit("leaderboardUpdate");
@@ -252,7 +247,7 @@ app.delete("/admin/leaderboard/:id", async (req, res) => {
 });
 
 // ================== ADMIN PRODUCT ROUTES ==================
-app.post("/admin/products", upload.single("image"), async (req, res) => {
+app.post("/admin/products", ensureAuthenticated, requireAdmin, upload.single("image"), async (req, res) => {
   try {
     const { title, marketPrice, salePrice, description, onSale } = req.body;
     const newProduct = await Product.create({
@@ -270,7 +265,7 @@ app.post("/admin/products", upload.single("image"), async (req, res) => {
   }
 });
 
-app.post("/admin/products/edit/:id", upload.single("image"), async (req, res) => {
+app.post("/admin/products/edit/:id", ensureAuthenticated, requireAdmin, upload.single("image"), async (req, res) => {
   try {
     const { title, marketPrice, salePrice, description, onSale } = req.body;
     const product = await Product.findById(req.params.id);
@@ -287,7 +282,7 @@ app.post("/admin/products/edit/:id", upload.single("image"), async (req, res) =>
   }
 });
 
-app.post("/admin/products/delete/:id", async (req, res) => {
+app.post("/admin/products/delete/:id", ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
     const product = await Product.findByIdAndDelete(req.params.id);
     if (!product) return res.status(404).json({ success: false, message: "Product not found" });
@@ -301,10 +296,8 @@ app.post("/admin/products/delete/:id", async (req, res) => {
 // ================== USER LOANS ==================
 
 // Render user's loans page (HTML)
-app.get("/loans", async (req, res) => {
+app.get("/loans", ensureAuthenticated, async (req, res) => {
   try {
-    if (!req.session.user) return res.redirect("/login");
-
     const loans = await Loan.find({ user: req.session.user.id }).sort({ createdAt: -1 });
     res.render("loans", { loans });
   } catch (err) {
@@ -314,15 +307,8 @@ app.get("/loans", async (req, res) => {
 });
 
 // Create new loan
-app.post("/loans", upload.single("itemImage"), async (req, res) => {
+app.post("/loans", ensureAuthenticated, upload.single("itemImage"), async (req, res) => {
   try {
-    if (!req.session.user) {
-      if (req.headers.accept?.includes("application/json")) {
-        return res.status(403).json({ success: false, message: "Login required" });
-      }
-      return res.redirect("/login");
-    }
-
     const loan = await Loan.create({
       user: req.session.user.id,
       itemImage: req.file ? req.file.filename : null,
@@ -350,9 +336,8 @@ app.post("/loans", upload.single("itemImage"), async (req, res) => {
 });
 
 // Fetch logged-in user's loans (AJAX/json)
-app.get("/loans/list", async (req, res) => {
+app.get("/loans/list", ensureAuthenticated, async (req, res) => {
   try {
-    if (!req.session.user) return res.json([]);
     const loans = await Loan.find({ user: req.session.user.id }).sort({ createdAt: -1 });
     res.json(loans);
   } catch (err) {
@@ -364,10 +349,7 @@ app.get("/loans/list", async (req, res) => {
 // ================== ADMIN LOANS ==================
 
 // Render admin loans page
-app.get("/admin/loans", async (req, res) => {
-  if (!req.session.user || req.session.user.role !== "admin") {
-    return res.status(403).send("Access Denied");
-  }
+app.get("/admin/loans", ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
     const loans = await Loan.find().populate("user", "name email").sort({ createdAt: -1 });
     res.render("admin-loans", { loans });
@@ -378,13 +360,10 @@ app.get("/admin/loans", async (req, res) => {
 });
 
 // JSON for admin fetch/AJAX
-app.get("/admin/loans/json", async (req, res) => {
-  if (!req.session.user || req.session.user.role !== "admin") {
-    return res.status(403).json({ success: false, message: "Access denied" });
-  }
+app.get("/admin/loans/json", ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
     const loans = await Loan.find().populate("user", "name email").sort({ createdAt: -1 });
-    res.json(loans); // always array
+    res.json(loans);
   } catch (err) {
     console.error("Error fetching admin loans:", err);
     res.status(500).json([]);
@@ -392,11 +371,7 @@ app.get("/admin/loans/json", async (req, res) => {
 });
 
 // Admin update loan status
-app.post("/admin/loans/:id/status", async (req, res) => {
-  if (!req.session.user || req.session.user.role !== "admin") {
-    return res.status(403).json({ success: false, message: "Access denied" });
-  }
-
+app.post("/admin/loans/:id/status", ensureAuthenticated, requireAdmin, async (req, res) => {
   const { status } = req.body;
   try {
     const loan = await Loan.findByIdAndUpdate(
@@ -451,36 +426,30 @@ app.post("/login", async (req, res) => {
   try {
     const { name, password } = req.body;
 
-    // Check if both fields are provided
     if (!name || !password) {
       return res.status(400).send("Username and password are required");
     }
 
-    // Find user by username
     const user = await User.findOne({ name });
     if (!user) {
       return res.status(400).send("User not found");
     }
 
-    // Check if user is active
     if (!user.active) {
       return res.status(403).send("Your account is suspended. Please contact admin.");
     }
 
-    // Verify password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).send("Invalid password");
     }
 
-    // Save session with DB role
     req.session.user = {
       id: user._id,
       name: user.name,
       role: user.role
     };
 
-    // Redirect based on role
     return user.role === "admin"
       ? res.redirect("/admin")
       : res.redirect("/user");
@@ -490,8 +459,6 @@ app.post("/login", async (req, res) => {
     res.status(500).send("Internal server error");
   }
 });
-
-
 
 // ================== RESET PASSWORD ==================
 app.post("/reset-password", async (req, res) => {
@@ -522,12 +489,8 @@ app.post("/reset-password", async (req, res) => {
 });
 
 // ================== TOGGLE USER STATUS ==================
-app.post("/admin/users/toggle/:id", async (req, res) => {
+app.post("/admin/users/toggle/:id", ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
-    if (!req.session.user || req.session.user.role !== "admin") {
-      return res.status(403).json({ success: false, message: "Access denied" });
-    }
-
     const user = await User.findById(req.params.id);
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
@@ -545,12 +508,8 @@ app.post("/admin/users/toggle/:id", async (req, res) => {
 // ================== GAMING BOOKINGS ==================
 
 // User creates a new booking
-app.post("/gaming/book", async (req, res) => {
+app.post("/gaming/book", ensureAuthenticated, async (req, res) => {
   try {
-    if (!req.session.user) {
-      return res.status(403).json({ success: false, message: "Login required" });
-    }
-
     const { game, console, date, timeSlot } = req.body;
     const booking = await Booking.create({
       user: req.session.user.id,
@@ -573,12 +532,8 @@ app.post("/gaming/book", async (req, res) => {
 });
 
 // Admin updates booking status
-app.post("/admin/bookings/update/:id", async (req, res) => {
+app.post("/admin/bookings/update/:id", ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
-    if (!req.session.user || req.session.user.role !== "admin") {
-      return res.status(403).json({ success: false, message: "Access denied" });
-    }
-
     const { status } = req.body;
     const booking = await Booking.findById(req.params.id);
 
@@ -602,12 +557,8 @@ app.post("/admin/bookings/update/:id", async (req, res) => {
 });
 
 // Admin fetch all bookings
-app.get("/admin/bookings/json", async (req, res) => {
+app.get("/admin/bookings/json", ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
-    if (!req.session.user || req.session.user.role !== "admin") {
-      return res.status(403).json({ success: false, message: "Access denied" });
-    }
-
     const bookings = await Booking.find()
       .populate("user", "name email")
       .sort({ createdAt: -1 });
@@ -626,12 +577,8 @@ app.get("/admin/bookings/json", async (req, res) => {
 });
 
 // User fetch their own bookings
-app.get("/gaming/bookings/json", async (req, res) => {
+app.get("/gaming/bookings/json", ensureAuthenticated, async (req, res) => {
   try {
-    if (!req.session.user) {
-      return res.status(403).json({ success: false, message: "Login required" });
-    }
-
     const bookings = await Booking.find({ user: req.session.user.id })
       .sort({ createdAt: -1 });
 
@@ -644,7 +591,6 @@ app.get("/gaming/bookings/json", async (req, res) => {
 
 // ================== MESSAGES & TOP BAR ROUTES ==================
 
-// ======== SOCKET.IO ========
 io.on("connection", (socket) => {
   console.log("✅ Client connected:", socket.id);
 
@@ -656,8 +602,7 @@ io.on("connection", (socket) => {
 // ================== MESSAGES ==================
 
 // --- USER: fetch own messages ---
-app.get("/messages", async (req, res) => {
-  if (!req.session.user) return res.status(403).json({ success: false, message: "Login required" });
+app.get("/messages", ensureAuthenticated, async (req, res) => {
   try {
     const messages = await Message.find({ sender: req.session.user.id }).sort({ createdAt: -1 });
     res.json({ success: true, messages });
@@ -668,9 +613,7 @@ app.get("/messages", async (req, res) => {
 });
 
 // --- USER: send a new message ---
-app.post("/messages", async (req, res) => {
-  if (!req.session.user) return res.status(403).json({ success: false, message: "Login required" });
-
+app.post("/messages", ensureAuthenticated, async (req, res) => {
   const content = req.body.content?.trim();
   if (!content) return res.status(400).json({ success: false, message: "Message content cannot be empty" });
 
@@ -697,10 +640,7 @@ app.post("/messages", async (req, res) => {
 });
 
 // --- ADMIN: fetch all messages ---
-app.get("/admin/messages/json", async (req, res) => {
-  if (!req.session.user || req.session.user.role !== "admin") 
-    return res.status(403).json({ success: false, message: "Access denied" });
-
+app.get("/admin/messages/json", ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
     const messages = await Message.find()
       .populate("sender", "name email")
@@ -722,10 +662,7 @@ app.get("/admin/messages/json", async (req, res) => {
 });
 
 // --- ADMIN: reply to a message ---
-app.post("/admin/messages/reply/:id", async (req, res) => {
-  if (!req.session.user || req.session.user.role !== "admin")
-    return res.status(403).json({ success: false, message: "Access denied" });
-
+app.post("/admin/messages/reply/:id", ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
     const { reply } = req.body;
     const message = await Message.findById(req.params.id);
@@ -744,10 +681,7 @@ app.post("/admin/messages/reply/:id", async (req, res) => {
 });
 
 // --- ADMIN: delete a message ---
-app.delete("/admin/messages/:id", async (req, res) => {
-  if (!req.session.user || req.session.user.role !== "admin")
-    return res.status(403).json({ success: false, message: "Access denied" });
-
+app.delete("/admin/messages/:id", ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
     const message = await Message.findByIdAndDelete(req.params.id);
     if (!message) return res.status(404).json({ success: false, message: "Message not found" });
@@ -761,11 +695,7 @@ app.delete("/admin/messages/:id", async (req, res) => {
 });
 
 // ================== TOP BAR MESSAGES ==================
-// --- ADMIN: create/update top bar message ---
-app.post("/admin/top-bar", async (req, res) => {
-  if (!req.session.user || req.session.user.role !== "admin")
-    return res.status(403).json({ success: false, message: "Access denied" });
-
+app.post("/admin/top-bar", ensureAuthenticated, requireAdmin, async (req, res) => {
   const { id, content, order, active } = req.body;
 
   try {
@@ -788,11 +718,7 @@ app.post("/admin/top-bar", async (req, res) => {
   }
 });
 
-// --- ADMIN: delete top bar message ---
-app.delete("/admin/top-bar/:id", async (req, res) => {
-  if (!req.session.user || req.session.user.role !== "admin")
-    return res.status(403).json({ success: false, message: "Access denied" });
-
+app.delete("/admin/top-bar/:id", ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
     const deletedMessage = await TopBarMessage.findByIdAndDelete(req.params.id);
     if (!deletedMessage)
@@ -806,11 +732,7 @@ app.delete("/admin/top-bar/:id", async (req, res) => {
   }
 });
 
-// --- ADMIN: get all top bar messages as JSON ---
-app.get("/admin/top-bar/json", async (req, res) => {
-  if (!req.session.user || req.session.user.role !== "admin")
-    return res.status(403).json({ success: false, message: "Access denied" });
-
+app.get("/admin/top-bar/json", ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
     const messages = await TopBarMessage.find().sort({ order: 1 });
     res.json(messages);
@@ -820,7 +742,6 @@ app.get("/admin/top-bar/json", async (req, res) => {
   }
 });
 
-// --- USER: fetch active top bar messages ---
 app.get("/top-bar/active", async (req, res) => {
   try {
     const messages = await TopBarMessage.find({ active: true }).sort({ order: 1 });
@@ -833,10 +754,7 @@ app.get("/top-bar/active", async (req, res) => {
 
 // ================== USER PROFILE ==================
 
-// Render profile page
-app.get("/profile", async (req, res) => {
-  if (!req.session.user) return res.redirect("/login");
-
+app.get("/profile", ensureAuthenticated, async (req, res) => {
   try {
     const user = await User.findById(req.session.user.id);
     if (!user) return res.status(404).send("User not found");
@@ -847,10 +765,7 @@ app.get("/profile", async (req, res) => {
   }
 });
 
-// Update profile details (with optional image upload)
-app.post("/profile/update", upload.single("image"), async (req, res) => {
-  if (!req.session.user) return res.status(403).send("Login required");
-
+app.post("/profile/update", ensureAuthenticated, upload.single("image"), async (req, res) => {
   const { name, phone, studentId } = req.body;
 
   try {
@@ -869,10 +784,7 @@ app.post("/profile/update", upload.single("image"), async (req, res) => {
   }
 });
 
-// Remove profile image
-app.get("/profile/remove-image", async (req, res) => {
-  if (!req.session.user) return res.status(403).send("Login required");
-
+app.get("/profile/remove-image", ensureAuthenticated, async (req, res) => {
   try {
     const user = await User.findById(req.session.user.id);
     user.image = null;
