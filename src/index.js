@@ -18,7 +18,14 @@ const PORT = process.env.PORT || 3000;
 const JWT_SECRET = "supersecretkey";
 
 // ================== MIDDLEWARE ==================
-app.set("trust proxy", 1); //  required on Render/Heroku
+app.set("trust proxy", 1); // required on Render/Heroku
+
+// Body parsing middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Static file serving
+app.use(express.static(path.join(__dirname, "../public")));
 
 app.use(
   session({
@@ -28,10 +35,14 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production", //  HTTPS only in prod
+      secure: process.env.NODE_ENV === "production", // HTTPS only in prod
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // allow cross-site in prod
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     },
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGODB_URI || 'mongodb+srv://Johnstone2020:Johnstone2020@cluster0.mozeuc4.mongodb.net/maximum_gamers?retryWrites=true&w=majority&appName=Cluster0',
+      collectionName: 'sessions'
+    }),
   })
 );
 
