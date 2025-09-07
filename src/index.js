@@ -5,6 +5,7 @@ const bcrypt = require("bcrypt");
 const path = require("path");
 const hbs = require("hbs");
 const session = require("express-session");
+const flash = require("connect-flash"); // Added flash middleware
 const multer = require("multer");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -28,6 +29,7 @@ app.use(session({
   cookie: { secure: process.env.NODE_ENV === "production", httpOnly: true }
 }));
 
+app.use(flash()); // Add flash middleware
 
 // ================== AUTH MIDDLEWARE ==================
 async function ensureAuthenticated(req, res, next) {
@@ -65,8 +67,6 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-
-
 // ================== MULTER UPLOAD ==================
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, path.join(__dirname, "../public/uploads")),
@@ -77,7 +77,6 @@ const upload = multer({ storage });
 // ================== VIEW ENGINE ==================
 app.set("view engine", "hbs");
 app.set("views", path.join(__dirname, "../templates"));
-
 
 // ================== HBS HELPERS ==================
 hbs.registerHelper("eq", (a, b) => a === b);
@@ -127,7 +126,7 @@ app.get("/admin", async (req, res) => {
 
 // ================== ADMIN USER ROUTES ==================
 
-// Get all users (JSON for admin panel)
+// Get all users (JSON for admin panel) - REMOVED DUPLICATE
 app.get("/admin/users/json", ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
     const users = await User.find().sort({ createdAt: -1 });
@@ -179,22 +178,6 @@ app.post("/admin/users/delete/:id", ensureAuthenticated, requireAdmin, async (re
   }
 });
 
-// ===== ADMIN: fetch all users JSON =====
-app.get("/admin/users/json", async (req, res) => {
-  if (!req.session.user || req.session.user.role !== "admin") {
-    return res.status(403).json({ success: false, message: "Access denied" });
-  }
-
-  try {
-    const users = await User.find().sort({ createdAt: -1 });
-    res.json(users);
-  } catch (err) {
-    console.error("Error fetching users:", err);
-    res.status(500).json({ success: false, message: "Failed to load users" });
-  }
-});
-
-
 // ================== ADMIN PRODUCTS JSON ==================
 app.get("/admin/products/json", async (req, res) => {
   if (!req.session.user || req.session.user.role !== "admin") 
@@ -220,7 +203,6 @@ app.get("/products/json", async (req, res) => {
   }
 });
 
-
 // --------- TOP LEADERBOARD ---------
 app.get("/top-leaderboard", async (req, res) => {
   try {
@@ -242,13 +224,11 @@ app.post("/admin/leaderboard", async (req, res) => {
     const newPlayer = await Leaderboard.create({ player, score });
     io.emit("leaderboardUpdate", newPlayer);
 
-    // 👉 return JSON (not redirect)
     res.json({ success: true, entry: newPlayer });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 });
-
 
 app.put("/admin/leaderboard/:id", async (req, res) => {
   try {
@@ -353,7 +333,6 @@ app.post("/loans", upload.single("itemImage"), async (req, res) => {
       status: "Pending",
     });
 
-    // ✅ broadcast new loan to admins (match frontend listener)
     io.emit("loanCreated", loan);
 
     if (req.headers.accept?.includes("application/json")) {
@@ -381,7 +360,6 @@ app.get("/loans/list", async (req, res) => {
     res.status(500).json([]);
   }
 });
-
 
 // ================== ADMIN LOANS ==================
 
@@ -429,7 +407,6 @@ app.post("/admin/loans/:id/status", async (req, res) => {
 
     if (!loan) return res.status(404).json({ success: false, message: "Loan not found" });
 
-    // ✅ broadcast update (match frontend listener)
     io.emit("loanUpdated", loan);
 
     res.json({ success: true, loan });
@@ -438,7 +415,6 @@ app.post("/admin/loans/:id/status", async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 });
-
 
 // ================== USER AUTH ==================
 
@@ -460,7 +436,7 @@ app.post("/signup", async (req, res) => {
       password: hashedPassword,
       role: "user",
       studentId,
-      active: true, // ✅ ensure active by default
+      active: true,
     });
 
     req.flash("success_msg", "Signup successful! Please login.");
@@ -487,10 +463,8 @@ app.post("/login", async (req, res) => {
       return res.status(400).send("Invalid password");
     }
 
-    // ✅ Store session
     req.session.user = { id: user._id, name: user.name, role: user.role };
 
-    // ✅ Redirect based on actual role, not submitted role
     res.redirect(user.role === "admin" ? "/admin" : "/user");
   } catch (err) {
     res.status(500).send(err.message);
@@ -546,8 +520,6 @@ app.post("/admin/users/toggle/:id", async (req, res) => {
   }
 });
 
-
-
 // ================== GAMING BOOKINGS ==================
 
 // User creates a new booking
@@ -569,7 +541,6 @@ app.post("/gaming/book", async (req, res) => {
     const populatedBooking = await Booking.findById(booking._id)
       .populate("user", "name email");
 
-    // Notify all admins/clients via socket.io
     io.emit("newBooking", { ...populatedBooking.toObject(), isNew: true });
 
     res.json({ success: true, booking: populatedBooking });
@@ -599,7 +570,6 @@ app.post("/admin/bookings/update/:id", async (req, res) => {
     const populatedBooking = await Booking.findById(booking._id)
       .populate("user", "name email");
 
-    // Notify all clients about update
     io.emit("updateBooking", populatedBooking);
 
     res.json({ success: true, booking: populatedBooking });
@@ -626,10 +596,10 @@ app.get("/admin/bookings/json", async (req, res) => {
       isNew: (now - b.createdAt) / 1000 < 10
     }));
 
-    res.json(bookingsWithFlag); // always array
+    res.json(bookingsWithFlag);
   } catch (err) {
     console.error("Error fetching admin bookings:", err);
-    res.status(500).json([]); // keep array shape
+    res.status(500).json([]);
   }
 });
 
@@ -643,13 +613,12 @@ app.get("/gaming/bookings/json", async (req, res) => {
     const bookings = await Booking.find({ user: req.session.user.id })
       .sort({ createdAt: -1 });
 
-    res.json(bookings); // always array
+    res.json(bookings);
   } catch (err) {
     console.error("Error fetching user bookings:", err);
-    res.status(500).json([]); // keep array shape
+    res.status(500).json([]);
   }
 });
-
 
 // ================== MESSAGES & TOP BAR ROUTES ==================
 
@@ -769,7 +738,6 @@ app.delete("/admin/messages/:id", async (req, res) => {
   }
 });
 
-
 // ================== TOP BAR MESSAGES ==================
 // --- ADMIN: create/update top bar message ---
 app.post("/admin/top-bar", async (req, res) => {
@@ -790,7 +758,7 @@ app.post("/admin/top-bar", async (req, res) => {
       message = await TopBarMessage.create({ content, order, active });
     }
 
-    io.emit("topBarUpdate"); // 🔄 unified event
+    io.emit("topBarUpdate");
     res.json({ success: true, message });
   } catch (err) {
     console.error("Error saving top bar message:", err);
@@ -808,13 +776,14 @@ app.delete("/admin/top-bar/:id", async (req, res) => {
     if (!deletedMessage)
       return res.status(404).json({ success: false, message: "Message not found" });
 
-    io.emit("topBarUpdate"); // 🔄 same event for delete
+    io.emit("topBarUpdate");
     res.json({ success: true });
   } catch (err) {
     console.error("Error deleting top bar message:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
+
 // --- ADMIN: get all top bar messages as JSON ---
 app.get("/admin/top-bar/json", async (req, res) => {
   if (!req.session.user || req.session.user.role !== "admin")
@@ -828,6 +797,7 @@ app.get("/admin/top-bar/json", async (req, res) => {
     res.status(500).json([]);
   }
 });
+
 // --- USER: fetch active top bar messages ---
 app.get("/top-bar/active", async (req, res) => {
   try {
@@ -838,7 +808,6 @@ app.get("/top-bar/active", async (req, res) => {
     res.status(500).json({ success: false, messages: [] });
   }
 });
-
 
 // ================== USER PROFILE ==================
 
@@ -865,7 +834,6 @@ app.post("/profile/update", upload.single("image"), async (req, res) => {
   try {
     const updateData = { name, phone, studentId };
 
-    // If a new image is uploaded, save it
     if (req.file) {
       updateData.image = "/uploads/" + req.file.filename;
     }
@@ -885,7 +853,7 @@ app.get("/profile/remove-image", async (req, res) => {
 
   try {
     const user = await User.findById(req.session.user.id);
-    user.image = null; // reset to null
+    user.image = null;
     await user.save();
     res.redirect("/profile");
   } catch (err) {
@@ -894,10 +862,8 @@ app.get("/profile/remove-image", async (req, res) => {
   }
 });
 
-
-
 // ================== OTHER PAGES ==================
-const pages = ["user","signup","login","reset-password","gaming","loans","shop","blog","contact","about","privacy-policy","terms","profile","home","whatscoming","refund-policy","terms"];
+const pages = ["user","signup","login","reset-password","gaming","loans","shop","blog","contact","about","privacy-policy","terms","profile","home","whatscoming","refund-policy"];
 pages.forEach(page => app.get("/"+page, (req,res)=>res.render(page)));
 
 // ================== START SERVER ==================
