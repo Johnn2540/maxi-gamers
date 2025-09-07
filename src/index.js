@@ -440,7 +440,7 @@ app.post("/signup", async (req, res) => {
     });
 
     req.flash("success_msg", "Signup successful! Please login.");
-    res.redirect("/login");
+    res.redirect("/user");
   } catch (err) {
     res.status(500).send(err.message);
   }
@@ -449,13 +449,19 @@ app.post("/signup", async (req, res) => {
 // ================== LOGIN ==================
 app.post("/login", async (req, res) => {
   try {
-    const { name, password } = req.body;
-    const user = await User.findOne({ name });
+    const { name, role, password } = req.body;
 
-    if (!user) return res.status(400).send("User not found");
+    // Look up user by both name and role
+    const user = await User.findOne({ name, role });
+
+    if (!user) {
+      return res.status(400).send("User not found or role mismatch");
+    }
 
     if (!user.active) {
-      return res.status(403).send("Your account is suspended. Please contact admin.");
+      return res
+        .status(403)
+        .send("Your account is suspended. Please contact admin.");
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -463,13 +469,20 @@ app.post("/login", async (req, res) => {
       return res.status(400).send("Invalid password");
     }
 
+    // Save role in session
     req.session.user = { id: user._id, name: user.name, role: user.role };
 
-    res.redirect(user.role === "admin" ? "/admin" : "/user");
+    // Redirect based on role
+    if (user.role === "admin") {
+      res.redirect("/admin");
+    } else {
+      res.redirect("/user");
+    }
   } catch (err) {
     res.status(500).send(err.message);
   }
 });
+
 
 // ================== RESET PASSWORD ==================
 app.post("/reset-password", async (req, res) => {
