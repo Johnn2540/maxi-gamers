@@ -12,22 +12,34 @@ const { User, Product, Leaderboard, Booking, TopBarMessage, Loan, Message } = re
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
+const MongoStore = require('connect-mongo');
 
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = "supersecretkey";
 
 // ================== MIDDLEWARE ==================
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use(express.static(path.join(__dirname, "../public")));
+app.set("trust proxy", 1); //  required on Render/Heroku
 
-app.use(session({
-  secret: "yourSecretKey",
-  resave: false,
-  saveUninitialized: false,
-  cookie: { secure: process.env.NODE_ENV === "production", httpOnly: true }
-}));
+app.use(
+  session({
+    name: "connect.sid",
+    secret: process.env.SESSION_SECRET || "yourSecretKey",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", //  HTTPS only in prod
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // allow cross-site in prod
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    },
+  })
+);
 
+// Debug middleware
+app.use((req, res, next) => {
+  console.log("🔎 Session debug:", req.session);
+  next();
+});
 
 // ================== AUTH MIDDLEWARE ==================
 async function ensureAuthenticated(req, res, next) {
@@ -97,6 +109,16 @@ hbs.registerHelper("chunk", (array, size) => {
 io.on("connection", socket => {
   console.log("User connected:", socket.id);
 });
+
+
+app.use(session({
+  // ... other settings
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGODB_URI || 'mongodb+srv://Johnstone2020:Johnstone2020@cluster0.mozeuc4.mongodb.net/maximum_gamers?retryWrites=true&w=majority&appName=Cluster0',
+    collectionName: 'sessions'
+  }),
+}));
+
 
 // ================== ROUTES ==================
 
@@ -901,4 +923,6 @@ const pages = ["user","signup","login","reset-password","gaming","loans","shop",
 pages.forEach(page => app.get("/"+page, (req,res)=>res.render(page)));
 
 // ================== START SERVER ==================
-server.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
