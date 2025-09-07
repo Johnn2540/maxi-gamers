@@ -92,10 +92,26 @@ function requireAdmin(req, res, next) {
 
 // ================== MULTER UPLOAD ==================
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, path.join(__dirname, "../public/uploads")),
-  filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
+  destination: (req, file, cb) => {
+    cb(null, path.join(__dirname, "../public/uploads"));
+  },
+  filename: (req, file, cb) => {
+    // Use Date.now() + original file name for uniqueness
+    cb(null, Date.now() + "-" + file.originalname);
+  },
 });
-const upload = multer({ storage });
+
+const upload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    // Only allow images
+    if (!file.mimetype.startsWith("image/")) {
+      return cb(new Error("Only image files are allowed"));
+    }
+    cb(null, true);
+  },
+});
+
 
 // ================== VIEW ENGINE ==================
 app.set("view engine", "hbs");
@@ -246,7 +262,11 @@ app.get("/admin/products/json", async (req, res) => {
 app.get("/products/json", async (req, res) => {
   try {
     const products = await Product.find();
-    res.json(products);
+    const productsWithPath = products.map(p => ({
+      ...p.toObject(),
+      image: p.image ? "/uploads/" + p.image : null
+    }));
+    res.json(productsWithPath);
   } catch (err) {
     console.error("Failed to fetch products:", err);
     res.status(500).json({ success: false, message: "Failed to fetch products" });
