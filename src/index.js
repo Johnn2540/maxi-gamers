@@ -33,25 +33,32 @@ app.use(flash());
 
 // ================== AUTH MIDDLEWARE ==================
 async function ensureAuthenticated(req, res, next) {
+  console.log("ensureAuthenticated: Checking session user:", req.session.user);
+  
   if (!req.session.user) {
+    console.log("ensureAuthenticated: No session user - redirecting to login");
     return res.redirect("/login");
   }
 
   try {
+    console.log("ensureAuthenticated: Looking for user with ID:", req.session.user.id);
     const user = await User.findById(req.session.user.id);
 
     if (!user) {
+      console.log("ensureAuthenticated: User not found in DB - destroying session");
       req.session.destroy(() => res.redirect("/login"));
       return;
     }
 
     if (user.active === false) {
+      console.log("ensureAuthenticated: User is suspended - destroying session");
       req.session.destroy(() =>
         res.status(403).send("Your account is suspended.")
       );
       return;
     }
 
+    console.log("ensureAuthenticated: User authenticated successfully:", user.name, "Role:", user.role);
     req.user = user;
     next();
   } catch (err) {
@@ -61,9 +68,14 @@ async function ensureAuthenticated(req, res, next) {
 }
 
 function requireAdmin(req, res, next) {
+  console.log("requireAdmin: Checking if user is admin:", req.user ? req.user.role : "No user");
+  
   if (!req.user || req.user.role !== "admin") {
+    console.log("requireAdmin: Access denied - user is not admin");
     return res.status(403).send("Access denied");
   }
+  
+  console.log("requireAdmin: User is admin - allowing access");
   next();
 }
 
@@ -110,9 +122,9 @@ app.get("/", async (req, res) => {
 });
 
 // --------- ADMIN DASHBOARD ---------
-// FIXED: Use authentication middleware instead of direct session check
 app.get("/admin", ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
+    console.log("Admin dashboard accessed by:", req.user.name);
     const [users, products, leaderboard] = await Promise.all([
       User.find(),
       Product.find(),
@@ -425,21 +437,27 @@ app.post("/signup", async (req, res) => {
 app.post("/login", async (req, res) => {
   try {
     const { name, password } = req.body;
+    console.log("Login attempt for user:", name);
 
     if (!name || !password) {
       return res.status(400).send("Username and password are required");
     }
 
     const user = await User.findOne({ name });
+    console.log("User found in DB:", user ? user.name : "None");
+
     if (!user) {
       return res.status(400).send("User not found");
     }
 
     if (!user.active) {
+      console.log("User account is suspended");
       return res.status(403).send("Your account is suspended. Please contact admin.");
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
+    console.log("Password match result:", isMatch);
+
     if (!isMatch) {
       return res.status(400).send("Invalid password");
     }
@@ -449,6 +467,9 @@ app.post("/login", async (req, res) => {
       name: user.name,
       role: user.role
     };
+
+    console.log("Session created for user:", req.session.user);
+    console.log("Redirecting to:", user.role === "admin" ? "/admin" : "/user");
 
     return user.role === "admin"
       ? res.redirect("/admin")
