@@ -264,7 +264,7 @@ app.get("/products/json", async (req, res) => {
     const products = await Product.find();
     const productsWithPath = products.map(p => ({
       ...p.toObject(),
-      image: p.image ? "/uploads/" + p.image : null
+      image: p.image || null // Cloudinary URL or null
     }));
     res.json(productsWithPath);
   } catch (err) {
@@ -328,14 +328,24 @@ app.delete("/admin/leaderboard/:id", async (req, res) => {
 app.post("/admin/products", upload.single("image"), async (req, res) => {
   try {
     const { title, marketPrice, salePrice, description, onSale } = req.body;
+    let imageUrl = null;
+
+    if (req.file) {
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: "products"
+      });
+      imageUrl = result.secure_url;
+    }
+
     const newProduct = await Product.create({
       title,
       marketPrice,
       salePrice,
       description,
       onSale: onSale === "on" || onSale === "true",
-      image: req.file ? "/uploads/" + req.file.filename : null,
+      image: imageUrl
     });
+
     io.emit("newProduct", newProduct);
     res.json({ success: true, product: newProduct });
   } catch (err) {
@@ -349,8 +359,14 @@ app.post("/admin/products/edit/:id", upload.single("image"), async (req, res) =>
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ success: false, message: "Product not found" });
 
+    if (req.file) {
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: "products"
+      });
+      product.image = result.secure_url;
+    }
+
     Object.assign(product, { title, marketPrice, salePrice, description, onSale: onSale === "on" || onSale === "true" });
-    if (req.file) product.image = "/uploads/" + req.file.filename;
     await product.save();
 
     io.emit("updateProduct", product);
@@ -359,6 +375,7 @@ app.post("/admin/products/edit/:id", upload.single("image"), async (req, res) =>
     res.status(500).json({ success: false, message: err.message });
   }
 });
+
 
 app.post("/admin/products/delete/:id", async (req, res) => {
   try {
@@ -406,7 +423,7 @@ app.post("/loans", upload.single("itemImage"), async (req, res) => {
       status: "Pending",
     });
 
-    // ✅ broadcast new loan to admins (match frontend listener)
+    //  broadcast new loan to admins (match frontend listener)
     io.emit("loanCreated", loan);
 
     if (req.headers.accept?.includes("application/json")) {
@@ -482,7 +499,7 @@ app.post("/admin/loans/:id/status", async (req, res) => {
 
     if (!loan) return res.status(404).json({ success: false, message: "Loan not found" });
 
-    // ✅ broadcast update (match frontend listener)
+    // broadcast update (match frontend listener)
     io.emit("loanUpdated", loan);
 
     res.json({ success: true, loan });
@@ -513,7 +530,7 @@ app.post("/signup", async (req, res) => {
       password: hashedPassword,
       role: "user",
       studentId,
-      active: true, // ✅ ensure active by default
+      active: true, // ensure active by default
     });
 
     req.flash("success_msg", "Signup successful! Please login.");
@@ -540,10 +557,10 @@ app.post("/login", async (req, res) => {
       return res.status(400).send("Invalid password");
     }
 
-    // ✅ Store session
+    //  Store session
     req.session.user = { id: user._id, name: user.name, role: user.role };
 
-    // ✅ Redirect based on actual role, not submitted role
+    //  Redirect based on actual role, not submitted role
     res.redirect(user.role === "admin" ? "/admin" : "/user");
   } catch (err) {
     res.status(500).send(err.message);
@@ -708,10 +725,10 @@ app.get("/gaming/bookings/json", async (req, res) => {
 
 // ======== SOCKET.IO ========
 io.on("connection", (socket) => {
-  console.log("✅ Client connected:", socket.id);
+  console.log("Client connected:", socket.id);
 
   socket.on("disconnect", () => {
-    console.log("❌ Client disconnected:", socket.id);
+    console.log("Client disconnected:", socket.id);
   });
 });
 
@@ -843,7 +860,7 @@ app.post("/admin/top-bar", async (req, res) => {
       message = await TopBarMessage.create({ content, order, active });
     }
 
-    io.emit("topBarUpdate"); // 🔄 unified event
+    io.emit("topBarUpdate"); //  unified event
     res.json({ success: true, message });
   } catch (err) {
     console.error("Error saving top bar message:", err);
