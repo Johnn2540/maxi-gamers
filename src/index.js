@@ -24,7 +24,7 @@ app.use(express.static(path.join(__dirname, "../public")));
 
 app.use(session({
   secret: "yourSecretKey",
-  resave: false,
+  resave: true,
   saveUninitialized: false,
   cookie: { secure: process.env.NODE_ENV === "production", httpOnly: true }
 }));
@@ -444,7 +444,7 @@ app.post("/login", async (req, res) => {
     }
 
     const user = await User.findOne({ name });
-    console.log("User found in DB:", user ? user.name : "None");
+    console.log("User found in DB:", user ? {name: user.name, role: user.role, id: user._id} : "None");
 
     if (!user) {
       return res.status(400).send("User not found");
@@ -462,18 +462,31 @@ app.post("/login", async (req, res) => {
       return res.status(400).send("Invalid password");
     }
 
+    // Set session data
     req.session.user = {
-      id: user._id,
+      id: user._id.toString(), // Ensure it's a string
       name: user.name,
       role: user.role
     };
 
-    console.log("Session created for user:", req.session.user);
-    console.log("Redirecting to:", user.role === "admin" ? "/admin" : "/user");
+    console.log("Session data set:", req.session.user);
 
-    return user.role === "admin"
-      ? res.redirect("/admin")
-      : res.redirect("/user");
+    //  CRITICAL: Save session before redirecting
+    req.session.save((err) => {
+      if (err) {
+        console.error("Session save error:", err);
+        return res.status(500).send("Internal server error");
+      }
+      
+      console.log("Session saved successfully, redirecting to:", user.role === "admin" ? "/admin" : "/user");
+      
+      // Redirect based on role
+      if (user.role === "admin") {
+        return res.redirect("/admin");
+      } else {
+        return res.redirect("/user");
+      }
+    });
       
   } catch (err) {
     console.error("Login error:", err);
