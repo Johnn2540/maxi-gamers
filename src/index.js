@@ -13,9 +13,17 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 const MongoStore = require('connect-mongo');
+const cloudinary = require("cloudinary").v2;
+
+
 
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = "supersecretkey";
+cloudinary.config({
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.CLOUD_API_KEY,
+  api_secret: process.env.CLOUD_API_SECRET
+});
 
 // ================== MIDDLEWARE ==================
 app.set("trust proxy", 1); // required on Render/Heroku
@@ -533,8 +541,7 @@ app.post("/signup", async (req, res) => {
       active: true, // ensure active by default
     });
 
-    req.flash("success_msg", "Signup successful! Please login.");
-    res.redirect("/login");
+    res.redirect("/user");
   } catch (err) {
     res.status(500).send(err.message);
   }
@@ -588,8 +595,7 @@ app.post("/reset-password", async (req, res) => {
     user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
 
-    req.flash("success_msg", "Password updated. Please login.");
-    res.redirect("/login");
+    res.redirect("/user");
   } catch (err) {
     res.status(500).send(err.message);
   }
