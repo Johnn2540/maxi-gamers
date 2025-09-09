@@ -697,10 +697,11 @@ app.get("/admin/bookings/json", async (req, res) => {
       .sort({ createdAt: -1 });
 
     const now = new Date();
-    const bookingsWithFlag = bookings.map(b => ({
-      ...b.toObject(),
-      isNew: (now - b.createdAt) / 1000 < 10
-    }));
+    const bookingsWithFlag = bookings.map(b => {
+      const bookingObj = b.toObject();
+      bookingObj.isNew = b.createdAt ? ((now - b.createdAt) / 1000 < 10) : false;
+      return bookingObj;
+    });
 
     res.json(bookingsWithFlag); // always array
   } catch (err) {
@@ -708,6 +709,7 @@ app.get("/admin/bookings/json", async (req, res) => {
     res.status(500).json([]); // keep array shape
   }
 });
+
 
 // User fetch their own bookings
 app.get("/gaming/bookings/json", async (req, res) => {
