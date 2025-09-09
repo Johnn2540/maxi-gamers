@@ -699,7 +699,13 @@ app.get("/admin/bookings/json", async (req, res) => {
     const now = new Date();
     const bookingsWithFlag = bookings.map(b => {
       const bookingObj = b.toObject();
-      bookingObj.isNew = b.createdAt ? ((now - b.createdAt) / 1000 < 10) : false;
+
+      // Safe fallback: if createdAt is missing, set it to null
+      const createdAt = b.createdAt || null;
+
+      bookingObj.isNew = createdAt ? ((now - createdAt) / 1000 < 10) : false;
+      bookingObj.createdAt = createdAt; // keep field consistent
+
       return bookingObj;
     });
 
@@ -709,6 +715,7 @@ app.get("/admin/bookings/json", async (req, res) => {
     res.status(500).json([]); // keep array shape
   }
 });
+
 
 
 // User fetch their own bookings
