@@ -14,7 +14,6 @@ const server = http.createServer(app);
 const io = new Server(server);
 const MongoStore = require('connect-mongo');
 const cloudinary = require("cloudinary").v2;
-const helmet = require("helmet");
 
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = "supersecretkey";
@@ -33,23 +32,6 @@ app.use(express.urlencoded({ extended: true }));
 
 // Static file serving
 app.use(express.static(path.join(__dirname, "public")));
-
-//  Helmet CSP setup
-app.use(
-  helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        imgSrc: ["'self'", "data:", "https://res.cloudinary.com"],
-        manifestSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-        fontSrc: ["'self'", "https://fonts.gstatic.com"],
-        scriptSrc: ["'self'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"]
-      }
-    }
-  })
-);
-
 
 app.use(
   session({
