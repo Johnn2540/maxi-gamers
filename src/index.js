@@ -31,40 +31,24 @@ app.set("trust proxy", 1); // required on Render/Heroku
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// configure it to allow images, styles, scripts, and manifests
+// Static file serving
+app.use(express.static(path.join(__dirname, "public")));
+
+//  Helmet CSP setup
 app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: [
-          "'self'",
-          "https://cdn.jsdelivr.net",
-          "https://cdnjs.cloudflare.com"
-        ],
-        styleSrc: [
-          "'self'",
-          "'unsafe-inline'",
-          "https://cdn.jsdelivr.net",
-          "https://fonts.googleapis.com"
-        ],
-        fontSrc: ["'self'", "https://fonts.gstatic.com"],
-        imgSrc: [
-          "'self'",
-          "data:",
-          "https://res.cloudinary.com"
-        ],
+        imgSrc: ["'self'", "data:", "https://res.cloudinary.com"],
         manifestSrc: ["'self'"],
-        connectSrc: ["'self'"],
-        objectSrc: ["'none'"],
-        upgradeInsecureRequests: [],
-      },
-    },
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        scriptSrc: ["'self'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"]
+      }
+    }
   })
 );
-
-// Static file serving
-app.use(express.static(path.join(__dirname, "public")));
 
 app.use(
   session({
