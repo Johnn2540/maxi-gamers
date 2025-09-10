@@ -14,8 +14,7 @@ const server = http.createServer(app);
 const io = new Server(server);
 const MongoStore = require('connect-mongo');
 const cloudinary = require("cloudinary").v2;
-
-
+const helmet = require("helmet");
 
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = "supersecretkey";
@@ -31,6 +30,38 @@ app.set("trust proxy", 1); // required on Render/Heroku
 // Body parsing middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// configure it to allow images, styles, scripts, and manifests
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: [
+          "'self'",
+          "https://cdn.jsdelivr.net",
+          "https://cdnjs.cloudflare.com"
+        ],
+        styleSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          "https://cdn.jsdelivr.net",
+          "https://fonts.googleapis.com"
+        ],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        imgSrc: [
+          "'self'",
+          "data:",
+          "https://res.cloudinary.com"
+        ],
+        manifestSrc: ["'self'"],
+        connectSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        upgradeInsecureRequests: [],
+      },
+    },
+  })
+);
 
 // Static file serving
 app.use(express.static(path.join(__dirname, "public")));
