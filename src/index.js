@@ -249,6 +249,36 @@ app.get("/admin/users/json", async (req, res) => {
   }
 });
 
+// Get single user by ID and render edit form
+app.get("/admin/users/edit/:id", ensureAuthenticated, requireAdmin, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).lean();
+    if (!user) {
+      return res.status(404).send("User not found");
+    }
+
+    // Render an EJS/handlebars view called "admin/edit-user"
+    res.render("admin/edit-user", { user });
+  } catch (err) {
+    console.error("Error loading edit page:", err);
+    res.status(500).send("Server error");
+  }
+});
+// Update user data
+app.post("/admin/users/edit/:id", ensureAuthenticated, requireAdmin, async (req, res) => {
+  try {
+    await User.findByIdAndUpdate(req.params.id, {
+      name: req.body.name,
+      email: req.body.email,
+      // add more fields as needed
+    });
+    res.redirect("/admin/users"); // or wherever your admin panel lives
+  } catch (err) {
+    console.error("Error updating user:", err);
+    res.status(500).send("Server error");
+  }
+});
+
 
 // ================== ADMIN PRODUCTS JSON ==================
 app.get("/admin/products/json", async (req, res) => {
