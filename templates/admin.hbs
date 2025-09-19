@@ -26,12 +26,77 @@
       .content { margin-left: 0; }
     }
     
-    @media (max-width: 768px) {
-      .sidebar { width: 0; overflow: hidden; position: fixed; z-index: 1000; height: 100%; }
-      .content { width: 100%; margin-left: 0 !important; }
-      .sidebar.show { width: 250px; }
-      .menu-toggle { display: block !important; }
-    }
+@media (max-width: 768px) {
+  /* Sidebar hidden by default */
+  .sidebar { 
+    width: 250px; 
+    position: fixed; 
+    left: 0; 
+    top: 0; 
+    height: 100%; 
+    z-index: 1000; 
+    transform: translateX(-100%); 
+    transition: transform 0.3s ease-in-out; 
+    background: #212529;
+  }
+
+  /* Sidebar shown when toggled */
+  .sidebar.show { 
+    transform: translateX(0); 
+  }
+
+  /* Show nav link text when sidebar is open */
+  .sidebar .nav-link span {
+    display: none; /* hide text by default */
+  }
+  .sidebar.show .nav-link span {
+    display: inline; /* show text when sidebar slides in */
+    margin-left: 10px; /* spacing from icon */
+    color: #ddd; /* ensure text color is visible */
+  }
+
+  /* Content adjustments */
+  .content { 
+    width: 100%; 
+    margin-left: 0 !important; 
+    transition: margin-left 0.3s ease;
+  }
+
+  /* Hamburger menu button */
+  .menu-toggle { 
+    display: block !important; 
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 1100;
+    background: #0d6efd;
+    color: #fff;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+}
+
+/* Overlay for mobile menu */
+.overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  z-index: 900;
+  transition: opacity 0.3s ease;
+}
+
+.overlay.show {
+  display: block;
+  opacity: 1;
+}
+
+
     
     /* Leaderboard glow styles */
     .leaderboard-table tbody tr { transition: all 0.3s ease; }
@@ -1365,5 +1430,21 @@
     socket.on('newBooking', b => renderBookingRow(b, true));
     socket.on('updateBooking', b => renderBookingRow(b));
   </script>
+  <script>
+  const menuBtn = document.querySelector('.menu-toggle');
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.querySelector('.overlay');
+
+  menuBtn.addEventListener('click', () => {
+    sidebar.classList.toggle('show');
+    overlay.classList.toggle('show');
+  });
+
+  overlay.addEventListener('click', () => {
+    sidebar.classList.remove('show');
+    overlay.classList.remove('show');
+  });
+</script>
+
 </body>
 </html>

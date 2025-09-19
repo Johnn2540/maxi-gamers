@@ -11,8 +11,8 @@ mongoose
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
-  .then(() => console.log("✅ MongoDB connected successfully"))
-  .catch(err => console.error("❌ MongoDB connection error:", err));
+  .then(() => console.log(" MongoDB connected successfully"))
+  .catch(err => console.error(" MongoDB connection error:", err));
 
 // ------------------ SCHEMAS ------------------
 
@@ -28,7 +28,7 @@ const userSchema = new mongoose.Schema(
     studentId: { type: String },
     image: { type: String, default: null }, // Profile image URL/path
   },
-  { timestamps: true }
+  { timestamps: true } 
 );
 
 // PRODUCT SCHEMA
@@ -58,9 +58,9 @@ const bookingSchema = new mongoose.Schema({
     type: String,
     enum: ["Pending", "Confirmed", "Completed", "Cancelled"],
     default: "Pending",
-  },
-  createdAt: { type: Date, default: Date.now },
-});
+  }
+}, { timestamps: true });  // adds createdAt & updatedAt automatically
+
 
 // TOP BAR MESSAGE SCHEMA
 const topBarMessageSchema = new mongoose.Schema({
@@ -117,5 +117,12 @@ module.exports = {
   Loan,
   Message,
 };
+
+
+
+
+
+
+
 
 
