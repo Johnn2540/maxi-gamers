@@ -264,20 +264,34 @@ app.get("/admin/users/edit/:id", ensureAuthenticated, requireAdmin, async (req, 
     res.status(500).send("Server error");
   }
 });
-// Update user data
-app.post("/admin/users/edit/:id", ensureAuthenticated, requireAdmin, async (req, res) => {
+// ================== ADMIN UPDATE USER ==================
+app.post("/admin/users/update/:id", async (req, res) => {
   try {
-    await User.findByIdAndUpdate(req.params.id, {
-      name: req.body.name,
-      email: req.body.email,
-      // add more fields as needed
-    });
-    res.redirect("/admin/users"); // or wherever your admin panel lives
+    if (!req.session.user || req.session.user.role !== "admin") {
+      return res.status(403).send("Access denied");
+    }
+
+    const { name, email, role } = req.body;
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      { name, email, role },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).send("User not found");
+    }
+
+    // After update, go back to user list
+    res.redirect("/admin");
   } catch (err) {
     console.error("Error updating user:", err);
-    res.status(500).send("Server error");
+    res.status(500).send("Failed to update user");
   }
 });
+
+
 
 
 // ================== ADMIN PRODUCTS JSON ==================
@@ -629,28 +643,6 @@ app.post("/reset-password", async (req, res) => {
   }
 });
 
-// ================== TOGGLE USER STATUS ==================
-app.post("/admin/users/toggle/:id", async (req, res) => {
-  try {
-    if (!req.session.user || req.session.user.role !== "admin") {
-      return res.status(403).json({ success: false, message: "Access denied" });
-    }
-
-    const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
-    }
-
-    user.active = !user.active;
-    await user.save();
-
-    res.json({ success: true, active: user.active });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
-
-
 
 // ================== GAMING BOOKINGS ==================
 
@@ -663,7 +655,7 @@ app.post("/gaming/book", async (req, res) => {
 
     const { game, console, date, timeSlot } = req.body;
     const booking = await Booking.create({
-      user: req.session.user.id,
+      user: req.session.user.id,   // correct field name from schema
       game,
       console,
       date,
@@ -728,11 +720,14 @@ app.get("/admin/bookings/json", async (req, res) => {
     const bookingsWithFlag = bookings.map(b => {
       const bookingObj = b.toObject();
 
-      // Safe fallback: if createdAt is missing, set it to null
-      const createdAt = b.createdAt || null;
+      // 👇 prevent crash if user is missing
+      if (!bookingObj.user) {
+        bookingObj.user = { name: "Unknown User", email: "N/A" };
+      }
 
+      const createdAt = b.createdAt instanceof Date ? b.createdAt : null;
       bookingObj.isNew = createdAt ? ((now - createdAt) / 1000 < 10) : false;
-      bookingObj.createdAt = createdAt; // keep field consistent
+      bookingObj.createdAt = createdAt;
 
       return bookingObj;
     });
@@ -744,8 +739,6 @@ app.get("/admin/bookings/json", async (req, res) => {
   }
 });
 
-
-
 // User fetch their own bookings
 app.get("/gaming/bookings/json", async (req, res) => {
   try {
@@ -754,9 +747,19 @@ app.get("/gaming/bookings/json", async (req, res) => {
     }
 
     const bookings = await Booking.find({ user: req.session.user.id })
+      .populate("user", "name email")
       .sort({ createdAt: -1 });
 
-    res.json(bookings); // always array
+    // 👇 make sure every booking has a safe user object
+    const safeBookings = bookings.map(b => {
+      const bookingObj = b.toObject();
+      if (!bookingObj.user) {
+        bookingObj.user = { name: "Unknown User", email: "N/A" };
+      }
+      return bookingObj;
+    });
+
+    res.json(safeBookings); // always array
   } catch (err) {
     console.error("Error fetching user bookings:", err);
     res.status(500).json([]); // keep array shape
