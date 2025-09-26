@@ -113,15 +113,27 @@
     <i class="bi bi-cart"></i> Cart (<span id="cart-count">0</span>)
   </button>
 
-  <!-- Cart Sidebar -->
-  <div id="cart-sidebar">
-    <h4>🛍 Your Cart</h4>
-    <div id="cart-items"></div>
-    <hr>
-    <p class="fw-bold">Total: Ksh <span id="cart-total">0</span></p>
-    <button class="btn btn-success w-100" id="checkout-btn">Checkout</button>
-    <button class="btn btn-secondary w-100 mt-2" id="close-cart">Close</button>
+<!-- Cart Sidebar -->
+<div id="cart-sidebar">
+  <h4>🛍 Your Cart</h4>
+  <div id="cart-items"></div>
+  <hr>
+  <p class="fw-bold">Total: Ksh <span id="cart-total">0</span></p>
+
+  <!-- Customer Info -->
+  <div class="mb-3">
+    <label for="customer-name" class="form-label">Your Name</label>
+    <input type="text" id="customer-name" class="form-control" placeholder="Enter your name">
   </div>
+  <div class="mb-3">
+    <label for="customer-phone" class="form-label">Your Phone</label>
+    <input type="text" id="customer-phone" class="form-control" placeholder="07XXXXXXXX">
+  </div>
+
+  <button class="btn btn-success w-100" id="checkout-btn">Order via WhatsApp</button>
+  <button class="btn btn-warning w-100 mt-2" id="clear-cart">Clear Cart</button>
+  <button class="btn btn-secondary w-100 mt-2" id="close-cart">Close</button>
+</div>
 
   <!-- Scripts -->
   <script>
@@ -230,9 +242,56 @@
       document.getElementById('cart-sidebar').style.display = 'none';
     });
 
-    document.getElementById('checkout-btn').addEventListener('click', () => {
-      alert('Checkout coming soon, visit our shop,KM, opposite shopping center,1st floor. For more info, call or whatsapp: 0718804786');
-    });
+// WhatsApp Checkout
+document.getElementById('checkout-btn').addEventListener('click', () => {
+  if (!cart.length) {
+    alert("Your cart is empty!");
+    return;
+  }
+
+  const name = document.getElementById("customer-name").value.trim();
+  const phone = document.getElementById("customer-phone").value.trim();
+
+  if (!name || !phone) {
+    alert("Please enter your name and phone number before ordering.");
+    return;
+  }
+
+  // Build order details
+  let orderDetails = cart.map((item, idx) =>
+    `${idx + 1}. ${item.title} - Ksh ${item.salePrice}`
+  ).join("%0A");
+
+  let total = cart.reduce((sum, item) => sum + item.salePrice, 0);
+
+  // WhatsApp message
+  let message = `Hello, my name is ${name}, my phone number is ${phone}.%0A` +
+                `I would like to place an order from Maximum Gamers 🛒%0A%0A` +
+                `${orderDetails}%0A%0ATotal: Ksh ${total}`;
+
+  // Redirect to WhatsApp (Kenya code 254)
+  window.open(`https://wa.me/254718804786?text=${message}`, "_blank");
+
+  // Clear cart + reset form
+  cart.length = 0;
+  updateCartUI();
+  document.getElementById("customer-name").value = "";
+  document.getElementById("customer-phone").value = "";
+  document.getElementById('cart-sidebar').style.display = 'none';
+});
+
+    // Clear Cart Button
+document.getElementById('clear-cart').addEventListener('click', () => {
+  if (!cart.length) {
+    alert("Your cart is already empty.");
+    return;
+  }
+  if (confirm("Are you sure you want to clear your cart?")) {
+    cart.length = 0; 
+    updateCartUI();
+  }
+});
+
 
     window.addEventListener('DOMContentLoaded', loadProducts);
   </script>
