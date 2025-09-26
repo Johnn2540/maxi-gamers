@@ -1,38 +1,81 @@
-// ================== IMPORTS ==================
-const express = require("express");
-const jwt = require("jsonwebtoken");
-const bcrypt = require("bcrypt");
-const path = require("path");
-const hbs = require("hbs");
-const session = require("express-session");
-const multer = require("multer");
-const http = require("http");
-const { Server } = require("socket.io");
-const { User, Product, Leaderboard, Booking, TopBarMessage, Loan, Message } = require("./mongodb");
+// ================== CORE IMPORTS ==================
+const express = require("express");             // Web framework
+const http = require("http");                   // HTTP server wrapper (needed for socket.io)
+const path = require("path");                   // Path utilities
+require("dotenv").config();                     // Load environment variables
+
+// ================== SECURITY & UTILS ==================
+const helmet = require("helmet");               // Security headers
+const rateLimit = require("express-rate-limit");// Protect against abuse (rate limiting)
+const bcrypt = require("bcrypt");               // Password hashing
+const jwt = require("jsonwebtoken");            // Token-based authentication
+const session = require("express-session");     // Session management
+const MongoStore = require("connect-mongo");    // MongoDB-backed session store
+const multer = require("multer");               // File uploads (images, docs, etc.)
+
+// ================== VIEWS ==================
+const hbs = require("hbs");                     // Handlebars view engine
+
+// ================== DATABASE MODELS ==================
+const { 
+  User, 
+  Product, 
+  Leaderboard, 
+  Booking, 
+  TopBarMessage, 
+  Loan, 
+  Message 
+} = require("./mongodb");                       // Custom MongoDB models
+
+// ================== REALTIME ==================
+const { Server } = require("socket.io");        // WebSocket server
+
+// ================== CLOUD & AI ==================
+const cloudinary = require("cloudinary").v2;    // Cloud storage for media
+const OpenAI = require("openai");               // OpenAI SDK
+
+// ================== APP INITIALIZATION ==================
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
-const MongoStore = require('connect-mongo');
-const cloudinary = require("cloudinary").v2;
 
+// ================== CONFIGURATION ==================
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const PORT = process.env.PORT || 3000;
-const JWT_SECRET = "supersecretkey";
+const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey"; // better: keep in .env
+
+// Cloudinary setup
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
   api_key: process.env.CLOUD_API_KEY,
-  api_secret: process.env.CLOUD_API_SECRET
+  api_secret: process.env.CLOUD_API_SECRET,
 });
 
 // ================== MIDDLEWARE ==================
-app.set("trust proxy", 1); // required on Render/Heroku
 
-// Body parsing middleware
+// Trust proxy (needed on Render/Heroku/behind Nginx)
+app.set("trust proxy", 1);
+
+// Security headers
+app.use(helmet());
+
+// Rate limiter (prevent abuse, e.g. login brute force)
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100,                 // limit each IP to 100 requests per windowMs
+  standardHeaders: true,    // return rate limit info in headers
+  legacyHeaders: false,
+});
+app.use(limiter);
+
+// Body parsing
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Static file serving
 app.use(express.static(path.join(__dirname, "public")));
 
+// Session management
 app.use(
   session({
     name: "connect.sid",
@@ -40,23 +83,25 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      httpOnly: true,
+      httpOnly: true,                           // JS cannot access cookie
       secure: process.env.NODE_ENV === "production", // HTTPS only in prod
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // allow cross-site in prod
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", 
+      maxAge: 7 * 24 * 60 * 60 * 1000,          // 7 days
     },
     store: MongoStore.create({
-      mongoUrl: process.env.MONGODB_URI || 'mongodb+srv://Johnstone2020:Johnstone2020@cluster0.mozeuc4.mongodb.net/maximum_gamers?retryWrites=true&w=majority&appName=Cluster0',
-      collectionName: 'sessions'
+      mongoUrl: process.env.MONGODB_URI,
+      collectionName: "sessions",
     }),
   })
 );
 
-// Debug middleware
-app.use((req, res, next) => {
-  console.log("🔎 Session debug:", req.session);
-  next();
-});
+// Debug (only in dev)
+if (process.env.NODE_ENV !== "production") {
+  app.use((req, res, next) => {
+    console.log("🔎 Session debug:", req.session);
+    next();
+  });
+}
 
 // ================== AUTH MIDDLEWARE ==================
 async function ensureAuthenticated(req, res, next) {
@@ -93,6 +138,66 @@ function requireAdmin(req, res, next) {
   }
   next();
 }
+
+// ================== AI ASSISTANT ==================
+const aiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 20, // limit each IP to 20 requests per window
+  message: "Too many AI requests, slow down."
+});
+
+app.post("/ai/ask", aiLimiter, async (req, res) => {
+  try {
+    const userMessage = (req.body.message || "").trim();
+    if (!userMessage) {
+      return res.status(400).json({ success: false, message: "Message required" });
+    }
+
+    const systemPrompt = {
+      role: "system",
+      content: "You are an assistant for Maximum Gamers. Be concise, helpful, and prioritize product/loan/booking info."
+    };
+
+    // Try multiple models in order
+    const models = ["gpt-4o-mini", "gpt-4o", "gpt-4.1-mini"];
+    let reply = null;
+    let lastError = null;
+
+    for (const model of models) {
+      try {
+        console.log(`🔎 Trying model: ${model}`);
+        const resp = await openai.chat.completions.create({
+          model,
+          messages: [systemPrompt, { role: "user", content: userMessage }],
+          max_tokens: 300,
+          temperature: 0.3
+        });
+
+        reply = resp.choices?.[0]?.message?.content?.trim();
+        if (reply) break; // success → stop trying
+      } catch (err) {
+        lastError = err.response?.data?.error?.message || err.message;
+        console.error(`❌ Model ${model} failed:`, lastError);
+      }
+    }
+
+    if (!reply) {
+      return res.status(500).json({
+        success: false,
+        message: `AI assistant failed. Last error: ${lastError || "Unknown error"}`
+      });
+    }
+
+    res.json({ success: true, reply });
+
+  } catch (err) {
+    console.error("🔥 AI route fatal error:", err);
+    res.status(500).json({
+      success: false,
+      message: err.response?.data?.error?.message || err.message || "AI assistant failed"
+    });
+  }
+});
 
 
 
@@ -720,7 +825,7 @@ app.get("/admin/bookings/json", async (req, res) => {
     const bookingsWithFlag = bookings.map(b => {
       const bookingObj = b.toObject();
 
-      // 👇 prevent crash if user is missing
+      // prevent crash if user is missing
       if (!bookingObj.user) {
         bookingObj.user = { name: "Unknown User", email: "N/A" };
       }
@@ -750,7 +855,7 @@ app.get("/gaming/bookings/json", async (req, res) => {
       .populate("user", "name email")
       .sort({ createdAt: -1 });
 
-    // 👇 make sure every booking has a safe user object
+    // make sure every booking has a safe user object
     const safeBookings = bookings.map(b => {
       const bookingObj = b.toObject();
       if (!bookingObj.user) {

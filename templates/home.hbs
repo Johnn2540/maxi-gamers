@@ -997,6 +997,127 @@ document.addEventListener('DOMContentLoaded', initBackToTop);
 <div id="backToTop" class="back-to-top">
   <i class="bi bi-arrow-up-circle-fill"></i>
 </div>
+<!-- Chat Widget -->
+<div id="chat-widget">
+  <div id="chat-header">💬 Chat with AI</div>
+  <div id="chat-box"></div>
+  <input id="user-input" type="text" placeholder="Type your message..." />
+  <button onclick="sendMessage()">Send</button>
+</div>
+
+<style>
+  #chat-widget {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 300px;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    display: flex;
+    flex-direction: column;
+    font-family: Arial, sans-serif;
+    z-index: 9999;
+  }
+  #chat-header {
+    background: #0078ff;
+    color: white;
+    padding: 8px;
+    cursor: move;
+    border-radius: 10px 10px 0 0;
+  }
+  #chat-box {
+    height: 200px;
+    overflow-y: auto;
+    padding: 8px;
+    font-size: 14px;
+  }
+  #user-input {
+    border: none;
+    border-top: 1px solid #ccc;
+    padding: 8px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  button {
+    border: none;
+    background: #0078ff;
+    color: white;
+    padding: 8px;
+    cursor: pointer;
+  }
+  .user { font-weight: bold; margin: 4px 0; }
+  .ai { color: green; margin: 4px 0; }
+  .error { color: red; margin: 4px 0; }
+</style>
+
+<script>
+async function sendMessage() {
+  const input = document.getElementById("user-input");
+  const chatBox = document.getElementById("chat-box");
+  const message = input.value.trim();
+  if (!message) return;
+
+  // Show user msg
+  chatBox.innerHTML += `<div class="user">You: ${message}</div>`;
+  input.value = "";
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  // Send to backend
+  const res = await fetch("/ai/ask", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message })
+  });
+
+  const data = await res.json();
+  if (data.success) {
+    chatBox.innerHTML += `<div class="ai">AI: ${data.reply}</div>`;
+  } else {
+    chatBox.innerHTML += `<div class="error">AI failed: ${data.message}</div>`;
+  }
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+// === Make the chat draggable ===
+dragElement(document.getElementById("chat-widget"));
+
+function dragElement(el) {
+  const header = document.getElementById("chat-header");
+  let pos1=0, pos2=0, pos3=0, pos4=0;
+
+  header.onmousedown = dragMouseDown;
+
+  function dragMouseDown(e) {
+    e = e || window.event;
+    e.preventDefault();
+    pos3 = e.clientX;
+    pos4 = e.clientY;
+    document.onmouseup = closeDragElement;
+    document.onmousemove = elementDrag;
+  }
+
+  function elementDrag(e) {
+    e = e || window.event;
+    e.preventDefault();
+    pos1 = pos3 - e.clientX;
+    pos2 = pos4 - e.clientY;
+    pos3 = e.clientX;
+    pos4 = e.clientY;
+    el.style.top = (el.offsetTop - pos2) + "px";
+    el.style.left = (el.offsetLeft - pos1) + "px";
+    el.style.bottom = "auto";
+    el.style.right = "auto";
+  }
+
+  function closeDragElement() {
+    document.onmouseup = null;
+    document.onmousemove = null;
+  }
+}
+</script>
+
 </body>
 
-</html> 
+</html>

@@ -3,16 +3,16 @@ require("dotenv").config();
 
 // ------------------ CONNECT TO MONGODB ------------------
 const MONGO_URI =
-  process.env.MONGO_URI ||
-  "mongodb://127.0.0.1:27017/LoginSignup"; // fallback to local DB
+  process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/LoginSignup";
 
 mongoose
   .connect(MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
-  .then(() => console.log(" MongoDB connected successfully"))
-  .catch(err => console.error(" MongoDB connection error:", err));
+  .then(() => console.log("MongoDB connected successfully"))
+  .catch(err => console.error("MongoDB connection error:", err));
+
 
 // ------------------ SCHEMAS ------------------
 
@@ -117,7 +117,6 @@ module.exports = {
   Loan,
   Message,
 };
-
 
 
 
