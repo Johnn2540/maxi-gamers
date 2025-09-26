@@ -209,17 +209,17 @@
           </div>
         `).join('');
 
-        // Add to Cart
-        document.querySelectorAll('.add-to-cart').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const id = btn.dataset.id;
-            const title = btn.dataset.title;
-            const salePrice = parseFloat(btn.dataset.price);
-            cart.push({ id, title, salePrice });
-            updateCartUI();
-            document.getElementById('cart-sidebar').style.display = 'block';
-          });
-        });
+// Add to Cart
+document.querySelectorAll('.add-to-cart').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const id = btn.dataset.id;
+    const title = btn.dataset.title;
+    const salePrice = parseFloat(btn.dataset.price);
+    cart.push({ id, title, salePrice });
+    updateCartUI();
+  });
+});
+
 
       } catch (err) {
         console.error('Failed to load products:', err);
