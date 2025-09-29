@@ -277,11 +277,11 @@
             loanForm.reset();
             fetchLoans(); // refresh immediately
           } else {
-            loanStatus.innerHTML = `<div class="alert alert-danger">❌ ${data.message || "Failed to submit loan. Try again."}</div>`;
+            loanStatus.innerHTML = `<div class="alert alert-danger"> ${data.message || "Failed to submit loan. Try again."}</div>`;
           }
         })
         .catch(() => {
-          loanStatus.innerHTML = `<div class="alert alert-danger">❌ Failed to submit loan. Try again.</div>`;
+          loanStatus.innerHTML = `<div class="alert alert-danger"> Failed to submit loan. Try again.</div>`;
         });
     });
 
@@ -303,38 +303,32 @@
     });
 
     // Render loans table
-    function renderLoans(loans) {
-      if (!loans || !loans.length) {
-        loanList.innerHTML = `<tr><td colspan="6" class="text-center">No loans yet</td></tr>`;
-        return;
-      }
-      loanList.innerHTML = loans
-        .map(loan => `<tr data-id="${loan._id}">${renderLoanRow(loan)}</tr>`)
-        .join("");
-    }
-
     function renderLoanRow(loan) {
-      return `
-        <td>${loan.itemImage ? `<img src="/uploads/${loan.itemImage}" class="img-fluid rounded" width="60">` : "—"}</td>
-        <td>${loan.description}</td>
-        <td>Ksh ${loan.itemValue}</td>
-        <td>Ksh ${loan.loanAmount}</td>
-        <td>${loan.loanPeriod}</td>
-        <td>
-          <span class="badge ${
-            loan.status === "Approved"
-              ? "bg-success"
-              : loan.status === "Rejected"
-              ? "bg-danger"
-              : loan.status === "Visit Shop"
-              ? "bg-info"
-              : "bg-warning"
-          }">
-            ${loan.status}
-          </span>
-        </td>
-      `;
-    }
+  return `
+    <td>
+      ${loan.itemImage 
+        ? `<img src="${loan.itemImage}" class="img-fluid rounded" width="60">`
+        : "—"}
+    </td>
+    <td>${loan.description}</td>
+    <td>Ksh ${loan.itemValue}</td>
+    <td>Ksh ${loan.loanAmount}</td>
+    <td>${loan.loanPeriod}</td>
+    <td>
+      <span class="badge ${
+        loan.status === "Approved"
+          ? "bg-success"
+          : loan.status === "Rejected"
+          ? "bg-danger"
+          : loan.status === "Visit Shop"
+          ? "bg-info"
+          : "bg-warning"
+      }">
+        ${loan.status}
+      </span>
+    </td>
+  `;
+}
 
     // Fetch loans list for logged-in user
     function fetchLoans() {
@@ -346,6 +340,8 @@
         });
     }
 
+
+    
     // Initial load
     fetchLoans();
   </script>

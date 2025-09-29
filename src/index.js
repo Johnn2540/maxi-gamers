@@ -1,81 +1,147 @@
-// ================== CORE IMPORTS ==================
-const express = require("express");             // Web framework
-const http = require("http");                   // HTTP server wrapper (needed for socket.io)
-const path = require("path");                   // Path utilities
-require("dotenv").config();                     // Load environment variables
+require("dotenv").config();
 
-// ================== SECURITY & UTILS ==================
-const helmet = require("helmet");               // Security headers
-const rateLimit = require("express-rate-limit");// Protect against abuse (rate limiting)
-const bcrypt = require("bcrypt");               // Password hashing
-const jwt = require("jsonwebtoken");            // Token-based authentication
-const session = require("express-session");     // Session management
-const MongoStore = require("connect-mongo");    // MongoDB-backed session store
-const multer = require("multer");               // File uploads (images, docs, etc.)
+// ================== IMPORTS ==================
+const express = require("express");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
+const path = require("path");
+const hbs = require("hbs");
+const session = require("express-session");
+const multer = require("multer");
+const http = require("http");
+const { Server } = require("socket.io");
+const { User, Product, Leaderboard, Booking, TopBarMessage, Loan, Message } = require("./mongodb");
+const MongoStore = require('connect-mongo');
+const cloudinary = require("cloudinary").v2;
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const passport = require("passport");
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
+const crypto = require("crypto");
+const nodemailer = require("nodemailer");
 
-// ================== VIEWS ==================
-const hbs = require("hbs");                     // Handlebars view engine
-
-// ================== DATABASE MODELS ==================
-const { 
-  User, 
-  Product, 
-  Leaderboard, 
-  Booking, 
-  TopBarMessage, 
-  Loan, 
-  Message 
-} = require("./mongodb");                       // Custom MongoDB models
-
-// ================== REALTIME ==================
-const { Server } = require("socket.io");        // WebSocket server
-
-// ================== CLOUD & AI ==================
-const cloudinary = require("cloudinary").v2;    // Cloud storage for media
-const OpenAI = require("openai");               // OpenAI SDK
-
-// ================== APP INITIALIZATION ==================
+// ================== APP & SERVER ==================
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// ================== CONFIGURATION ==================
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const PORT = process.env.PORT || 3000;
-const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey"; // better: keep in .env
+const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey"; // fallback if env not set
 
-// Cloudinary setup
+// ================== CLOUDINARY CONFIG ==================
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
   api_key: process.env.CLOUD_API_KEY,
   api_secret: process.env.CLOUD_API_SECRET,
 });
 
-// ================== MIDDLEWARE ==================
+// ================== SESSION CONFIG ==================
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "fallbacksecret",
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
+  })
+);
 
-// Trust proxy (needed on Render/Heroku/behind Nginx)
-app.set("trust proxy", 1);
+// ================== PASSPORT GOOGLE OAUTH ==================
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: "/auth/google/callback",
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        let user = await User.findOne({ googleId: profile.id });
 
-// Security headers
-app.use(helmet());
+        if (!user) {
+          user = await User.create({
+            googleId: profile.id,
+            name: profile.displayName,
+            email: profile.emails[0].value,
+            image: profile.photos[0].value,
+            role: "user",
+            active: true,
+          });
+        }
 
-// Rate limiter (prevent abuse, e.g. login brute force)
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,                 // limit each IP to 100 requests per windowMs
-  standardHeaders: true,    // return rate limit info in headers
-  legacyHeaders: false,
+        return done(null, user);
+      } catch (err) {
+        return done(err, null);
+      }
+    }
+  )
+);
+
+// ================== PASSPORT SERIALIZE / DESERIALIZE ==================
+passport.serializeUser((user, done) => done(null, user.id));
+passport.deserializeUser(async (id, done) => {
+  try {
+    const user = await User.findById(id);
+    done(null, user);
+  } catch (err) {
+    done(err, null);
+  }
 });
-app.use(limiter);
 
-// Body parsing
+// ================== INITIALIZE PASSPORT ==================
+app.use(passport.initialize());
+app.use(passport.session());
+
+// ================== GOOGLE AUTH ROUTES ==================
+
+// 1. Start Google login
+app.get("/auth/google",
+  passport.authenticate("google", { scope: ["profile", "email"] })
+);
+
+// 2. Google callback
+app.get(
+  "/auth/google/callback",
+  passport.authenticate("google", { failureRedirect: "/login" }),
+  (req, res) => {
+    // Set session after Google login
+    req.session.user = {
+      id: req.user._id,
+      name: req.user.name,
+      role: req.user.role
+    };
+
+    // Redirect based on role
+    if (req.user.role === "admin") {
+      return res.redirect("/admin");
+    } else {
+      return res.redirect("/user");
+    }
+  }
+);
+
+// 3. Logout
+app.get("/logout", (req, res) => {
+  req.logout(() => {
+    req.session.destroy(() => res.redirect("/"));
+  });
+});
+
+
+// ================== DEBUG ==================
+console.log("GOOGLE_CLIENT_ID loaded:", !!process.env.GOOGLE_CLIENT_ID);
+console.log("Mongo URI loaded:", !!process.env.MONGO_URI);
+console.log("Session Secret loaded:", !!process.env.SESSION_SECRET);
+console.log("JWT Secret loaded:", !!process.env.JWT_SECRET);
+
+// ================== MIDDLEWARE ==================
+app.set("trust proxy", 1); // required on Render/Heroku
+
+// Body parsing middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Static file serving
 app.use(express.static(path.join(__dirname, "public")));
 
-// Session management
 app.use(
   session({
     name: "connect.sid",
@@ -83,25 +149,23 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      httpOnly: true,                           // JS cannot access cookie
+      httpOnly: true,
       secure: process.env.NODE_ENV === "production", // HTTPS only in prod
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", 
-      maxAge: 7 * 24 * 60 * 60 * 1000,          // 7 days
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // allow cross-site in prod
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     },
     store: MongoStore.create({
-      mongoUrl: process.env.MONGODB_URI,
-      collectionName: "sessions",
+      mongoUrl: process.env.MONGODB_URI || 'mongodb+srv://Johnstone2020:Johnstone2020@cluster0.mozeuc4.mongodb.net/maximum_gamers?retryWrites=true&w=majority&appName=Cluster0',
+      collectionName: 'sessions'
     }),
   })
 );
 
-// Debug (only in dev)
-if (process.env.NODE_ENV !== "production") {
-  app.use((req, res, next) => {
-    console.log("🔎 Session debug:", req.session);
-    next();
-  });
-}
+// Debug middleware
+app.use((req, res, next) => {
+  console.log("🔎 Session debug:", req.session);
+  next();
+});
 
 // ================== AUTH MIDDLEWARE ==================
 async function ensureAuthenticated(req, res, next) {
@@ -139,90 +203,18 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-// ================== AI ASSISTANT ==================
-const aiLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 20, // limit each IP to 20 requests per window
-  message: "Too many AI requests, slow down."
-});
 
-app.post("/ai/ask", aiLimiter, async (req, res) => {
-  try {
-    const userMessage = (req.body.message || "").trim();
-    if (!userMessage) {
-      return res.status(400).json({ success: false, message: "Message required" });
-    }
-
-    const systemPrompt = {
-      role: "system",
-      content: "You are an assistant for Maximum Gamers. Be concise, helpful, and prioritize product/loan/booking info."
-    };
-
-    // Try multiple models in order
-    const models = ["gpt-4o-mini", "gpt-4o", "gpt-4.1-mini"];
-    let reply = null;
-    let lastError = null;
-
-    for (const model of models) {
-      try {
-        console.log(`🔎 Trying model: ${model}`);
-        const resp = await openai.chat.completions.create({
-          model,
-          messages: [systemPrompt, { role: "user", content: userMessage }],
-          max_tokens: 300,
-          temperature: 0.3
-        });
-
-        reply = resp.choices?.[0]?.message?.content?.trim();
-        if (reply) break; // success → stop trying
-      } catch (err) {
-        lastError = err.response?.data?.error?.message || err.message;
-        console.error(`❌ Model ${model} failed:`, lastError);
-      }
-    }
-
-    if (!reply) {
-      return res.status(500).json({
-        success: false,
-        message: `AI assistant failed. Last error: ${lastError || "Unknown error"}`
-      });
-    }
-
-    res.json({ success: true, reply });
-
-  } catch (err) {
-    console.error("🔥 AI route fatal error:", err);
-    res.status(500).json({
-      success: false,
-      message: err.response?.data?.error?.message || err.message || "AI assistant failed"
-    });
-  }
-});
-
-
-
-// ================== MULTER UPLOAD ==================
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, "../public/uploads"));
-  },
-  filename: (req, file, cb) => {
-    // Use Date.now() + original file name for uniqueness
-    cb(null, Date.now() + "-" + file.originalname);
+// Cloudinary storage engine for multer
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: "loans",
+    public_id: (req, file) =>
+      Date.now() + "-" + file.originalname.split(".")[0],
   },
 });
 
-const upload = multer({
-  storage,
-  fileFilter: (req, file, cb) => {
-    // Only allow images
-    if (!file.mimetype.startsWith("image/")) {
-      return cb(new Error("Only image files are allowed"));
-    }
-    cb(null, true);
-  },
-});
-
+const upload = multer({ storage }); 
 
 // ================== VIEW ENGINE ==================
 app.set("view engine", "hbs");
@@ -397,8 +389,6 @@ app.post("/admin/users/update/:id", async (req, res) => {
 });
 
 
-
-
 // ================== ADMIN PRODUCTS JSON ==================
 app.get("/admin/products/json", async (req, res) => {
   if (!req.session.user || req.session.user.role !== "admin") 
@@ -568,9 +558,10 @@ app.post("/loans", upload.single("itemImage"), async (req, res) => {
       return res.redirect("/login");
     }
 
+    // When using CloudinaryStorage, req.file.path is the full Cloudinary URL
     const loan = await Loan.create({
       user: req.session.user.id,
-      itemImage: req.file ? req.file.filename : null,
+      itemImage: req.file ? req.file.path : null,   //  Cloudinary URL instead of local filename
       description: req.body.description,
       itemValue: req.body.itemValue,
       loanAmount: req.body.loanAmount,
@@ -578,7 +569,7 @@ app.post("/loans", upload.single("itemImage"), async (req, res) => {
       status: "Pending",
     });
 
-    //  broadcast new loan to admins (match frontend listener)
+    // Broadcast new loan to admins
     io.emit("loanCreated", loan);
 
     if (req.headers.accept?.includes("application/json")) {
@@ -616,7 +607,11 @@ app.get("/admin/loans", async (req, res) => {
     return res.status(403).send("Access Denied");
   }
   try {
-    const loans = await Loan.find().populate("user", "name email").sort({ createdAt: -1 });
+    const loans = await Loan.find()
+      .populate("user", "name email")
+      .sort({ createdAt: -1 });
+
+    // images are already part of Loan schema, so they’ll be available here
     res.render("admin-loans", { loans });
   } catch (err) {
     console.error("Error loading admin loans:", err);
@@ -630,8 +625,12 @@ app.get("/admin/loans/json", async (req, res) => {
     return res.status(403).json({ success: false, message: "Access denied" });
   }
   try {
-    const loans = await Loan.find().populate("user", "name email").sort({ createdAt: -1 });
-    res.json(loans); // always array
+    const loans = await Loan.find()
+      .populate("user", "name email")
+      .sort({ createdAt: -1 });
+
+    // includes images array
+    res.json(loans);
   } catch (err) {
     console.error("Error fetching admin loans:", err);
     res.status(500).json([]);
@@ -652,9 +651,11 @@ app.post("/admin/loans/:id/status", async (req, res) => {
       { new: true }
     ).populate("user", "name email");
 
-    if (!loan) return res.status(404).json({ success: false, message: "Loan not found" });
+    if (!loan) {
+      return res.status(404).json({ success: false, message: "Loan not found" });
+    }
 
-    // broadcast update (match frontend listener)
+    // Broadcast update (frontend can refresh automatically)
     io.emit("loanUpdated", loan);
 
     res.json({ success: true, loan });
@@ -667,84 +668,127 @@ app.post("/admin/loans/:id/status", async (req, res) => {
 
 // ================== USER AUTH ==================
 
-// ================== SIGNUP ==================
+// ================== SIGNUP (JWT Only) ==================
 app.post("/signup", async (req, res) => {
   try {
     const { name, email, phone, password, studentId } = req.body;
 
-    if (await User.findOne({ $or: [{ email }, { phone }] })) {
-      return res.status(400).send("User already exists");
-    }
+    const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
+    if (existingUser) return res.status(400).send("User already exists");
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    await User.create({
+    const newUser = await User.create({
       name,
       email,
       phone,
       password: hashedPassword,
       role: "user",
       studentId,
-      active: true, // ensure active by default
+      active: false,
     });
 
-    res.redirect("/user");
+    // Generate JWT
+    const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "1h" });
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+    });
+
+    const baseUrl = process.env.BASE_URL || "http://localhost:3000";
+    const verifyUrl = `${baseUrl}/verify-email-jwt?token=${token}`;
+
+    await transporter.sendMail({
+      to: email,
+      subject: "Verify your email",
+      html: `<p>Hello ${name},</p>
+             <p>Please verify your email by clicking the link below:</p>
+             <a href="${verifyUrl}">${verifyUrl}</a>`,
+    });
+
+    res.send("Signup successful! Please check your email to verify your account.");
   } catch (err) {
-    res.status(500).send(err.message);
+    console.error("Signup error:", err);
+    res.status(500).send("Error during signup. Please try again.");
   }
 });
+
+// ================== EMAIL VERIFICATION ==================
+app.get("/verify-email-jwt", async (req, res) => {
+  try {
+    const { token } = req.query;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = await User.findOne({
+      email: decoded.email,
+      verifyToken: token,
+      verifyTokenExpires: { $gt: Date.now() },
+    });
+
+    if (!user) return res.status(400).send("Invalid or expired token");
+
+    // Activate account
+    user.active = true;
+    user.verifyToken = undefined;
+    user.verifyTokenExpires = undefined;
+    await user.save();
+
+    // Auto-login: set session
+    req.session.user = { id: user._id, name: user.name, role: user.role };
+
+    // Redirect directly to user or admin dashboard
+    res.redirect(user.role === "admin" ? "/admin" : "/user");
+  } catch (err) {
+    console.error("Email verification error:", err);
+    res.status(500).send("Error verifying email. Please try again.");
+  }
+});
+
 
 // ================== LOGIN ==================
 app.post("/login", async (req, res) => {
   try {
-    const { name, password } = req.body;
-    const user = await User.findOne({ name });
+    const { email, password } = req.body;
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
 
-    if (!user) return res.status(400).send("User not found");
-
-    if (!user.active) {
-      return res.status(403).send("Your account is suspended. Please contact admin.");
-    }
+    if (!user) return res.status(400).send("Invalid email or password");
+    if (!user.active) return res.status(403).send("Please verify your email or contact admin");
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).send("Invalid password");
-    }
+    if (!isMatch) return res.status(400).send("Invalid email or password");
 
-    //  Store session
-    req.session.user = { id: user._id, name: user.name, role: user.role };
+    // Store minimal session data
+    req.session.userId = user._id;
 
-    //  Redirect based on actual role, not submitted role
-    res.redirect(user.role === "admin" ? "/admin" : "/user");
+    // Role-based redirect
+    const redirectMap = { admin: "/admin", user: "/user" };
+    res.redirect(redirectMap[user.role] || "/");
   } catch (err) {
-    res.status(500).send(err.message);
+    console.error("Login error:", err);
+    res.status(500).send("Login failed. Please try again.");
   }
 });
 
 // ================== RESET PASSWORD ==================
 app.post("/reset-password", async (req, res) => {
   try {
-    const { name, email, newPassword, confirmPassword } = req.body;
+    const { email, newPassword, confirmPassword } = req.body;
 
-    if (newPassword !== confirmPassword) {
+    if (newPassword !== confirmPassword)
       return res.status(400).send("Passwords do not match");
-    }
 
-    const user = await User.findOne({ name, email });
-    if (!user) {
-      return res.status(400).send("Invalid username or email");
-    }
-
-    if (!user.active) {
-      return res.status(403).send("Your account is suspended. Please contact admin.");
-    }
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).send("Invalid email");
+    if (!user.active) return res.status(403).send("Please verify your email or contact admin");
 
     user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
 
-    res.redirect("/user");
+    res.send("Password reset successful. You can now login.");
   } catch (err) {
-    res.status(500).send(err.message);
+    console.error("Reset password error:", err);
+    res.status(500).send("Error resetting password. Please try again.");
   }
 });
 
@@ -1077,7 +1121,7 @@ app.get("/profile", async (req, res) => {
   }
 });
 
-// Update profile details (with optional image upload)
+// Update profile (with Cloudinary upload)
 app.post("/profile/update", upload.single("image"), async (req, res) => {
   if (!req.session.user) return res.status(403).send("Login required");
 
@@ -1086,9 +1130,10 @@ app.post("/profile/update", upload.single("image"), async (req, res) => {
   try {
     const updateData = { name, phone, studentId };
 
-    // If a new image is uploaded, save it
+    // If a new image is uploaded
     if (req.file) {
-      updateData.image = "/uploads/" + req.file.filename;
+      updateData.image = req.file.path;       // Cloudinary secure URL
+      updateData.imageId = req.file.filename; // Cloudinary public_id
     }
 
     await User.findByIdAndUpdate(req.session.user.id, updateData, { new: true });
@@ -1106,15 +1151,23 @@ app.get("/profile/remove-image", async (req, res) => {
 
   try {
     const user = await User.findById(req.session.user.id);
-    user.image = null; // reset to null
+
+    // Delete from Cloudinary if image exists
+    if (user.imageId) {
+      await cloudinary.uploader.destroy(user.imageId);
+    }
+
+    // Reset in DB
+    user.image = null;
+    user.imageId = null;
     await user.save();
+
     res.redirect("/profile");
   } catch (err) {
     console.error("Remove image error:", err);
     res.status(500).send("Failed to remove image");
   }
 });
-
 
 
 // ================== OTHER PAGES ==================

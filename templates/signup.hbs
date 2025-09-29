@@ -7,7 +7,6 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-
   <style>
     body {
       background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
@@ -17,308 +16,192 @@
       padding: 20px 0;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
-    
-    .signup-container {
-      max-width: 800px;
-      margin: 0 auto;
-    }
-    
-    .signup-card {
-      border: none;
-      border-radius: 20px;
-      overflow: hidden;
-      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
-    }
-    
+    .signup-container { max-width: 800px; margin: 0 auto; }
+    .signup-card { border: none; border-radius: 20px; overflow: hidden;
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2); }
     .signup-left {
-      background: url('https://images.unsplash.com/photo-1550745165-9bc0b252726f?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80') center center/cover no-repeat;
-      padding: 0;
+      background: url('https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=800&q=80') center center/cover no-repeat;
       position: relative;
     }
-    
     .signup-left::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       background: linear-gradient(to bottom, rgba(106, 17, 203, 0.7), rgba(37, 117, 252, 0.7));
     }
-    
-    .signup-left-content {
-      position: relative;
-      z-index: 1;
-      color: white;
-      padding: 40px;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-    
-    .signup-right {
-      padding: 40px;
-      background: white;
-    }
-    
-    .logo {
-      font-weight: 700;
-      font-size: 28px;
-      color: #6a11cb;
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
+    .signup-left-content { position: relative; z-index: 1; color: white; padding: 40px; height: 100%;
+      display: flex; flex-direction: column; justify-content: center; }
     .form-control {
-      border-radius: 10px;
-      padding: 12px 15px;
-      border: 2px solid #eef0f3;
-      transition: all 0.3s;
+      border-radius: 10px; padding: 12px 15px; border: 2px solid #eef0f3; transition: all 0.3s;
     }
-    
     .form-control:focus {
-      border-color: #6a11cb;
-      box-shadow: 0 0 0 0.25rem rgba(106, 17, 203, 0.25);
+      border-color: #6a11cb; box-shadow: 0 0 0 0.25rem rgba(106, 17, 203, 0.25);
     }
-    
-    .input-group-text {
-      background: white;
-      border: 2px solid #eef0f3;
-      border-right: none;
-      border-radius: 10px 0 0 10px;
-    }
-    
-    .form-label {
-      font-weight: 600;
-      color: #495057;
-      margin-bottom: 8px;
-    }
-    
     .btn-signup {
       background: linear-gradient(to right, #6a11cb, #2575fc);
-      border: none;
-      padding: 12px;
-      border-radius: 10px;
-      font-weight: 600;
-      transition: all 0.3s;
+      border: none; padding: 12px; border-radius: 10px;
+      font-weight: 600; transition: all 0.3s;
     }
-    
-    .btn-signup:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(106, 17, 203, 0.4);
+    .btn-signup:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(106, 17, 203, 0.4); }
+    .btn-google {
+      background: #fff; border: 2px solid #ddd; padding: 10px; border-radius: 10px;
+      font-weight: 600; color: #444; transition: all 0.3s;
     }
-    
-    .feature-list {
-      list-style: none;
-      padding: 0;
-    }
-    
-    .feature-list li {
-      margin-bottom: 15px;
-      display: flex;
-      align-items: center;
-    }
-    
-    .feature-list i {
-      background: rgba(255, 255, 255, 0.2);
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-right: 10px;
-    }
-    
-    .password-toggle {
-      cursor: pointer;
-      position: absolute;
-      right: 15px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #6c757d;
-    }
-    
-    .password-container {
-      position: relative;
-    }
-    
-    .form-check-input:checked {
-      background-color: #6a11cb;
-      border-color: #6a11cb;
-    }
+    .btn-google:hover { background: #f8f8f8; }
+    .password-toggle { cursor: pointer; position: absolute; right: 15px; top: 50%;
+      transform: translateY(-50%); color: #6c757d; }
+    .password-container { position: relative; }
+    .form-check-input:checked { background-color: #6a11cb; border-color: #6a11cb; }
   </style>
 </head>
 <body>
   <div class="container signup-container">
     <div class="card signup-card">
       <div class="row g-0">
-        <!-- Left side with branding -->
+        <!-- Left side -->
         <div class="col-md-5 d-none d-md-block signup-left">
           <div class="signup-left-content">
             <h2 class="mb-4">Join Maximum Gamers Community</h2>
             <p>Create an account to access exclusive features:</p>
-            <ul class="feature-list mt-4">
-              <li><i class="fas fa-gamepad"></i> Track your gaming progress</li>
-              <li><i class="fas fa-trophy"></i> Compete in tournaments</li>
-              <li><i class="fas fa-users"></i> Connect with other gamers</li>
-              <li><i class="fas fa-gift"></i> Get exclusive rewards</li>
+            <ul class="mt-4">
+              <li><i class="fas fa-gamepad me-2"></i> Track your gaming progress</li>
+              <li><i class="fas fa-trophy me-2"></i> Compete in tournaments</li>
+              <li><i class="fas fa-users me-2"></i> Connect with other gamers</li>
+              <li><i class="fas fa-gift me-2"></i> Get exclusive rewards</li>
             </ul>
-            <div class="mt-5">
-              <div class="d-flex">
-                <div class="me-3">
-                  <i class="fas fa-quote-left fa-2x opacity-50"></i>
-                </div>
-                <div>
-                  <p class="fst-italic">"This platform transformed how I connect with fellow gamers and track my progress!"</p>
-                  <div class="d-flex align-items-center">
-                    <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="User" class="rounded-circle me-2" width="30">
-                    <span>Alex Chen, Pro Gamer</span>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
-        
-        <!-- Right side with form -->
-        <div class="col-md-7 signup-right">
-          <div class="logo">
-            <i class="fas fa-gamepad me-2"></i> Maximum Gamers
-          </div>
-          <h3 class="text-center mb-4">Create Your Account</h3>
-          
-          <form action="/signup" method="POST">
+
+        <!-- Right side form -->
+        <div class="col-md-7 p-4 bg-white">
+          <form id="signupForm">
             <div class="row">
-              <div class="col-md-6">
-                <!-- Name -->
-                <div class="mb-3">
-                  <label for="name" class="form-label">User Name</label>
-                  <div class="input-group">
-                    <span class="input-group-text"><i class="fas fa-user"></i></span>
-                    <input type="text" id="name" name="name" class="form-control" placeholder="Enter your full name" required>
-                  </div>
-                </div>
+              <div class="col-md-6 mb-3">
+                <label for="name" class="form-label">User Name</label>
+                <input type="text" id="name" name="name" class="form-control" required>
               </div>
-              
-              <div class="col-md-6">
-                <!-- Student ID -->
-                <div class="mb-3">
-                  <label for="studentId" class="form-label">Student ID</label>
-                  <div class="input-group">
-                    <span class="input-group-text"><i class="fas fa-id-card"></i></span>
-                    <input type="text" id="studentId" name="studentId" class="form-control" placeholder="Enter student ID" required>
-                  </div>
-                </div>
+              <div class="col-md-6 mb-3">
+                <label for="studentId" class="form-label">Student ID(or Nil)</label>
+                <input type="text" id="studentId" name="studentId" class="form-control" required>
               </div>
             </div>
-            
-            <!-- Email -->
             <div class="mb-3">
-              <label for="email" class="form-label">Email Address</label>
-              <div class="input-group">
-                <span class="input-group-text"><i class="fas fa-envelope"></i></span>
-                <input type="email" id="email" name="email" class="form-control" placeholder="Enter your email" required>
-              </div>
+              <label for="email" class="form-label">Email</label>
+              <input type="email" id="email" name="email" class="form-control" required>
             </div>
-            
-            <!-- Phone -->
             <div class="mb-3">
-              <label for="phone" class="form-label">Phone Number</label>
-              <div class="input-group">
-                <span class="input-group-text"><i class="fas fa-phone"></i></span>
-                <input type="tel" id="phone" name="phone" class="form-control" placeholder="Enter your phone" required>
-              </div>
+              <label for="phone" class="form-label">Phone</label>
+              <input type="tel" id="phone" name="phone" class="form-control" required>
             </div>
-            
-            <!-- Password -->
-            <div class="mb-3">
+            <div class="mb-3 password-container">
               <label for="password" class="form-label">Password</label>
-              <div class="password-container">
-                <div class="input-group">
-                  <span class="input-group-text"><i class="fas fa-lock"></i></span>
-                  <input type="password" id="password" name="password" class="form-control" placeholder="Create a strong password" required>
-                </div>
-                <span class="password-toggle" id="passwordToggle">
-                  <i class="fas fa-eye"></i>
-                </span>
-              </div>
-              <div class="form-text">Must be at least 8 characters with numbers and symbols</div>
+              <input type="password" id="password" name="password" class="form-control" required>
+              <span class="password-toggle" id="passwordToggle"><i class="fas fa-eye"></i></span>
+              <div class="form-text">At least 6 chars, must include a letter and a number</div>
             </div>
-            
-            <!-- Confirm Password -->
-            <div class="mb-3">
+            <div class="mb-3 password-container">
               <label for="confirmPassword" class="form-label">Confirm Password</label>
-              <div class="password-container">
-                <div class="input-group">
-                  <span class="input-group-text"><i class="fas fa-lock"></i></span>
-                  <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" placeholder="Confirm your password" required>
-                </div>
-                <span class="password-toggle" id="confirmPasswordToggle">
-                  <i class="fas fa-eye"></i>
-                </span>
-              </div>
+              <input type="password" id="confirmPassword" class="form-control" required>
+              <span class="password-toggle" id="confirmPasswordToggle"><i class="fas fa-eye"></i></span>
             </div>
-            
-            <!-- Terms Agreement -->
             <div class="mb-3 form-check">
               <input type="checkbox" class="form-check-input" id="terms" required>
-              <label class="form-check-label" for="terms">I agree to the <a href="/terms">Terms of Service</a> and <a href="/privacy-policy">Privacy Policy</a></label>
+              <label class="form-check-label" for="terms">I agree to the <a href="/terms">Terms</a> & <a href="/privacy-policy">Privacy Policy</a></label>
             </div>
-            
-            <!-- Submit -->
-            <div class="d-grid gap-2 mt-4">
-              <button type="submit" class="btn btn-signup btn-lg">Create Account</button>
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-signup btn-lg" id="signupBtn">
+                <span id="btnText">Create Account</span>
+              </button>
+              <div class="text-center fw-bold my-2">OR</div>
+              <button type="button" class="btn btn-google btn-lg" onclick="window.location.href='/auth/google'">
+                <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" width="20" class="me-2">
+                Sign up with Google
+              </button>
             </div>
+            <div id="signupMessage" class="mt-3 text-center fw-bold"></div>
           </form>
-          
-          <!-- Login Link -->
-          <div class="text-center mt-4">
-            <p>Already have an account? <a href="/login" class="text-decoration-none fw-bold">Log In</a></p>
-          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <script>
-    // Password toggle functionality
-    document.getElementById('passwordToggle').addEventListener('click', function() {
-      const passwordInput = document.getElementById('password');
-      const icon = this.querySelector('i');
-      
-      if (passwordInput.type === 'password') {
-        passwordInput.type = 'text';
-        icon.classList.remove('fa-eye');
-        icon.classList.add('fa-eye-slash');
+<script>
+  // Toggle passwords
+  function setupToggle(toggleId, inputId) {
+    document.getElementById(toggleId).addEventListener("click", function () {
+      const input = document.getElementById(inputId);
+      const icon = this.querySelector("i");
+      if (input.type === "password") {
+        input.type = "text"; icon.classList.replace("fa-eye", "fa-eye-slash");
       } else {
-        passwordInput.type = 'password';
-        icon.classList.remove('fa-eye-slash');
-        icon.classList.add('fa-eye');
+        input.type = "password"; icon.classList.replace("fa-eye-slash", "fa-eye");
       }
     });
-    
-    // Confirm password toggle functionality
-    document.getElementById('confirmPasswordToggle').addEventListener('click', function() {
-      const confirmPasswordInput = document.getElementById('confirmPassword');
-      const icon = this.querySelector('i');
-      
-      if (confirmPasswordInput.type === 'password') {
-        confirmPasswordInput.type = 'text';
-        icon.classList.remove('fa-eye');
-        icon.classList.add('fa-eye-slash');
-      } else {
-        confirmPasswordInput.type = 'password';
-        icon.classList.remove('fa-eye-slash');
-        icon.classList.add('fa-eye');
+  }
+  setupToggle("passwordToggle", "password");
+  setupToggle("confirmPasswordToggle", "confirmPassword");
+
+  // Handle signup (local)
+  document.getElementById("signupForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
+    const pass = document.getElementById("password").value;
+    const confirm = document.getElementById("confirmPassword").value;
+    const msg = document.getElementById("signupMessage");
+    const btn = document.getElementById("signupBtn");
+    const btnText = document.getElementById("btnText");
+
+    // Validate password
+    if (pass !== confirm) {
+      msg.textContent = "❌ Passwords do not match.";
+      msg.style.color = "red";
+      return;
+    }
+    const mediumPass = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
+    if (!mediumPass.test(pass)) {
+      msg.textContent = "❌ Weak password: must include at least 1 letter and 1 number, 6+ chars.";
+      msg.style.color = "red";
+      return;
+    }
+
+    // Loading state
+    btn.disabled = true;
+    btnText.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Creating...';
+
+    // Collect form data
+    const formData = {
+      name: document.getElementById("name").value,
+      studentId: document.getElementById("studentId").value,
+      email: document.getElementById("email").value,
+      phone: document.getElementById("phone").value,
+      password: pass
+    };
+
+    try {
+      const res = await fetch("/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
+      });
+
+      const text = await res.text();
+      msg.textContent = text;
+      msg.style.color = res.ok ? "green" : "red";
+
+      //  Redirect after success
+      if (res.ok) {
+        setTimeout(() => {
+          window.location.href = "/user"; 
+        }, 1500);
       }
-    });
-  </script>
+
+    } catch (err) {
+      msg.textContent = "⚠ Signup failed. Try again.";
+      msg.style.color = "red";
+    } finally {
+      btn.disabled = false;
+      btnText.textContent = "Create Account";
+    }
+  });
+</script>
+
 </body>
 </html>
-
-
 

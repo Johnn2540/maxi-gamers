@@ -240,29 +240,39 @@
       </div>
 
       <!-- LOANS TAB -->
-      <div class="tab-pane fade" id="loans">
-        <h2 class="mb-4">💰 Manage Loans</h2>
-        <div class="table-responsive">
-          <table class="table table-striped table-hover align-middle">
-            <thead class="table-dark">
-              <tr>
-                <th>#</th>
-                <th>Image</th>
-                <th>Description</th>
-                <th>Value</th>
-                <th>Requested</th>
-                <th>Months</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="adminLoanTable">
-              <tr><td colspan="8" class="text-center">Loading loans...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+<div class="tab-pane fade" id="loans">
+  <h2 class="mb-4">💰 Manage Loans</h2>
+  <div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
+      <thead class="table-dark">
+        <tr>
+          <th>#</th>
+          <th>Image</th>
+          <th>Description</th>
+          <th>Item Value</th>
+          <th>Loan Requested</th>
+          <th>Period (Months)</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="adminLoanTable">
+        <tr><td colspan="8" class="text-center">Loading loans...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
 
+<!-- Loan Image Modal (place it here, outside the table, but inside body) -->
+<div class="modal fade" id="loanImageModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content bg-dark text-center">
+      <div class="modal-body">
+        <img id="loanModalImg" src="" class="img-fluid rounded shadow" alt="Loan Item">
+      </div>
+    </div>
+  </div>
+</div>
       <!-- BANNER-CONTENT TAB -->
       <div class="tab-pane fade" id="content">
         <h2 class="mb-4">📢 Manage Top Bar Messages</h2>
@@ -868,98 +878,127 @@
     document.addEventListener('DOMContentLoaded', loadProducts);
 
     // ===== LOANS TAB =====
-    const adminLoanTable = document.getElementById("adminLoanTable");
+const adminLoanTable = document.getElementById("adminLoanTable");
 
-    // Render one loan row
-    function renderAdminLoanRow(loan) {
-      return `
-        <tr id="loan-${loan._id}">
-          <td>${loan._id.slice(-4)}</td>
-          <td>${loan.itemImage ? `<img src="/uploads/${loan.itemImage}" width="60" class="rounded">` : "—"}</td>
-          <td>${loan.description}</td>
-          <td>Ksh ${loan.itemValue}</td>
-          <td>Ksh ${loan.loanAmount}</td>
-          <td>${loan.loanPeriod} months</td>
-          <td class="loan-status">
-            <span class="badge ${
-              loan.status === "Approved"
-                ? "bg-success"
-                : loan.status === "Rejected"
-                ? "bg-danger"
-                : loan.status === "Visit Shop"
-                ? "bg-info"
-                : "bg-warning"
-            }">
-              ${loan.status}
-            </span>
-          </td>
-          <td>
-            <button class="btn btn-success btn-sm me-1" onclick="updateLoan('${loan._id}','Approved')">Approve</button>
-            <button class="btn btn-info btn-sm me-1" onclick="updateLoan('${loan._id}','Visit Shop')">Visit Shop</button>
-            <button class="btn btn-danger btn-sm" onclick="updateLoan('${loan._id}','Rejected')">Reject</button>
-          </td>
-        </tr>
-      `;
-    }
-
-    // Load loans initially
-    async function loadAdminLoans() {
-      try {
-        const res = await fetch("/admin/loans/json");
-        const loans = await res.json();
-
-        if (!loans.length) {
-          adminLoanTable.innerHTML =
-            '<tr><td colspan="8" class="text-center">No loans yet</td></tr>';
-          return;
+// Render one loan row
+function renderAdminLoanRow(loan) {
+  return `
+    <tr id="loan-${loan._id}">
+      <td>${loan._id.slice(-4)}</td>
+      <td>
+        ${
+          loan.itemImage
+            ? `<img src="${loan.itemImage}" width="60" class="rounded shadow-sm loan-img"
+                 alt="Loan Item"
+                 data-bs-toggle="modal" data-bs-target="#loanImageModal"
+                 onclick="showLoanImage('${loan.itemImage}')">`
+            : "—"
         }
+      </td>
+      <td>${loan.description || "N/A"}</td>
+      <td>Ksh ${loan.itemValue?.toLocaleString() || 0}</td>
+      <td>Ksh ${loan.loanAmount?.toLocaleString() || 0}</td>
+      <td>${loan.loanPeriod || 0} months</td>
+      <td class="loan-status">
+        <span class="badge ${
+          loan.status === "Approved"
+            ? "bg-success"
+            : loan.status === "Rejected"
+            ? "bg-danger"
+            : loan.status === "Visit Shop"
+            ? "bg-info"
+            : "bg-warning text-dark"
+        }">
+          ${loan.status}
+        </span>
+      </td>
+      <td>
+        <button class="btn btn-success btn-sm me-1"
+          onclick="updateLoan('${loan._id}','Approved')"
+          ${loan.status !== "Pending" && loan.status !== "Visit Shop" ? "disabled" : ""}>
+          Approve
+        </button>
+        <button class="btn btn-info btn-sm me-1"
+          onclick="updateLoan('${loan._id}','Visit Shop')"
+          ${loan.status !== "Pending" ? "disabled" : ""}>
+          Visit Shop
+        </button>
+        <button class="btn btn-danger btn-sm"
+          onclick="updateLoan('${loan._id}','Rejected')"
+          ${loan.status !== "Pending" && loan.status !== "Visit Shop" ? "disabled" : ""}>
+          Reject
+        </button>
+      </td>
+    </tr>
+  `;
+}
 
-        adminLoanTable.innerHTML = loans.map(renderAdminLoanRow).join("");
-      } catch (error) {
-        console.error("Error loading loans:", error);
-        adminLoanTable.innerHTML =
-          '<tr><td colspan="8" class="text-center text-danger">Error loading loans</td></tr>';
-      }
+// Helper for modal
+function showLoanImage(url) {
+  document.getElementById("loanModalImg").src = url;
+}
+
+// Load loans initially
+async function loadAdminLoans() {
+  try {
+    const res = await fetch("/admin/loans/json");
+    const loans = await res.json();
+
+    if (!loans.length) {
+      adminLoanTable.innerHTML =
+        '<tr><td colspan="8" class="text-center">No loans yet</td></tr>';
+      return;
     }
 
-    // Admin updates loan status
-    async function updateLoan(id, status) {
-      try {
-        const res = await fetch(`/admin/loans/${id}/status`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status }),
-        });
+    adminLoanTable.innerHTML = loans.map(renderAdminLoanRow).join("");
+  } catch (error) {
+    console.error("Error loading loans:", error);
+    adminLoanTable.innerHTML =
+      '<tr><td colspan="8" class="text-center text-danger">⚠️ Error loading loans</td></tr>';
+  }
+}
 
-        const data = await res.json();
-        if (data.success) {
-          loadAdminLoans(); // Reload to see the updated status
-        } else {
-          alert("❌ Failed to update loan status");
-        }
-      } catch (error) {
-        console.error("Error updating loan:", error);
-        alert("Failed to update loan status");
-      }
-    }
-
-    // Real-time: new loan added
-    socket.on("loanCreated", (loan) => {
-      if (!document.getElementById(`loan-${loan._id}`)) {
-        adminLoanTable.innerHTML =
-          renderAdminLoanRow(loan) + adminLoanTable.innerHTML; // prepend newest
-      }
+// Admin updates loan status
+async function updateLoan(id, status) {
+  try {
+    const res = await fetch(`/admin/loans/${id}/status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
     });
 
-    // Real-time: loan updated
-    socket.on("loanUpdated", (loan) => {
-      const row = document.getElementById(`loan-${loan._id}`);
-      if (row) {
-        row.outerHTML = renderAdminLoanRow(loan);
-      } else {
-        loadAdminLoans(); // fallback if row not present
-      }
-    });
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById(`loan-${id}`).outerHTML = renderAdminLoanRow(data.loan);
+    } else {
+      alert("❌ Failed to update loan status: " + (data.message || ""));
+    }
+  } catch (error) {
+    console.error("Error updating loan:", error);
+    alert("⚠️ Failed to update loan status");
+  }
+}
+
+// Real-time: new loan added
+socket.on("loanCreated", (loan) => {
+  if (!document.getElementById(`loan-${loan._id}`)) {
+    adminLoanTable.insertAdjacentHTML("afterbegin", renderAdminLoanRow(loan));
+  }
+});
+
+// Real-time: loan updated
+socket.on("loanUpdated", (loan) => {
+  const row = document.getElementById(`loan-${loan._id}`);
+  if (row) {
+    row.outerHTML = renderAdminLoanRow(loan);
+  } else {
+    loadAdminLoans();
+  }
+});
+
+// Initial load
+loadAdminLoans();
+
 
     // ===== TOP BAR =====
     async function loadTopBar() {

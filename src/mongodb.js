@@ -1,18 +1,21 @@
 const mongoose = require("mongoose");
 require("dotenv").config();
 
-// ------------------ CONNECT TO MONGODB ------------------
-const MONGO_URI =
-  process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/LoginSignup";
+// ------------------ CONNECT TO MONGODB ATLAS ------------------
+const MONGO_URI = process.env.MONGO_URI; // MUST be set in .env
+
+if (!MONGO_URI) {
+  console.error("❌ MONGO_URI is not defined in .env");
+  process.exit(1); // stop the server if no Atlas URI is provided
+}
 
 mongoose
   .connect(MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
-  .then(() => console.log("MongoDB connected successfully"))
-  .catch(err => console.error("MongoDB connection error:", err));
-
+  .then(() => console.log(" Connected to MongoDB Atlas"))
+  .catch(err => console.error(" MongoDB Atlas connection error:", err));
 
 // ------------------ SCHEMAS ------------------
 
@@ -21,14 +24,37 @@ const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    phone: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
+
+    // Phone required only for local signup
+    phone: { type: String, unique: true, sparse: true },
+
+    // Password optional for Google login
+    password: { 
+      type: String,
+      required: false,
+      validate: {
+        validator: function (value) {
+          if (!value) return true; // skip validation if no password (Google users)
+          // Medium strength: at least 6 chars, must include letters + numbers
+          return /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/.test(value);
+        },
+        message:
+          "Password must be at least 6 characters long and include at least one letter and one number."
+      }
+    },
+
     role: { type: String, enum: ["user", "admin"], default: "user" },
     active: { type: Boolean, default: true },
     studentId: { type: String },
-    image: { type: String, default: null }, // Profile image URL/path
+
+    // Profile image
+    image: { type: String, default: null },
+    imageId: { type: String, default: null },
+
+    // For Google OAuth
+    googleId: { type: String, unique: true, sparse: true },
   },
-  { timestamps: true } 
+  { timestamps: true }
 );
 
 // PRODUCT SCHEMA
@@ -48,19 +74,21 @@ const leaderboardSchema = new mongoose.Schema({
 });
 
 // BOOKING SCHEMA
-const bookingSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  game: { type: String, required: true },
-  console: { type: String, required: true },
-  date: { type: Date, required: true },
-  timeSlot: { type: String, required: true },
-  status: {
-    type: String,
-    enum: ["Pending", "Confirmed", "Completed", "Cancelled"],
-    default: "Pending",
-  }
-}, { timestamps: true });  // adds createdAt & updatedAt automatically
-
+const bookingSchema = new mongoose.Schema(
+  {
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    game: { type: String, required: true },
+    console: { type: String, required: true },
+    date: { type: Date, required: true },
+    timeSlot: { type: String, required: true },
+    status: {
+      type: String,
+      enum: ["Pending", "Confirmed", "Completed", "Cancelled"],
+      default: "Pending",
+    },
+  },
+  { timestamps: true }
+);
 
 // TOP BAR MESSAGE SCHEMA
 const topBarMessageSchema = new mongoose.Schema({
@@ -72,15 +100,16 @@ const topBarMessageSchema = new mongoose.Schema({
 
 // LOAN SCHEMA
 const loanSchema = new mongoose.Schema({
-  itemImage: String,
-  description: String,
-  itemValue: Number,
-  loanAmount: Number,
-  loanPeriod: Number,
-  status: { type: String, default: "Pending" },
-  user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  images: [String], // Cloudinary URLs (multiple images)
+  description: { type: String, required: true },
+  itemValue: { type: Number, required: true },
+  loanAmount: { type: Number, required: true },
+  loanPeriod: { type: Number, required: true },
+  status: { type: String, default: "Pending", enum: ["Pending", "Approved", "Rejected", "Completed"] },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   createdAt: { type: Date, default: Date.now },
 });
+
 
 // MESSAGE SCHEMA
 const messageSchema = new mongoose.Schema({
@@ -117,7 +146,6 @@ module.exports = {
   Loan,
   Message,
 };
-
 
 
 
