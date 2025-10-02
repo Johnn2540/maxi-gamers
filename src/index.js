@@ -34,13 +34,35 @@ cloudinary.config({
   api_secret: process.env.CLOUD_API_SECRET,
 });
 
+// ================== CLOUDINARY STORAGE ==================
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: async (req, file) => ({
+    folder: "loans",
+    public_id: Date.now() + "-" + file.originalname.split(".")[0],
+  }),
+});
+
+const upload = multer({ storage });
+
 // ================== SESSION CONFIG ==================
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "fallbacksecret",
+    name: "connect.sid",
+    secret: process.env.SESSION_SECRET || "yourSecretKey",
     resave: false,
     saveUninitialized: false,
-    store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    },
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGO_URI, // make sure this matches your .env
+      collectionName: "sessions",
+      ttl: 7 * 24 * 60 * 60, // 7 days
+    }),
   })
 );
 
@@ -55,7 +77,6 @@ passport.use(
     async (accessToken, refreshToken, profile, done) => {
       try {
         let user = await User.findOne({ googleId: profile.id });
-
         if (!user) {
           user = await User.create({
             googleId: profile.id,
@@ -66,7 +87,6 @@ passport.use(
             active: true,
           });
         }
-
         return done(null, user);
       } catch (err) {
         return done(err, null);
@@ -90,41 +110,34 @@ passport.deserializeUser(async (id, done) => {
 app.use(passport.initialize());
 app.use(passport.session());
 
-// ================== GOOGLE AUTH ROUTES ==================
-
-// 1. Start Google login
-app.get("/auth/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
+// Start Google OAuth login
+app.get('/auth/google',
+  passport.authenticate('google', { scope: ['profile', 'email'] })
 );
 
-// 2. Google callback
-app.get(
-  "/auth/google/callback",
-  passport.authenticate("google", { failureRedirect: "/login" }),
+// Google OAuth callback
+app.get('/auth/google/callback', 
+  passport.authenticate('google', { failureRedirect: '/login' }),
   (req, res) => {
-    // Set session after Google login
-    req.session.user = {
-      id: req.user._id,
-      name: req.user.name,
-      role: req.user.role
+    // Successful login, store user in session
+    req.session.user = { 
+      id: req.user._id, 
+      name: req.user.name, 
+      role: req.user.role 
     };
 
     // Redirect based on role
-    if (req.user.role === "admin") {
-      return res.redirect("/admin");
-    } else {
-      return res.redirect("/user");
-    }
+    if (req.user.role === 'admin') return res.redirect('/admin');
+    return res.redirect('/user');
   }
 );
 
-// 3. Logout
-app.get("/logout", (req, res) => {
-  req.logout(() => {
-    req.session.destroy(() => res.redirect("/"));
-  });
-});
 
+// ================== MIDDLEWARE ==================
+app.set("trust proxy", 1); // required on Render/Heroku
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, "public")));
 
 // ================== DEBUG ==================
 console.log("GOOGLE_CLIENT_ID loaded:", !!process.env.GOOGLE_CLIENT_ID);
@@ -132,42 +145,14 @@ console.log("Mongo URI loaded:", !!process.env.MONGO_URI);
 console.log("Session Secret loaded:", !!process.env.SESSION_SECRET);
 console.log("JWT Secret loaded:", !!process.env.JWT_SECRET);
 
-// ================== MIDDLEWARE ==================
-app.set("trust proxy", 1); // required on Render/Heroku
-
-// Body parsing middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Static file serving
-app.use(express.static(path.join(__dirname, "public")));
-
-app.use(
-  session({
-    name: "connect.sid",
-    secret: process.env.SESSION_SECRET || "yourSecretKey",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // HTTPS only in prod
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // allow cross-site in prod
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    },
-    store: MongoStore.create({
-      mongoUrl: process.env.MONGODB_URI || 'mongodb+srv://Johnstone2020:Johnstone2020@cluster0.mozeuc4.mongodb.net/maximum_gamers?retryWrites=true&w=majority&appName=Cluster0',
-      collectionName: 'sessions'
-    }),
-  })
-);
-
-// Debug middleware
-app.use((req, res, next) => {
-  console.log("🔎 Session debug:", req.session);
-  next();
-});
 
 // ================== AUTH MIDDLEWARE ==================
+
+/**
+ * Ensures that the user is logged in and active.
+ * Attaches the DB-fetched user to req.user.
+ * Optionally redirects users based on role.
+ */
 async function ensureAuthenticated(req, res, next) {
   if (!req.session.user) {
     return res.redirect("/login"); // Not logged in
@@ -177,18 +162,23 @@ async function ensureAuthenticated(req, res, next) {
     const user = await User.findById(req.session.user.id);
 
     if (!user) {
-      req.session.destroy(() => res.redirect("/login"));
+      req.session.destroy(() => res.status(403).send("User not found."));
       return;
     }
 
-    if (user.active === false) {
-      req.session.destroy(() =>
-        res.status(403).send("Your account is suspended.")
-      );
+    if (!user.active) {
+      req.session.destroy(() => res.status(403).send("Your account is suspended."));
       return;
     }
 
-    req.user = user; // attach full user for later use
+    req.user = user; // Attach user to request for downstream middleware
+
+    // Auto-redirect based on role if hitting the default dashboard route
+    if (req.path === "/dashboard" || req.path === "/") {
+      if ((user.role || "").toLowerCase() === "admin") return res.redirect("/admin");
+      return res.redirect("/user");
+    }
+
     next();
   } catch (err) {
     console.error("Auth check error:", err);
@@ -196,30 +186,25 @@ async function ensureAuthenticated(req, res, next) {
   }
 }
 
+/**
+ * Ensures the logged-in user is an admin.
+ * Use after ensureAuthenticated middleware.
+ */
 function requireAdmin(req, res, next) {
-  if (!req.user || req.user.role !== "admin") {
-    return res.status(403).send("Access denied");
+  if (!req.user || (req.user.role || "").toLowerCase() !== "admin") {
+    return res.status(403).send("Access denied. Admins only.");
   }
   next();
 }
 
-
-// Cloudinary storage engine for multer
-const storage = new CloudinaryStorage({
-  cloudinary,
-  params: {
-    folder: "loans",
-    public_id: (req, file) =>
-      Date.now() + "-" + file.originalname.split(".")[0],
-  },
-});
-
-const upload = multer({ storage }); 
+module.exports = {
+  ensureAuthenticated,
+  requireAdmin
+};
 
 // ================== VIEW ENGINE ==================
 app.set("view engine", "hbs");
 app.set("views", path.join(__dirname, "../templates"));
-
 
 // ================== HBS HELPERS ==================
 hbs.registerHelper("eq", (a, b) => a === b);
@@ -239,15 +224,6 @@ hbs.registerHelper("chunk", (array, size) => {
 io.on("connection", socket => {
   console.log("User connected:", socket.id);
 });
-
-
-app.use(session({
-  // ... other settings
-  store: MongoStore.create({
-    mongoUrl: process.env.MONGODB_URI || 'mongodb+srv://Johnstone2020:Johnstone2020@cluster0.mozeuc4.mongodb.net/maximum_gamers?retryWrites=true&w=majority&appName=Cluster0',
-    collectionName: 'sessions'
-  }),
-}));
 
 
 // ================== ROUTES ==================
@@ -666,18 +642,19 @@ app.post("/admin/loans/:id/status", async (req, res) => {
 });
 
 
-// ================== USER AUTH ==================
-
 // ================== SIGNUP (JWT Only) ==================
 app.post("/signup", async (req, res) => {
   try {
     const { name, email, phone, password, studentId } = req.body;
 
+    // Check if user already exists
     const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
     if (existingUser) return res.status(400).send("User already exists");
 
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Create new inactive user
     const newUser = await User.create({
       name,
       email,
@@ -685,12 +662,13 @@ app.post("/signup", async (req, res) => {
       password: hashedPassword,
       role: "user",
       studentId,
-      active: false,
+      active: false, // requires email verification
     });
 
-    // Generate JWT
+    // Generate JWT token for email verification
     const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "1h" });
 
+    // Prepare verification email
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
@@ -716,31 +694,39 @@ app.post("/signup", async (req, res) => {
 
 // ================== EMAIL VERIFICATION ==================
 app.get("/verify-email-jwt", async (req, res) => {
+  const { token } = req.query;
+
+  if (!token) return res.status(400).send("Verification token is missing.");
+
   try {
-    const { token } = req.query;
+    // Decode JWT token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const user = await User.findOne({
-      email: decoded.email,
-      verifyToken: token,
-      verifyTokenExpires: { $gt: Date.now() },
-    });
+    // Find user
+    const user = await User.findOne({ email: decoded.email });
+    if (!user) return res.status(400).send("Invalid or expired token.");
 
-    if (!user) return res.status(400).send("Invalid or expired token");
+    // Activate user if not already active
+    if (!user.active) {
+      user.active = true;
+      await user.save();
+    }
 
-    // Activate account
-    user.active = true;
-    user.verifyToken = undefined;
-    user.verifyTokenExpires = undefined;
-    await user.save();
-
-    // Auto-login: set session
+    // Auto-login via session
     req.session.user = { id: user._id, name: user.name, role: user.role };
 
-    // Redirect directly to user or admin dashboard
+    // Redirect based on role
     res.redirect(user.role === "admin" ? "/admin" : "/user");
   } catch (err) {
     console.error("Email verification error:", err);
+
+    // Handle JWT-specific errors
+    if (err.name === "TokenExpiredError") {
+      return res.status(400).send("Verification link has expired. Please signup again.");
+    } else if (err.name === "JsonWebTokenError") {
+      return res.status(400).send("Invalid verification token.");
+    }
+
     res.status(500).send("Error verifying email. Please try again.");
   }
 });
@@ -753,10 +739,15 @@ app.post("/login", async (req, res) => {
     const user = await User.findOne({ email: email.toLowerCase().trim() });
 
     if (!user) return res.status(400).send("Invalid email or password");
-    if (!user.active) return res.status(403).send("Please verify your email or contact admin");
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).send("Invalid email or password");
+
+    // If user exists but not verified
+    if (!user.active && user.role !== "admin") {
+      // redirect to a resend verification page
+      return res.redirect(`/resend-verification?email=${encodeURIComponent(email)}`);
+    }
 
     // Store minimal session data
     req.session.userId = user._id;
@@ -780,7 +771,11 @@ app.post("/reset-password", async (req, res) => {
 
     const user = await User.findOne({ email });
     if (!user) return res.status(400).send("Invalid email");
-    if (!user.active) return res.status(403).send("Please verify your email or contact admin");
+
+    // Allow password reset for existing users/admins
+    if (!user.active && user.role === "user") {
+      return res.status(403).send("Please verify your email or contact admin");
+    }
 
     user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
@@ -791,7 +786,6 @@ app.post("/reset-password", async (req, res) => {
     res.status(500).send("Error resetting password. Please try again.");
   }
 });
-
 
 // ================== GAMING BOOKINGS ==================
 
@@ -1152,22 +1146,25 @@ app.get("/profile/remove-image", async (req, res) => {
   try {
     const user = await User.findById(req.session.user.id);
 
+    if (!user) return res.status(404).send("User not found");
+
     // Delete from Cloudinary if image exists
     if (user.imageId) {
       await cloudinary.uploader.destroy(user.imageId);
     }
 
-    // Reset in DB
+    // Reset image fields in DB
     user.image = null;
     user.imageId = null;
     await user.save();
 
     res.redirect("/profile");
   } catch (err) {
-    console.error("Remove image error:", err);
-    res.status(500).send("Failed to remove image");
+    console.error("Error removing profile image:", err);
+    res.status(500).send("Failed to remove profile image");
   }
 });
+
 
 
 // ================== OTHER PAGES ==================
