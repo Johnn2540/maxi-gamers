@@ -642,19 +642,26 @@ app.post("/admin/loans/:id/status", async (req, res) => {
 });
 
 
-// ================== SIGNUP (JWT Only) ==================
+// ================== SIGNUP (JWT + Email Verification) ==================
 app.post("/signup", async (req, res) => {
   try {
     const { name, email, phone, password, studentId } = req.body;
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
-    if (existingUser) return res.status(400).send("User already exists");
+    // 1️⃣ Validate required fields
+    if (!name || !email || !phone || !password) {
+      return res.status(400).send("Missing required fields.");
+    }
 
-    // Hash password
+    // 2️⃣ Check if user already exists
+    const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
+    if (existingUser) {
+      return res.status(400).send("User already exists with that email or phone.");
+    }
+
+    // 3️⃣ Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create new inactive user
+    // 4️⃣ Create inactive user in DB
     const newUser = await User.create({
       name,
       email,
@@ -662,30 +669,44 @@ app.post("/signup", async (req, res) => {
       password: hashedPassword,
       role: "user",
       studentId,
-      active: false, // requires email verification
+      active: false,
     });
 
-    // Generate JWT token for email verification
-    const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "1h" });
+    // 5️⃣ Generate JWT token (expires in 1 hour)
+    const token = jwt.sign({ email: newUser.email }, process.env.JWT_SECRET, { expiresIn: "1h" });
 
-    // Prepare verification email
+    // 6️⃣ Prepare verification email
     const transporter = nodemailer.createTransport({
       service: "gmail",
-      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS, // Use app password if 2FA is enabled
+      },
     });
 
     const baseUrl = process.env.BASE_URL || "http://localhost:3000";
     const verifyUrl = `${baseUrl}/verify-email-jwt?token=${token}`;
 
-    await transporter.sendMail({
-      to: email,
-      subject: "Verify your email",
-      html: `<p>Hello ${name},</p>
-             <p>Please verify your email by clicking the link below:</p>
-             <a href="${verifyUrl}">${verifyUrl}</a>`,
-    });
+    try {
+      await transporter.sendMail({
+        to: newUser.email,
+        subject: "Verify your email - Maximum Gamers",
+        html: `
+          <p>Hello ${newUser.name},</p>
+          <p>Please verify your email by clicking the link below:</p>
+          <a href="${verifyUrl}">${verifyUrl}</a>
+          <p>This link expires in 1 hour.</p>
+        `,
+      });
+      console.log(`Verification email sent to ${newUser.email}`);
+    } catch (emailErr) {
+      console.error("Email sending error:", emailErr);
+      return res.status(500).send("Signup succeeded, but failed to send verification email. Contact support.");
+    }
 
-    res.send("Signup successful! Please check your email to verify your account.");
+    // 7️⃣ Send success response
+    res.status(200).send("Signup successful! Please check your email to verify your account.");
+
   } catch (err) {
     console.error("Signup error:", err);
     res.status(500).send("Error during signup. Please try again.");
@@ -699,35 +720,49 @@ app.get("/verify-email-jwt", async (req, res) => {
   if (!token) return res.status(400).send("Verification token is missing.");
 
   try {
-    // Decode JWT token
+    // Decode JWT
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // Find user
     const user = await User.findOne({ email: decoded.email });
     if (!user) return res.status(400).send("Invalid or expired token.");
 
-    // Activate user if not already active
+    // Activate user if not active
     if (!user.active) {
       user.active = true;
       await user.save();
     }
 
-    // Auto-login via session
+    // Optional: Auto-login
     req.session.user = { id: user._id, name: user.name, role: user.role };
 
     // Redirect based on role
     res.redirect(user.role === "admin" ? "/admin" : "/user");
+
   } catch (err) {
     console.error("Email verification error:", err);
 
     // Handle JWT-specific errors
-    if (err.name === "TokenExpiredError") {
-      return res.status(400).send("Verification link has expired. Please signup again.");
-    } else if (err.name === "JsonWebTokenError") {
-      return res.status(400).send("Invalid verification token.");
-    }
+    if (err.name === "TokenExpiredError") return res.status(400).send("Verification link expired. Please signup again.");
+    if (err.name === "JsonWebTokenError") return res.status(400).send("Invalid verification token.");
 
     res.status(500).send("Error verifying email. Please try again.");
+  }
+});
+
+// ================== OPTIONAL: Real-time Email/Phone Check ==================
+app.post("/check-user", async (req, res) => {
+  try {
+    const { email, phone } = req.body;
+    if (!email && !phone) return res.status(400).json({ exists: false });
+
+    const user = await User.findOne({ $or: [{ email }, { phone }] });
+    if (user) return res.json({ exists: true, message: "User with this email or phone already exists." });
+
+    res.json({ exists: false });
+  } catch (err) {
+    console.error("Check-user error:", err);
+    res.status(500).json({ exists: false, message: "Error checking user." });
   }
 });
 
