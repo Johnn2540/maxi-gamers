@@ -134,9 +134,43 @@ app.get('/auth/google/callback',
 
 // ================== HELPER: Send Verification Email ==================
 async function sendVerificationEmail(user, baseUrl) {
+  const verifyUrl = `${baseUrl}/verify-email?token=${user.verificationToken}`;
+
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+  });
+
+  await transporter.sendMail({
+    to: user.email,
+    subject: "Verify your email - Maximum Gamers",
+    html: `
+      <p>Hello ${user.name},</p>
+      <p>Click the link below to verify your email:</p>
+      <a href="${verifyUrl}">${verifyUrl}</a>
+      <p>This link expires in 24 hours.</p>
+    `
+  });
+
+  console.log(`Verification email sent: ${verifyUrl}`);
+}
+
+// ================== MIDDLEWARE ==================
+app.set("trust proxy", 1); // required on Render/Heroku
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, "public")));
+
+// ================== DEBUG ==================
+console.log("GOOGLE_CLIENT_ID loaded:", !!process.env.GOOGLE_CLIENT_ID);
+console.log("Mongo URI loaded:", !!process.env.MONGO_URI);
+console.log("Session Secret loaded:", !!process.env.SESSION_SECRET);
+console.log("JWT Secret loaded:", !!process.env.JWT_SECRET);
+
+// ================== HELPER: Send Email ==================
+async function sendVerificationEmail(user, baseUrl) {
   const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: "1h" });
-  user.verificationToken = token; // Save token in DB
-  user.lastVerificationSent = new Date();
+  user.verificationToken = token; // Save token to DB
   await user.save();
 
   const verifyUrl = `${baseUrl}/verify-email?token=${token}`;
@@ -155,21 +189,8 @@ async function sendVerificationEmail(user, baseUrl) {
       <p>This link expires in 1 hour.</p>
     `
   });
-
   console.log(`Verification email sent: ${verifyUrl}`);
 }
-
-// ================== MIDDLEWARE ==================
-app.set("trust proxy", 1); // required on Render/Heroku
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, "public")));
-
-// ================== DEBUG ==================
-console.log("GOOGLE_CLIENT_ID loaded:", !!process.env.GOOGLE_CLIENT_ID);
-console.log("Mongo URI loaded:", !!process.env.MONGO_URI);
-console.log("Session Secret loaded:", !!process.env.SESSION_SECRET);
-console.log("JWT Secret loaded:", !!process.env.JWT_SECRET);
 
 
 // ================== AUTH MIDDLEWARE ==================
@@ -675,22 +696,35 @@ app.post("/admin/loans/:id/status", async (req, res) => {
 app.post("/signup", async (req, res) => {
   try {
     const { name, email, phone, password, studentId } = req.body;
+
+    // Validate required fields
     if (!name || !email || !phone || !password) {
       return res.redirect(`/signup?flash=${encodeURIComponent("Missing required fields.")}&type=error`);
     }
 
+    // Check if user already exists
     const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
     if (existingUser) {
       return res.redirect(`/login?flash=${encodeURIComponent("User already exists. Please login.")}&type=info`);
     }
 
+    // Validate password strength
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
     if (!passwordRegex.test(password)) {
       return res.redirect(`/signup?flash=${encodeURIComponent("Password must be at least 6 characters, include at least one letter and one number.")}&type=error`);
     }
 
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Generate verification token
+    const verificationToken = jwt.sign(
+      { email: email.toLowerCase().trim() },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    // Create new user
     const newUser = await User.create({
       name,
       email: email.toLowerCase().trim(),
@@ -699,18 +733,27 @@ app.post("/signup", async (req, res) => {
       role: "user",
       studentId,
       active: false,
-      createdAt: new Date(),
+      verificationToken,
     });
 
+    // Send verification email (handle errors separately)
     const baseUrl = process.env.BASE_URL || "http://localhost:3000";
-    await sendVerificationEmail(newUser, baseUrl);
+    try {
+      await sendVerificationEmail(newUser, baseUrl);
+    } catch (emailErr) {
+      console.error("Email send error:", emailErr);
+      // Do not fail signup if email sending fails
+    }
 
+    // Redirect to login with success message
     return res.redirect(`/login?flash=${encodeURIComponent("Signup successful! Check your email to verify your account.")}&type=success`);
+
   } catch (err) {
     console.error("Signup error:", err);
     return res.redirect(`/signup?flash=${encodeURIComponent("Error during signup. Please try again.")}&type=error`);
   }
 });
+
 
 // ================== LOGIN ==================
 app.post("/login", async (req, res) => {
@@ -772,25 +815,44 @@ app.get("/verify-email", async (req, res) => {
 app.post("/resend-verification", async (req, res) => {
   try {
     const { email } = req.body;
-    if (!email) return res.redirect(`/login?flash=${encodeURIComponent("Email is required.")}&type=error`);
+    if (!email) 
+      return res.redirect(`/login?flash=${encodeURIComponent("Email is required.")}&type=error`);
 
     const user = await User.findOne({ email: email.toLowerCase().trim() });
-    if (!user) return res.redirect(`/login?flash=${encodeURIComponent("No account found with that email.")}&type=error`);
-    if (user.active) return res.redirect(`/login?flash=${encodeURIComponent("Account already verified. Please log in.")}&type=info`);
+    if (!user) 
+      return res.redirect(`/login?flash=${encodeURIComponent("No account found with that email.")}&type=error`);
+    if (user.active) 
+      return res.redirect(`/login?flash=${encodeURIComponent("Account already verified. Please log in.")}&type=info`);
 
+    // Prevent spamming verification emails
     if (user.lastVerificationSent && (Date.now() - user.lastVerificationSent.getTime()) < 5 * 60 * 1000) {
       return res.redirect(`/login?flash=${encodeURIComponent("Verification email sent recently. Please wait before resending.")}&type=info`);
     }
 
+    // Generate a new token
+    const verificationToken = jwt.sign(
+      { email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    // Update user with new token and timestamp
+    user.verificationToken = verificationToken;
+    user.lastVerificationSent = new Date();
+    await user.save();
+
+    // Send email
     const baseUrl = process.env.BASE_URL || "http://localhost:3000";
     await sendVerificationEmail(user, baseUrl);
 
     return res.redirect(`/login?flash=${encodeURIComponent("Verification email resent! Check your inbox.")}&type=success`);
+
   } catch (err) {
     console.error("Resend verification error:", err);
     return res.redirect(`/login?flash=${encodeURIComponent("Something went wrong. Please try again later.")}&type=error`);
   }
 });
+
 
 // ================== RESET PASSWORD ==================
 app.post("/reset-password", async (req, res) => {
@@ -1232,5 +1294,5 @@ pages.forEach(page => app.get("/"+page, (req,res)=>res.render(page)));
 
 // ================== START SERVER ==================
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(` Server running on port ${PORT}`);
 });
