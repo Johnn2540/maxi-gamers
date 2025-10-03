@@ -649,35 +649,31 @@ app.post("/signup", async (req, res) => {
 
     // 1️⃣ Validate required fields
     if (!name || !email || !phone || !password) {
-      return res.status(400).send("Missing required fields.");
+      req.flash("error", "Missing required fields.");
+      return res.redirect("/signup");
     }
 
     // 2️⃣ Password strength validation (Medium)
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
-    /**
-     * ✅ At least 6 characters
-     * ✅ At least one letter
-     * ✅ At least one number
-     */
     if (!passwordRegex.test(password)) {
-      return res.status(400).send(
-        "Password must be at least 6 characters long, include at least one letter and one number."
-      );
+      req.flash("error", "Password must be at least 6 characters long, include at least one letter and one number.");
+      return res.redirect("/signup");
     }
 
     // 3️⃣ Check if user already exists
     const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
     if (existingUser) {
-      return res.status(400).send("User already exists with that email or phone.");
+      req.flash("error", "User already exists with that email or phone.");
+      return res.redirect("/signup");
     }
 
     // 4️⃣ Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 5️⃣ Create inactive user in DB
+    // 5️⃣ Create inactive user
     const newUser = await User.create({
       name,
-      email,
+      email: email.toLowerCase().trim(),
       phone,
       password: hashedPassword,
       role: "user",
@@ -688,41 +684,33 @@ app.post("/signup", async (req, res) => {
     // 6️⃣ Generate JWT token (expires in 1 hour)
     const token = jwt.sign({ email: newUser.email }, process.env.JWT_SECRET, { expiresIn: "1h" });
 
-    // 7️⃣ Prepare verification email
+    // 7️⃣ Send verification email
     const transporter = nodemailer.createTransport({
       service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS, // Use app password if 2FA is enabled
-      },
+      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
     });
 
     const baseUrl = process.env.BASE_URL || "http://localhost:3000";
     const verifyUrl = `${baseUrl}/verify-email-jwt?token=${token}`;
 
-    try {
-      await transporter.sendMail({
-        to: newUser.email,
-        subject: "Verify your email - Maximum Gamers",
-        html: `
-          <p>Hello ${newUser.name},</p>
-          <p>Please verify your email by clicking the link below:</p>
-          <a href="${verifyUrl}">${verifyUrl}</a>
-          <p>This link expires in 1 hour.</p>
-        `,
-      });
-      console.log(`Verification email sent to ${newUser.email}`);
-    } catch (emailErr) {
-      console.error("Email sending error:", emailErr);
-      return res.status(500).send("Signup succeeded, but failed to send verification email. Contact support.");
-    }
+    await transporter.sendMail({
+      to: newUser.email,
+      subject: "Verify your email - Maximum Gamers",
+      html: `
+        <p>Hello ${newUser.name},</p>
+        <p>Please verify your email by clicking the link below:</p>
+        <a href="${verifyUrl}">${verifyUrl}</a>
+        <p>This link expires in 1 hour.</p>
+      `,
+    });
 
-    // 8️⃣ Send success response
-    res.status(200).send("Signup successful! Please check your email to verify your account.");
+    req.flash("success", "Signup successful! Please check your email to verify your account.");
+    res.redirect("/login");
 
   } catch (err) {
     console.error("Signup error:", err);
-    res.status(500).send("Error during signup. Please try again.");
+    req.flash("error", "Error during signup. Please try again.");
+    res.redirect("/signup");
   }
 });
 
@@ -730,41 +718,170 @@ app.post("/signup", async (req, res) => {
 // ================== EMAIL VERIFICATION ==================
 app.get("/verify-email-jwt", async (req, res) => {
   const { token } = req.query;
-
-  if (!token) return res.status(400).send("Verification token is missing.");
+  if (!token) {
+    req.flash("error", "Verification token is missing.");
+    return res.redirect("/login");
+  }
 
   try {
-    // Decode JWT
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Find user
     const user = await User.findOne({ email: decoded.email });
-    if (!user) return res.status(400).send("Invalid or expired token.");
+    if (!user) {
+      req.flash("error", "Invalid or expired token.");
+      return res.redirect("/login");
+    }
 
-    // Activate user if not active
     if (!user.active) {
       user.active = true;
       await user.save();
     }
 
-    // Optional: Auto-login
     req.session.user = { id: user._id, name: user.name, role: user.role };
 
-    // Redirect based on role
     res.redirect(user.role === "admin" ? "/admin" : "/user");
 
   } catch (err) {
     console.error("Email verification error:", err);
 
-    // Handle JWT-specific errors
-    if (err.name === "TokenExpiredError") return res.status(400).send("Verification link expired. Please signup again.");
-    if (err.name === "JsonWebTokenError") return res.status(400).send("Invalid verification token.");
-
-    res.status(500).send("Error verifying email. Please try again.");
+    if (err.name === "TokenExpiredError") {
+      req.flash("error", "Verification link expired. Please resend verification.");
+    } else {
+      req.flash("error", "Invalid verification token.");
+    }
+    res.redirect("/login");
   }
 });
 
-// ================== OPTIONAL: Real-time Email/Phone Check ==================
+
+// ================== RESEND VERIFICATION ==================
+app.post("/resend-verification", async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      req.flash("error", "Email is required.");
+      return res.redirect("/login");
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) {
+      req.flash("error", "No account found with that email.");
+      return res.redirect("/login");
+    }
+
+    if (user.active) {
+      req.flash("info", "This account is already verified. Please log in.");
+      return res.redirect("/login");
+    }
+
+    // Generate new JWT
+    const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: "1h" });
+    const baseUrl = process.env.BASE_URL || "http://localhost:3000";
+    const verifyUrl = `${baseUrl}/verify-email-jwt?token=${token}`;
+
+    // Send email
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+    });
+
+    await transporter.sendMail({
+      to: user.email,
+      subject: "Resend Verification - Maximum Gamers",
+      html: `
+        <p>Hello ${user.name},</p>
+        <p>Please verify your email by clicking the link below:</p>
+        <a href="${verifyUrl}">${verifyUrl}</a>
+        <p>This link expires in 1 hour.</p>
+      `,
+    });
+
+    req.flash("success", "Verification email resent! Please check your inbox.");
+    res.redirect("/login");
+
+  } catch (err) {
+    console.error("Resend verification error:", err);
+    req.flash("error", "Something went wrong. Please try again later.");
+    res.redirect("/login");
+  }
+});
+
+
+// ================== LOGIN ==================
+app.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+
+    if (!user) {
+      req.flash("error", "Invalid email or password.");
+      return res.redirect("/login");
+    }
+
+    // ✅ Only enforce password check if password exists in DB
+    if (user.password) {
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        req.flash("error", "Invalid email or password.");
+        return res.redirect("/login");
+      }
+    }
+
+    // ✅ Enforce verification only for accounts that have 'active' field
+    if (typeof user.active !== "undefined" && !user.active && user.role !== "admin") {
+      req.flash("error", "Please verify your email before logging in.");
+      return res.redirect("/login");
+    }
+
+    // Normal login flow
+    req.session.userId = user._id;
+    const redirectMap = { admin: "/admin", user: "/user" };
+    res.redirect(redirectMap[user.role] || "/");
+
+  } catch (err) {
+    console.error("Login error:", err);
+    req.flash("error", "Login failed. Please try again.");
+    res.redirect("/login");
+  }
+});
+
+
+// ================== RESET PASSWORD ==================
+app.post("/reset-password", async (req, res) => {
+  try {
+    const { email, newPassword, confirmPassword } = req.body;
+
+    if (newPassword !== confirmPassword) {
+      req.flash("error", "Passwords do not match.");
+      return res.redirect("/reset-password");
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) {
+      req.flash("error", "No account found with that email.");
+      return res.redirect("/reset-password");
+    }
+
+    if (!user.active && user.role === "user") {
+      req.flash("error", "Please verify your email before resetting password.");
+      return res.redirect("/login");
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    req.flash("success", "Password reset successful. You can now login.");
+    res.redirect("/login");
+
+  } catch (err) {
+    console.error("Reset password error:", err);
+    req.flash("error", "Error resetting password. Please try again.");
+    res.redirect("/reset-password");
+  }
+});
+
+
+// ================== CHECK USER (AJAX for signup form) ==================
 app.post("/check-user", async (req, res) => {
   try {
     const { email, phone } = req.body;
@@ -777,62 +894,6 @@ app.post("/check-user", async (req, res) => {
   } catch (err) {
     console.error("Check-user error:", err);
     res.status(500).json({ exists: false, message: "Error checking user." });
-  }
-});
-
-
-// ================== LOGIN ==================
-app.post("/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email: email.toLowerCase().trim() });
-
-    if (!user) return res.status(400).send("Invalid email or password");
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).send("Invalid email or password");
-
-    // If user exists but not verified
-    if (!user.active && user.role !== "admin") {
-      // redirect to a resend verification page
-      return res.redirect(`/resend-verification?email=${encodeURIComponent(email)}`);
-    }
-
-    // Store minimal session data
-    req.session.userId = user._id;
-
-    // Role-based redirect
-    const redirectMap = { admin: "/admin", user: "/user" };
-    res.redirect(redirectMap[user.role] || "/");
-  } catch (err) {
-    console.error("Login error:", err);
-    res.status(500).send("Login failed. Please try again.");
-  }
-});
-
-// ================== RESET PASSWORD ==================
-app.post("/reset-password", async (req, res) => {
-  try {
-    const { email, newPassword, confirmPassword } = req.body;
-
-    if (newPassword !== confirmPassword)
-      return res.status(400).send("Passwords do not match");
-
-    const user = await User.findOne({ email });
-    if (!user) return res.status(400).send("Invalid email");
-
-    // Allow password reset for existing users/admins
-    if (!user.active && user.role === "user") {
-      return res.status(403).send("Please verify your email or contact admin");
-    }
-
-    user.password = await bcrypt.hash(newPassword, 10);
-    await user.save();
-
-    res.send("Password reset successful. You can now login.");
-  } catch (err) {
-    console.error("Reset password error:", err);
-    res.status(500).send("Error resetting password. Please try again.");
   }
 });
 
