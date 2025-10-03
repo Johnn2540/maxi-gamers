@@ -19,29 +19,17 @@ mongoose
 
 // ------------------ SCHEMAS ------------------
 
-// USER SCHEMA
+// ------------------USER SCHEMA ------------------
 const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
 
-    // Phone required only for local signup
+    // Phone number only for local signup
     phone: { type: String, unique: true, sparse: true },
 
-    // Password optional for Google login
-    password: { 
-      type: String,
-      required: false,
-      validate: {
-        validator: function (value) {
-          if (!value) return true; // skip validation if no password (Google users)
-          // Medium strength: at least 6 chars, must include letters + numbers
-          return /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/.test(value);
-        },
-        message:
-          "Password must be at least 6 characters long and include at least one letter and one number."
-      }
-    },
+    // Store hashed password only (validation handled before save)
+    password: { type: String, required: false },
 
     role: { type: String, enum: ["user", "admin"], default: "user" },
     active: { type: Boolean, default: true },
@@ -51,11 +39,12 @@ const userSchema = new mongoose.Schema(
     image: { type: String, default: null },
     imageId: { type: String, default: null },
 
-    // For Google OAuth
+    // Google OAuth
     googleId: { type: String, unique: true, sparse: true },
   },
   { timestamps: true }
 );
+
 
 // PRODUCT SCHEMA
 const productSchema = new mongoose.Schema({

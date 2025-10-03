@@ -1,78 +1,133 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Signup | Maximum Gamers</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
   <style>
     body {
       background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
       min-height: 100vh;
       display: flex;
       align-items: center;
+      justify-content: center;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      margin: 0;
-      padding: 20px 0;
+      padding: 20px;
     }
-    .signup-container { max-width: 820px; margin: 0 auto; }
-    .signup-card { border: none; border-radius: 20px; overflow: hidden;
-      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2); }
+    .signup-container { width: 100%; max-width: 900px; }
+    .card {
+      border: none;
+      border-radius: 20px;
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 10px 35px rgba(0,0,0,0.25);
+    }
     .signup-left {
-      background: url('https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=800&q=80') center/cover no-repeat;
+      background: url('https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=900&q=80') center/cover no-repeat;
       position: relative;
+      min-height: 100%;
     }
     .signup-left::before {
-      content: ''; position: absolute; top:0; left:0; width:100%; height:100%;
-      background: linear-gradient(to bottom, rgba(106,17,203,0.7), rgba(37,117,252,0.7));
+      content: "";
+      position: absolute; inset: 0;
+      background: linear-gradient(to bottom right, rgba(106,17,203,0.8), rgba(37,117,252,0.8));
     }
     .signup-left-content {
-      position: relative; z-index: 1; color: white; padding: 40px;
-      display: flex; flex-direction: column; justify-content: center; height: 100%;
+      position: relative; z-index: 2;
+      color: #fff;
+      padding: 50px 30px;
     }
-    .signup-left-content h2 { font-weight: 700; }
-    .form-control { border-radius: 10px; padding: 12px 15px; border: 2px solid #eef0f3; transition: all 0.3s; }
-    .form-control:focus { border-color: #6a11cb; box-shadow: 0 0 0 0.25rem rgba(106,17,203,0.25); }
+    .signup-left-content h2 { font-weight: 700; font-size: 32px; }
+    .signup-left-content ul { padding-left: 20px; margin-top: 15px; }
+    .signup-left-content li { margin-bottom: 10px; font-size: 15px; }
+    .form-label { font-weight: 600; }
+    .form-control {
+      border-radius: 10px;
+      padding: 12px 14px;
+      border: 2px solid #eef0f3;
+      transition: 0.3s;
+    }
+    .form-control:focus {
+      border-color: #6a11cb;
+      box-shadow: 0 0 0 0.25rem rgba(106,17,203,0.25);
+    }
+    .password-container { position: relative; }
+    .password-toggle {
+      cursor: pointer;
+      position: absolute;
+      right: 12px; top: 50%;
+      transform: translateY(-50%);
+      color: #6c757d;
+    }
     .btn-signup {
       background: linear-gradient(to right, #6a11cb, #2575fc);
-      border: none; padding: 12px; border-radius: 10px;
-      font-weight: 600; transition: all 0.3s;
+      border: none;
+      color: white;
+      padding: 12px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 16px;
+      transition: 0.3s;
     }
-    .btn-signup:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(106,17,203,0.4); }
+    .btn-signup:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(106,17,203,0.4);
+    }
     .btn-google {
-      background: #fff; border: 2px solid #ddd; padding: 10px; border-radius: 10px;
-      font-weight: 600; color: #444; transition: all 0.3s;
+      background: #fff;
+      border: 2px solid #ddd;
+      border-radius: 10px;
+      padding: 12px;
+      font-weight: 600;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: 0.3s;
     }
-    .btn-google:hover { background: #f8f8f8; }
-    .password-toggle { cursor: pointer; position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #6c757d; }
-    .password-container { position: relative; }
-    .form-check-input:checked { background-color: #6a11cb; border-color: #6a11cb; }
-    .input-feedback { font-size: 0.875rem; margin-top: 3px; }
-    .signup-message { font-weight: 600; font-size: 0.95rem; margin-top: 10px; }
+    .btn-google img { width: 20px; }
+    .btn-google:hover { background: #f8f8f8; border-color: #bbb; }
+    .input-feedback { font-size: 13px; margin-top: 2px; }
+    .alert { border-radius: 10px; font-size: 14px; }
   </style>
 </head>
 <body>
-  <div class="container signup-container">
-    <div class="card signup-card">
+  <div class="signup-container">
+    <div class="card">
       <div class="row g-0">
         <!-- Left side -->
         <div class="col-md-5 d-none d-md-block signup-left">
           <div class="signup-left-content">
             <h2>Join Maximum Gamers</h2>
-            <p>Access exclusive features:</p>
-            <ul class="mt-3">
-              <li><i class="fas fa-gamepad me-2"></i> Track gaming progress</li>
-              <li><i class="fas fa-trophy me-2"></i> Borrow valuable items</li>
-              <li><i class="fas fa-users me-2"></i> Connect with gamers</li>
-              <li><i class="fas fa-gift me-2"></i> Book gaming sessions</li>
+            <p class="mt-3">Unlock exclusive features:</p>
+            <ul>
+              <li><i class="fas fa-gamepad me-2"></i> Track your gaming progress</li>
+              <li><i class="fas fa-trophy me-2"></i> Borrow and rent items</li>
+              <li><i class="fas fa-users me-2"></i> Connect with fellow gamers</li>
+              <li><i class="fas fa-gift me-2"></i> Book special gaming sessions</li>
             </ul>
           </div>
         </div>
 
         <!-- Right side form -->
         <div class="col-md-7 p-4 bg-white">
-          <form id="signupForm">
+          <!-- Flash Messages -->
+          <% if (messages.error) { %>
+            <div class="alert alert-danger"><i class="fas fa-exclamation-circle me-2"></i><%= messages.error %></div>
+          <% } %>
+          <% if (messages.success) { %>
+            <div class="alert alert-success"><i class="fas fa-check-circle me-2"></i><%= messages.success %></div>
+          <% } %>
+          <% if (messages.info) { %>
+            <div class="alert alert-info"><i class="fas fa-info-circle me-2"></i><%= messages.info %></div>
+          <% } %>
+
+          <h3 class="fw-bold mb-3">Create Your Account</h3>
+          <form id="signupForm" method="POST" action="/signup">
             <div class="row">
               <div class="col-md-6 mb-3">
                 <label for="name" class="form-label">User Name</label>
@@ -80,7 +135,7 @@
               </div>
               <div class="col-md-6 mb-3">
                 <label for="studentId" class="form-label">Student ID (or Nil)</label>
-                <input type="text" id="studentId" name="studentId" class="form-control" required>
+                <input type="text" id="studentId" name="studentId" class="form-control">
               </div>
             </div>
 
@@ -100,30 +155,33 @@
               <label for="password" class="form-label">Password</label>
               <input type="password" id="password" name="password" class="form-control" required>
               <span class="password-toggle" id="passwordToggle"><i class="fas fa-eye"></i></span>
-              <div class="form-text">Min 6 chars, include a letter & a number</div>
+              <div class="form-text">Must be at least 6 characters, with 1 letter & 1 number</div>
             </div>
 
             <div class="mb-3 password-container">
               <label for="confirmPassword" class="form-label">Confirm Password</label>
-              <input type="password" id="confirmPassword" class="form-control" required>
+              <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" required>
               <span class="password-toggle" id="confirmPasswordToggle"><i class="fas fa-eye"></i></span>
             </div>
 
             <div class="mb-3 form-check">
               <input type="checkbox" class="form-check-input" id="terms" required>
-              <label class="form-check-label" for="terms">I agree to <a href="/terms">Terms</a> & <a href="/privacy-policy">Privacy Policy</a></label>
+              <label class="form-check-label" for="terms">
+                I agree to the <a href="/terms">Terms</a> & <a href="/privacy-policy">Privacy Policy</a>
+              </label>
             </div>
 
             <div class="d-grid gap-2">
-              <button type="submit" class="btn btn-signup btn-lg" id="signupBtn">
-                <span id="btnText">Create Account</span>
-              </button>
+              <button type="submit" class="btn btn-signup btn-lg">Create Account</button>
               <div class="text-center fw-bold my-2">OR</div>
               <button type="button" class="btn btn-google btn-lg" onclick="window.location.href='/auth/google'">
-                <img src="https://developers.google.com/identity/images/g-logo.png" width="20" class="me-2">Sign up with Google
+                <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google Logo">Sign up with Google
               </button>
             </div>
-            <div id="signupMessage" class="signup-message text-center"></div>
+
+            <div class="text-center mt-3">
+              <p class="mb-0">Already have an account? <a href="/login" class="fw-bold text-decoration-none">Login</a></p>
+            </div>
           </form>
         </div>
       </div>
@@ -131,7 +189,7 @@
   </div>
 
 <script>
-  // Toggle password visibility
+  // Password toggles
   function setupToggle(toggleId, inputId) {
     const toggle = document.getElementById(toggleId);
     const input = document.getElementById(inputId);
@@ -144,11 +202,17 @@
   setupToggle("passwordToggle", "password");
   setupToggle("confirmPasswordToggle", "confirmPassword");
 
-  const emailInput = document.getElementById("email");
-  const phoneInput = document.getElementById("phone");
-  const emailFeedback = document.getElementById("emailFeedback");
-  const phoneFeedback = document.getElementById("phoneFeedback");
+  // Confirm password validation
+  document.getElementById("signupForm").addEventListener("submit", (e) => {
+    const pass = document.getElementById("password").value;
+    const confirm = document.getElementById("confirmPassword").value;
+    if (pass !== confirm) {
+      e.preventDefault();
+      alert("Passwords do not match.");
+    }
+  });
 
+  // AJAX user check
   async function checkUserField(field, value, feedbackEl) {
     if (!value) { feedbackEl.textContent = ''; return; }
     try {
@@ -161,53 +225,8 @@
       feedbackEl.textContent = data.exists ? data.message : '';
     } catch (err) { console.error(err); }
   }
-
-  emailInput.addEventListener("blur", () => checkUserField("email", emailInput.value, emailFeedback));
-  phoneInput.addEventListener("blur", () => checkUserField("phone", phoneInput.value, phoneFeedback));
-
-  document.getElementById("signupForm").addEventListener("submit", async function(e) {
-    e.preventDefault();
-    const pass = document.getElementById("password").value;
-    const confirm = document.getElementById("confirmPassword").value;
-    const msg = document.getElementById("signupMessage");
-    const btn = document.getElementById("signupBtn");
-    const btnText = document.getElementById("btnText");
-
-    msg.textContent = '';
-    if (pass !== confirm) { msg.textContent = "Passwords do not match."; msg.style.color="red"; return; }
-    if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/.test(pass)) {
-      msg.textContent = "Weak password: min 6 chars, include letter & number."; msg.style.color="red"; return;
-    }
-    if (emailFeedback.textContent || phoneFeedback.textContent) {
-      msg.textContent = "Email or phone already in use."; msg.style.color="red"; return;
-    }
-
-    btn.disabled = true;
-    btnText.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Creating...';
-    const formData = {
-      name: document.getElementById("name").value,
-      studentId: document.getElementById("studentId").value,
-      email: emailInput.value,
-      phone: phoneInput.value,
-      password: pass
-    };
-
-    try {
-      const res = await fetch("/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData)
-      });
-      const text = await res.text();
-      msg.textContent = text;
-      msg.style.color = res.ok ? "green" : "red";
-      if (res.ok) setTimeout(() => window.location.href = "/user", 1500);
-    } catch {
-      msg.textContent = "Signup failed. Try again."; msg.style.color="red";
-    } finally {
-      btn.disabled = false; btnText.textContent = "Create Account";
-    }
-  });
+  document.getElementById("email").addEventListener("blur", e => checkUserField("email", e.target.value, document.getElementById("emailFeedback")));
+  document.getElementById("phone").addEventListener("blur", e => checkUserField("phone", e.target.value, document.getElementById("phoneFeedback")));
 </script>
 </body>
 </html>

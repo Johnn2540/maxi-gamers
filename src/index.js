@@ -642,7 +642,7 @@ app.post("/admin/loans/:id/status", async (req, res) => {
 });
 
 
-// ================== SIGNUP (JWT + Email Verification) ==================
+// ================== SIGNUP (JWT + Email Verification + Password Strength) ==================
 app.post("/signup", async (req, res) => {
   try {
     const { name, email, phone, password, studentId } = req.body;
@@ -652,16 +652,29 @@ app.post("/signup", async (req, res) => {
       return res.status(400).send("Missing required fields.");
     }
 
-    // 2️⃣ Check if user already exists
+    // 2️⃣ Password strength validation (Medium)
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
+    /**
+     * ✅ At least 6 characters
+     * ✅ At least one letter
+     * ✅ At least one number
+     */
+    if (!passwordRegex.test(password)) {
+      return res.status(400).send(
+        "Password must be at least 6 characters long, include at least one letter and one number."
+      );
+    }
+
+    // 3️⃣ Check if user already exists
     const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
     if (existingUser) {
       return res.status(400).send("User already exists with that email or phone.");
     }
 
-    // 3️⃣ Hash password
+    // 4️⃣ Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 4️⃣ Create inactive user in DB
+    // 5️⃣ Create inactive user in DB
     const newUser = await User.create({
       name,
       email,
@@ -672,10 +685,10 @@ app.post("/signup", async (req, res) => {
       active: false,
     });
 
-    // 5️⃣ Generate JWT token (expires in 1 hour)
+    // 6️⃣ Generate JWT token (expires in 1 hour)
     const token = jwt.sign({ email: newUser.email }, process.env.JWT_SECRET, { expiresIn: "1h" });
 
-    // 6️⃣ Prepare verification email
+    // 7️⃣ Prepare verification email
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -704,7 +717,7 @@ app.post("/signup", async (req, res) => {
       return res.status(500).send("Signup succeeded, but failed to send verification email. Contact support.");
     }
 
-    // 7️⃣ Send success response
+    // 8️⃣ Send success response
     res.status(200).send("Signup successful! Please check your email to verify your account.");
 
   } catch (err) {
@@ -712,6 +725,7 @@ app.post("/signup", async (req, res) => {
     res.status(500).send("Error during signup. Please try again.");
   }
 });
+
 
 // ================== EMAIL VERIFICATION ==================
 app.get("/verify-email-jwt", async (req, res) => {
