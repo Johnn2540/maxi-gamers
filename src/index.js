@@ -647,30 +647,22 @@ app.post("/signup", async (req, res) => {
   try {
     const { name, email, phone, password, studentId } = req.body;
 
-    // 1️⃣ Validate required fields
     if (!name || !email || !phone || !password) {
-      req.flash("error", "Missing required fields.");
-      return res.redirect("/signup");
+      return res.redirect(`/signup?flash=${encodeURIComponent("Missing required fields.")}&type=error`);
     }
 
-    // 2️⃣ Password strength validation (Medium)
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
     if (!passwordRegex.test(password)) {
-      req.flash("error", "Password must be at least 6 characters long, include at least one letter and one number.");
-      return res.redirect("/signup");
+      return res.redirect(`/signup?flash=${encodeURIComponent("Password must be at least 6 characters, include at least one letter and one number.")}&type=error`);
     }
 
-    // 3️⃣ Check if user already exists
     const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
     if (existingUser) {
-      req.flash("error", "User already exists with that email or phone.");
-      return res.redirect("/signup");
+      return res.redirect(`/signup?flash=${encodeURIComponent("User already exists with that email or phone.")}&type=error`);
     }
 
-    // 4️⃣ Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 5️⃣ Create inactive user
     const newUser = await User.create({
       name,
       email: email.toLowerCase().trim(),
@@ -679,19 +671,17 @@ app.post("/signup", async (req, res) => {
       role: "user",
       studentId,
       active: false,
+      createdAt: new Date()
     });
 
-    // 6️⃣ Generate JWT token (expires in 1 hour)
     const token = jwt.sign({ email: newUser.email }, process.env.JWT_SECRET, { expiresIn: "1h" });
+    const baseUrl = process.env.BASE_URL || "http://localhost:3000";
+    const verifyUrl = `${baseUrl}/verify-email-jwt?token=${token}`;
 
-    // 7️⃣ Send verification email
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
     });
-
-    const baseUrl = process.env.BASE_URL || "http://localhost:3000";
-    const verifyUrl = `${baseUrl}/verify-email-jwt?token=${token}`;
 
     await transporter.sendMail({
       to: newUser.email,
@@ -704,32 +694,27 @@ app.post("/signup", async (req, res) => {
       `,
     });
 
-    req.flash("success", "Signup successful! Please check your email to verify your account.");
-    res.redirect("/login");
+    return res.redirect(`/login?flash=${encodeURIComponent("Signup successful! Please check your email to verify your account.")}&type=success`);
 
   } catch (err) {
     console.error("Signup error:", err);
-    req.flash("error", "Error during signup. Please try again.");
-    res.redirect("/signup");
+    return res.redirect(`/signup?flash=${encodeURIComponent("Error during signup. Please try again.")}&type=error`);
   }
 });
-
 
 // ================== EMAIL VERIFICATION ==================
 app.get("/verify-email-jwt", async (req, res) => {
   const { token } = req.query;
   if (!token) {
-    req.flash("error", "Verification token is missing.");
-    return res.redirect("/login");
+    return res.redirect(`/login?flash=${encodeURIComponent("Verification token is missing.")}&type=error`);
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
     const user = await User.findOne({ email: decoded.email });
+
     if (!user) {
-      req.flash("error", "Invalid or expired token.");
-      return res.redirect("/login");
+      return res.redirect(`/login?flash=${encodeURIComponent("Invalid or expired token.")}&type=error`);
     }
 
     if (!user.active) {
@@ -738,48 +723,40 @@ app.get("/verify-email-jwt", async (req, res) => {
     }
 
     req.session.user = { id: user._id, name: user.name, role: user.role };
-
     res.redirect(user.role === "admin" ? "/admin" : "/user");
 
   } catch (err) {
     console.error("Email verification error:", err);
 
-    if (err.name === "TokenExpiredError") {
-      req.flash("error", "Verification link expired. Please resend verification.");
-    } else {
-      req.flash("error", "Invalid verification token.");
-    }
-    res.redirect("/login");
+    const msg = err.name === "TokenExpiredError"
+      ? "Verification link expired. Please resend verification."
+      : "Invalid verification token.";
+
+    return res.redirect(`/login?flash=${encodeURIComponent(msg)}&type=error`);
   }
 });
-
 
 // ================== RESEND VERIFICATION ==================
 app.post("/resend-verification", async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) {
-      req.flash("error", "Email is required.");
-      return res.redirect("/login");
+      return res.redirect(`/login?flash=${encodeURIComponent("Email is required.")}&type=error`);
     }
 
     const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) {
-      req.flash("error", "No account found with that email.");
-      return res.redirect("/login");
+      return res.redirect(`/login?flash=${encodeURIComponent("No account found with that email.")}&type=error`);
     }
 
     if (user.active) {
-      req.flash("info", "This account is already verified. Please log in.");
-      return res.redirect("/login");
+      return res.redirect(`/login?flash=${encodeURIComponent("This account is already verified. Please log in.")}&type=info`);
     }
 
-    // Generate new JWT
     const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: "1h" });
     const baseUrl = process.env.BASE_URL || "http://localhost:3000";
     const verifyUrl = `${baseUrl}/verify-email-jwt?token=${token}`;
 
-    // Send email
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
@@ -796,16 +773,13 @@ app.post("/resend-verification", async (req, res) => {
       `,
     });
 
-    req.flash("success", "Verification email resent! Please check your inbox.");
-    res.redirect("/login");
+    return res.redirect(`/login?flash=${encodeURIComponent("Verification email resent! Please check your inbox.")}&type=success`);
 
   } catch (err) {
     console.error("Resend verification error:", err);
-    req.flash("error", "Something went wrong. Please try again later.");
-    res.redirect("/login");
+    return res.redirect(`/login?flash=${encodeURIComponent("Something went wrong. Please try again later.")}&type=error`);
   }
 });
-
 
 // ================== LOGIN ==================
 app.post("/login", async (req, res) => {
@@ -814,37 +788,29 @@ app.post("/login", async (req, res) => {
     const user = await User.findOne({ email: email.toLowerCase().trim() });
 
     if (!user) {
-      req.flash("error", "Invalid email or password.");
-      return res.redirect("/login");
+      return res.redirect(`/login?flash=${encodeURIComponent("Invalid email or password.")}&type=error`);
     }
 
-    // ✅ Only enforce password check if password exists in DB
     if (user.password) {
       const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) {
-        req.flash("error", "Invalid email or password.");
-        return res.redirect("/login");
+        return res.redirect(`/login?flash=${encodeURIComponent("Invalid email or password.")}&type=error`);
       }
     }
 
-    // ✅ Enforce verification only for accounts that have 'active' field
     if (typeof user.active !== "undefined" && !user.active && user.role !== "admin") {
-      req.flash("error", "Please verify your email before logging in.");
-      return res.redirect("/login");
+      return res.redirect(`/login?flash=${encodeURIComponent("Please verify your email before logging in.")}&type=error`);
     }
 
-    // Normal login flow
     req.session.userId = user._id;
     const redirectMap = { admin: "/admin", user: "/user" };
     res.redirect(redirectMap[user.role] || "/");
 
   } catch (err) {
     console.error("Login error:", err);
-    req.flash("error", "Login failed. Please try again.");
-    res.redirect("/login");
+    return res.redirect(`/login?flash=${encodeURIComponent("Login failed. Please try again.")}&type=error`);
   }
 });
-
 
 // ================== RESET PASSWORD ==================
 app.post("/reset-password", async (req, res) => {
@@ -852,34 +818,28 @@ app.post("/reset-password", async (req, res) => {
     const { email, newPassword, confirmPassword } = req.body;
 
     if (newPassword !== confirmPassword) {
-      req.flash("error", "Passwords do not match.");
-      return res.redirect("/reset-password");
+      return res.redirect(`/reset-password?flash=${encodeURIComponent("Passwords do not match.")}&type=error`);
     }
 
     const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) {
-      req.flash("error", "No account found with that email.");
-      return res.redirect("/reset-password");
+      return res.redirect(`/reset-password?flash=${encodeURIComponent("No account found with that email.")}&type=error`);
     }
 
     if (!user.active && user.role === "user") {
-      req.flash("error", "Please verify your email before resetting password.");
-      return res.redirect("/login");
+      return res.redirect(`/login?flash=${encodeURIComponent("Please verify your email before resetting password.")}&type=error`);
     }
 
     user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
 
-    req.flash("success", "Password reset successful. You can now login.");
-    res.redirect("/login");
+    return res.redirect(`/login?flash=${encodeURIComponent("Password reset successful. You can now login.")}&type=success`);
 
   } catch (err) {
     console.error("Reset password error:", err);
-    req.flash("error", "Error resetting password. Please try again.");
-    res.redirect("/reset-password");
+    return res.redirect(`/reset-password?flash=${encodeURIComponent("Error resetting password. Please try again.")}&type=error`);
   }
 });
-
 
 // ================== CHECK USER (AJAX for signup form) ==================
 app.post("/check-user", async (req, res) => {
@@ -896,6 +856,7 @@ app.post("/check-user", async (req, res) => {
     res.status(500).json({ exists: false, message: "Error checking user." });
   }
 });
+
 
 // ================== GAMING BOOKINGS ==================
 

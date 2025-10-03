@@ -92,10 +92,23 @@
     .btn-google img { width: 20px; }
     .btn-google:hover { background: #f8f8f8; border-color: #bbb; }
     .input-feedback { font-size: 13px; margin-top: 2px; }
-    .alert { border-radius: 10px; font-size: 14px; }
+
+    /* Flash message container */
+    #flashMsg { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 500px; z-index: 1050; }
   </style>
 </head>
 <body>
+
+  <!-- Flash message -->
+  <div id="flashMsg">
+    {{#if flash}}
+      <div class="alert alert-{{flash.type}} alert-dismissible fade show d-flex justify-content-between align-items-center" role="alert">
+        {{flash.message}}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {{/if}}
+  </div>
+
   <div class="signup-container">
     <div class="card">
       <div class="row g-0">
@@ -115,17 +128,6 @@
 
         <!-- Right side form -->
         <div class="col-md-7 p-4 bg-white">
-          <!-- Flash Messages -->
-          <% if (messages.error) { %>
-            <div class="alert alert-danger"><i class="fas fa-exclamation-circle me-2"></i><%= messages.error %></div>
-          <% } %>
-          <% if (messages.success) { %>
-            <div class="alert alert-success"><i class="fas fa-check-circle me-2"></i><%= messages.success %></div>
-          <% } %>
-          <% if (messages.info) { %>
-            <div class="alert alert-info"><i class="fas fa-info-circle me-2"></i><%= messages.info %></div>
-          <% } %>
-
           <h3 class="fw-bold mb-3">Create Your Account</h3>
           <form id="signupForm" method="POST" action="/signup">
             <div class="row">
@@ -179,8 +181,13 @@
               </button>
             </div>
 
-            <div class="text-center mt-3">
-              <p class="mb-0">Already have an account? <a href="/login" class="fw-bold text-decoration-none">Login</a></p>
+            <div class="text-center mt-4">
+              <p class="mb-0 text-muted">
+                Already a member?
+                <a href="/login" class="fw-bold text-decoration-none" style="color:#6a11cb;">
+                  Login here
+                </a>
+              </p>
             </div>
           </form>
         </div>
@@ -188,6 +195,7 @@
     </div>
   </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
   // Password toggles
   function setupToggle(toggleId, inputId) {
@@ -228,5 +236,6 @@
   document.getElementById("email").addEventListener("blur", e => checkUserField("email", e.target.value, document.getElementById("emailFeedback")));
   document.getElementById("phone").addEventListener("blur", e => checkUserField("phone", e.target.value, document.getElementById("phoneFeedback")));
 </script>
+
 </body>
 </html>
