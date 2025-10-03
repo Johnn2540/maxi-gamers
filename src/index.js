@@ -166,14 +166,15 @@ async function ensureAuthenticated(req, res, next) {
       return;
     }
 
-    if (!user.active) {
-      req.session.destroy(() => res.status(403).send("Your account is suspended."));
+    // Only block inactive standard users
+    if ((user.role || "").toLowerCase() === "user" && !user.active) {
+      req.session.destroy(() => res.status(403).send("Your account is suspended or not verified."));
       return;
     }
 
     req.user = user; // Attach user to request for downstream middleware
 
-    // Auto-redirect based on role if hitting the default dashboard route
+    // Auto-redirect based on role if hitting default dashboard
     if (req.path === "/dashboard" || req.path === "/") {
       if ((user.role || "").toLowerCase() === "admin") return res.redirect("/admin");
       return res.redirect("/user");
@@ -201,6 +202,7 @@ module.exports = {
   ensureAuthenticated,
   requireAdmin
 };
+
 
 // ================== VIEW ENGINE ==================
 app.set("view engine", "hbs");
@@ -794,7 +796,7 @@ app.post("/login", async (req, res) => {
       return res.redirect(`/login?flash=${encodeURIComponent("Invalid email or password.")}&type=error`);
     }
 
-    // Password check
+    // Password check (if user has a password)
     if (user.password) {
       const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) {
@@ -802,15 +804,15 @@ app.post("/login", async (req, res) => {
       }
     }
 
-    // Only block **new unverified users** (role: 'user')
-    if (!user.active && user.role === "user") {
+    // Only block inactive normal users (role: 'user')
+    if ((user.role || "").toLowerCase() === "user" && !user.active) {
       return res.redirect(`/login?flash=${encodeURIComponent("Please verify your email before logging in.")}&type=error`);
     }
 
     // Login success
-    req.session.userId = user._id;
+    req.session.user = { id: user._id, name: user.name, role: user.role }; // match middleware
     const redirectMap = { admin: "/admin", user: "/user" };
-    res.redirect(redirectMap[user.role] || "/");
+    res.redirect(redirectMap[(user.role || "").toLowerCase()] || "/");
 
   } catch (err) {
     console.error("Login error:", err);
