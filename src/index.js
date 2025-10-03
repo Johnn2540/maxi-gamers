@@ -643,8 +643,9 @@ app.post("/admin/loans/:id/status", async (req, res) => {
   }
 });
 
+// ================== USER ROUTES ==================
 
-// ================== SIGNUP (JWT + Email Verification + Password Strength) ==================
+// ================== SIGNUP ==================
 app.post("/signup", async (req, res) => {
   try {
     const { name, email, phone, password, studentId } = req.body;
@@ -656,11 +657,10 @@ app.post("/signup", async (req, res) => {
     // Check if user already exists
     const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
     if (existingUser) {
-      // Allow existing users/admins to login
       return res.redirect(`/login?flash=${encodeURIComponent("User already exists. Please login.")}&type=info`);
     }
 
-    // Password rules for new users only
+    // Password rules: min 6 chars, 1 letter, 1 number
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
     if (!passwordRegex.test(password)) {
       return res.redirect(`/signup?flash=${encodeURIComponent("Password must be at least 6 characters, include at least one letter and one number.")}&type=error`);
@@ -679,13 +679,15 @@ app.post("/signup", async (req, res) => {
       createdAt: new Date()
     });
 
+    // Generate JWT token for email verification
     const token = jwt.sign({ email: newUser.email }, process.env.JWT_SECRET, { expiresIn: "1h" });
     const baseUrl = process.env.BASE_URL || "http://localhost:3000";
-    const verifyUrl = `${baseUrl}/verify-email-jwt?token=${token}`;
+    const verifyUrl = `${baseUrl}/verify-email?token=${token}`;
 
+    // Send verification email
     const transporter = nodemailer.createTransport({
       service: "gmail",
-      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
     });
 
     await transporter.sendMail({
@@ -693,13 +695,14 @@ app.post("/signup", async (req, res) => {
       subject: "Verify your email - Maximum Gamers",
       html: `
         <p>Hello ${newUser.name},</p>
-        <p>Please verify your email by clicking the link below:</p>
+        <p>Click the link below to verify your email:</p>
         <a href="${verifyUrl}">${verifyUrl}</a>
         <p>This link expires in 1 hour.</p>
-      `,
+      `
     });
 
-    return res.redirect(`/login?flash=${encodeURIComponent("Signup successful! Please check your email to verify your account.")}&type=success`);
+    console.log(`Verification email sent: ${verifyUrl}`);
+    return res.redirect(`/login?flash=${encodeURIComponent("Signup successful! Check your email to verify your account.")}&type=success`);
 
   } catch (err) {
     console.error("Signup error:", err);
@@ -708,35 +711,29 @@ app.post("/signup", async (req, res) => {
 });
 
 // ================== EMAIL VERIFICATION ==================
-app.get("/verify-email-jwt", async (req, res) => {
+app.get("/verify-email", async (req, res) => {
   const { token } = req.query;
-  if (!token) {
-    return res.redirect(`/login?flash=${encodeURIComponent("Verification token is missing.")}&type=error`);
-  }
+  if (!token) return res.redirect(`/login?flash=${encodeURIComponent("Verification token is missing.")}&type=error`);
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findOne({ email: decoded.email });
-
-    if (!user) {
-      return res.redirect(`/login?flash=${encodeURIComponent("Invalid or expired token.")}&type=error`);
-    }
+    if (!user) return res.redirect(`/login?flash=${encodeURIComponent("Invalid or expired token.")}&type=error`);
 
     if (!user.active) {
       user.active = true;
       await user.save();
     }
 
+    // Log user in
     req.session.user = { id: user._id, name: user.name, role: user.role };
-    res.redirect(user.role === "admin" ? "/admin" : "/user");
+    return res.redirect(user.role === "admin" ? "/admin" : "/user");
 
   } catch (err) {
     console.error("Email verification error:", err);
-
     const msg = err.name === "TokenExpiredError"
       ? "Verification link expired. Please resend verification."
       : "Invalid verification token.";
-
     return res.redirect(`/login?flash=${encodeURIComponent(msg)}&type=error`);
   }
 });
@@ -745,26 +742,19 @@ app.get("/verify-email-jwt", async (req, res) => {
 app.post("/resend-verification", async (req, res) => {
   try {
     const { email } = req.body;
-    if (!email) {
-      return res.redirect(`/login?flash=${encodeURIComponent("Email is required.")}&type=error`);
-    }
+    if (!email) return res.redirect(`/login?flash=${encodeURIComponent("Email is required.")}&type=error`);
 
     const user = await User.findOne({ email: email.toLowerCase().trim() });
-    if (!user) {
-      return res.redirect(`/login?flash=${encodeURIComponent("No account found with that email.")}&type=error`);
-    }
-
-    if (user.active) {
-      return res.redirect(`/login?flash=${encodeURIComponent("This account is already verified. Please log in.")}&type=info`);
-    }
+    if (!user) return res.redirect(`/login?flash=${encodeURIComponent("No account found with that email.")}&type=error`);
+    if (user.active) return res.redirect(`/login?flash=${encodeURIComponent("Account already verified. Please log in.")}&type=info`);
 
     const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: "1h" });
     const baseUrl = process.env.BASE_URL || "http://localhost:3000";
-    const verifyUrl = `${baseUrl}/verify-email-jwt?token=${token}`;
+    const verifyUrl = `${baseUrl}/verify-email?token=${token}`;
 
     const transporter = nodemailer.createTransport({
       service: "gmail",
-      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
     });
 
     await transporter.sendMail({
@@ -772,13 +762,14 @@ app.post("/resend-verification", async (req, res) => {
       subject: "Resend Verification - Maximum Gamers",
       html: `
         <p>Hello ${user.name},</p>
-        <p>Please verify your email by clicking the link below:</p>
+        <p>Click the link below to verify your email:</p>
         <a href="${verifyUrl}">${verifyUrl}</a>
         <p>This link expires in 1 hour.</p>
-      `,
+      `
     });
 
-    return res.redirect(`/login?flash=${encodeURIComponent("Verification email resent! Please check your inbox.")}&type=success`);
+    console.log(`Resent verification email: ${verifyUrl}`);
+    return res.redirect(`/login?flash=${encodeURIComponent("Verification email resent! Check your inbox.")}&type=success`);
 
   } catch (err) {
     console.error("Resend verification error:", err);
