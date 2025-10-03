@@ -651,14 +651,17 @@ app.post("/signup", async (req, res) => {
       return res.redirect(`/signup?flash=${encodeURIComponent("Missing required fields.")}&type=error`);
     }
 
+    // Check if user already exists
+    const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
+    if (existingUser) {
+      // Allow existing users/admins to login
+      return res.redirect(`/login?flash=${encodeURIComponent("User already exists. Please login.")}&type=info`);
+    }
+
+    // Password rules for new users only
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
     if (!passwordRegex.test(password)) {
       return res.redirect(`/signup?flash=${encodeURIComponent("Password must be at least 6 characters, include at least one letter and one number.")}&type=error`);
-    }
-
-    const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
-    if (existingUser) {
-      return res.redirect(`/signup?flash=${encodeURIComponent("User already exists with that email or phone.")}&type=error`);
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -791,6 +794,7 @@ app.post("/login", async (req, res) => {
       return res.redirect(`/login?flash=${encodeURIComponent("Invalid email or password.")}&type=error`);
     }
 
+    // Password check
     if (user.password) {
       const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) {
@@ -798,10 +802,12 @@ app.post("/login", async (req, res) => {
       }
     }
 
-    if (typeof user.active !== "undefined" && !user.active && user.role !== "admin") {
+    // Only block **new unverified users** (role: 'user')
+    if (!user.active && user.role === "user") {
       return res.redirect(`/login?flash=${encodeURIComponent("Please verify your email before logging in.")}&type=error`);
     }
 
+    // Login success
     req.session.userId = user._id;
     const redirectMap = { admin: "/admin", user: "/user" };
     res.redirect(redirectMap[user.role] || "/");
@@ -826,10 +832,7 @@ app.post("/reset-password", async (req, res) => {
       return res.redirect(`/reset-password?flash=${encodeURIComponent("No account found with that email.")}&type=error`);
     }
 
-    if (!user.active && user.role === "user") {
-      return res.redirect(`/login?flash=${encodeURIComponent("Please verify your email before resetting password.")}&type=error`);
-    }
-
+    // Allow admins or existing users to reset password even if not verified
     user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
 
