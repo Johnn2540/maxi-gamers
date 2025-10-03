@@ -132,6 +132,32 @@ app.get('/auth/google/callback',
   }
 );
 
+// ================== HELPER: Send Verification Email ==================
+async function sendVerificationEmail(user, baseUrl) {
+  const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: "1h" });
+  user.verificationToken = token; // Save token in DB
+  user.lastVerificationSent = new Date();
+  await user.save();
+
+  const verifyUrl = `${baseUrl}/verify-email?token=${token}`;
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+  });
+
+  await transporter.sendMail({
+    to: user.email,
+    subject: "Verify your email - Maximum Gamers",
+    html: `
+      <p>Hello ${user.name},</p>
+      <p>Click the link below to verify your email:</p>
+      <a href="${verifyUrl}">${verifyUrl}</a>
+      <p>This link expires in 1 hour.</p>
+    `
+  });
+
+  console.log(`Verification email sent: ${verifyUrl}`);
+}
 
 // ================== MIDDLEWARE ==================
 app.set("trust proxy", 1); // required on Render/Heroku
@@ -201,7 +227,7 @@ function requireAdmin(req, res, next) {
 module.exports = {
   ensureAuthenticated,
   requireAdmin
-};
+}; 
 
 
 // ================== VIEW ENGINE ==================
@@ -649,18 +675,15 @@ app.post("/admin/loans/:id/status", async (req, res) => {
 app.post("/signup", async (req, res) => {
   try {
     const { name, email, phone, password, studentId } = req.body;
-
     if (!name || !email || !phone || !password) {
       return res.redirect(`/signup?flash=${encodeURIComponent("Missing required fields.")}&type=error`);
     }
 
-    // Check if user already exists
     const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
     if (existingUser) {
       return res.redirect(`/login?flash=${encodeURIComponent("User already exists. Please login.")}&type=info`);
     }
 
-    // Password rules: min 6 chars, 1 letter, 1 number
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
     if (!passwordRegex.test(password)) {
       return res.redirect(`/signup?flash=${encodeURIComponent("Password must be at least 6 characters, include at least one letter and one number.")}&type=error`);
@@ -676,37 +699,45 @@ app.post("/signup", async (req, res) => {
       role: "user",
       studentId,
       active: false,
-      createdAt: new Date()
+      createdAt: new Date(),
     });
 
-    // Generate JWT token for email verification
-    const token = jwt.sign({ email: newUser.email }, process.env.JWT_SECRET, { expiresIn: "1h" });
     const baseUrl = process.env.BASE_URL || "http://localhost:3000";
-    const verifyUrl = `${baseUrl}/verify-email?token=${token}`;
+    await sendVerificationEmail(newUser, baseUrl);
 
-    // Send verification email
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
-    });
-
-    await transporter.sendMail({
-      to: newUser.email,
-      subject: "Verify your email - Maximum Gamers",
-      html: `
-        <p>Hello ${newUser.name},</p>
-        <p>Click the link below to verify your email:</p>
-        <a href="${verifyUrl}">${verifyUrl}</a>
-        <p>This link expires in 1 hour.</p>
-      `
-    });
-
-    console.log(`Verification email sent: ${verifyUrl}`);
     return res.redirect(`/login?flash=${encodeURIComponent("Signup successful! Check your email to verify your account.")}&type=success`);
-
   } catch (err) {
     console.error("Signup error:", err);
     return res.redirect(`/signup?flash=${encodeURIComponent("Error during signup. Please try again.")}&type=error`);
+  }
+});
+
+// ================== LOGIN ==================
+app.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) {
+      return res.redirect(`/login?flash=${encodeURIComponent("Invalid email or password.")}&type=error`);
+    }
+
+    if (user.password) {
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        return res.redirect(`/login?flash=${encodeURIComponent("Invalid email or password.")}&type=error`);
+      }
+    }
+
+    if ((user.role || "").toLowerCase() === "user" && !user.active) {
+      return res.redirect(`/login?flash=${encodeURIComponent("Please verify your email before logging in.")}&type=error`);
+    }
+
+    req.session.user = { id: user._id, name: user.name, role: user.role };
+    const redirectMap = { admin: "/admin", user: "/user" };
+    return res.redirect(redirectMap[(user.role || "").toLowerCase()] || "/");
+  } catch (err) {
+    console.error("Login error:", err);
+    return res.redirect(`/login?flash=${encodeURIComponent("Login failed. Please try again.")}&type=error`);
   }
 });
 
@@ -719,16 +750,15 @@ app.get("/verify-email", async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findOne({ email: decoded.email });
     if (!user) return res.redirect(`/login?flash=${encodeURIComponent("Invalid or expired token.")}&type=error`);
+    if (user.active) return res.redirect(`/login?flash=${encodeURIComponent("Account already verified.")}&type=info`);
+    if (user.verificationToken !== token) return res.redirect(`/login?flash=${encodeURIComponent("Invalid verification token.")}&type=error`);
 
-    if (!user.active) {
-      user.active = true;
-      await user.save();
-    }
+    user.active = true;
+    user.verificationToken = null;
+    await user.save();
 
-    // Log user in
     req.session.user = { id: user._id, name: user.name, role: user.role };
     return res.redirect(user.role === "admin" ? "/admin" : "/user");
-
   } catch (err) {
     console.error("Email verification error:", err);
     const msg = err.name === "TokenExpiredError"
@@ -748,66 +778,17 @@ app.post("/resend-verification", async (req, res) => {
     if (!user) return res.redirect(`/login?flash=${encodeURIComponent("No account found with that email.")}&type=error`);
     if (user.active) return res.redirect(`/login?flash=${encodeURIComponent("Account already verified. Please log in.")}&type=info`);
 
-    const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: "1h" });
+    if (user.lastVerificationSent && (Date.now() - user.lastVerificationSent.getTime()) < 5 * 60 * 1000) {
+      return res.redirect(`/login?flash=${encodeURIComponent("Verification email sent recently. Please wait before resending.")}&type=info`);
+    }
+
     const baseUrl = process.env.BASE_URL || "http://localhost:3000";
-    const verifyUrl = `${baseUrl}/verify-email?token=${token}`;
+    await sendVerificationEmail(user, baseUrl);
 
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
-    });
-
-    await transporter.sendMail({
-      to: user.email,
-      subject: "Resend Verification - Maximum Gamers",
-      html: `
-        <p>Hello ${user.name},</p>
-        <p>Click the link below to verify your email:</p>
-        <a href="${verifyUrl}">${verifyUrl}</a>
-        <p>This link expires in 1 hour.</p>
-      `
-    });
-
-    console.log(`Resent verification email: ${verifyUrl}`);
     return res.redirect(`/login?flash=${encodeURIComponent("Verification email resent! Check your inbox.")}&type=success`);
-
   } catch (err) {
     console.error("Resend verification error:", err);
     return res.redirect(`/login?flash=${encodeURIComponent("Something went wrong. Please try again later.")}&type=error`);
-  }
-});
-
-// ================== LOGIN ==================
-app.post("/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email: email.toLowerCase().trim() });
-
-    if (!user) {
-      return res.redirect(`/login?flash=${encodeURIComponent("Invalid email or password.")}&type=error`);
-    }
-
-    // Password check (if user has a password)
-    if (user.password) {
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) {
-        return res.redirect(`/login?flash=${encodeURIComponent("Invalid email or password.")}&type=error`);
-      }
-    }
-
-    // Only block inactive normal users (role: 'user')
-    if ((user.role || "").toLowerCase() === "user" && !user.active) {
-      return res.redirect(`/login?flash=${encodeURIComponent("Please verify your email before logging in.")}&type=error`);
-    }
-
-    // Login success
-    req.session.user = { id: user._id, name: user.name, role: user.role }; // match middleware
-    const redirectMap = { admin: "/admin", user: "/user" };
-    res.redirect(redirectMap[(user.role || "").toLowerCase()] || "/");
-
-  } catch (err) {
-    console.error("Login error:", err);
-    return res.redirect(`/login?flash=${encodeURIComponent("Login failed. Please try again.")}&type=error`);
   }
 });
 
@@ -815,29 +796,24 @@ app.post("/login", async (req, res) => {
 app.post("/reset-password", async (req, res) => {
   try {
     const { email, newPassword, confirmPassword } = req.body;
-
     if (newPassword !== confirmPassword) {
       return res.redirect(`/reset-password?flash=${encodeURIComponent("Passwords do not match.")}&type=error`);
     }
 
     const user = await User.findOne({ email: email.toLowerCase().trim() });
-    if (!user) {
-      return res.redirect(`/reset-password?flash=${encodeURIComponent("No account found with that email.")}&type=error`);
-    }
+    if (!user) return res.redirect(`/reset-password?flash=${encodeURIComponent("No account found with that email.")}&type=error`);
 
-    // Allow admins or existing users to reset password even if not verified
     user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
 
     return res.redirect(`/login?flash=${encodeURIComponent("Password reset successful. You can now login.")}&type=success`);
-
   } catch (err) {
     console.error("Reset password error:", err);
     return res.redirect(`/reset-password?flash=${encodeURIComponent("Error resetting password. Please try again.")}&type=error`);
   }
 });
 
-// ================== CHECK USER (AJAX for signup form) ==================
+// ================== CHECK USER (AJAX) ==================
 app.post("/check-user", async (req, res) => {
   try {
     const { email, phone } = req.body;
@@ -853,6 +829,22 @@ app.post("/check-user", async (req, res) => {
   }
 });
 
+// ================== GOOGLE OAUTH ROUTES ==================
+app.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
+
+app.get(
+  "/auth/google/callback",
+  passport.authenticate("google", { failureRedirect: "/login" }),
+  (req, res) => {
+    req.session.user = {
+      id: req.user._id,
+      name: req.user.name,
+      role: req.user.role,
+    };
+    const redirectMap = { admin: "/admin", user: "/user" };
+    res.redirect(redirectMap[(req.user.role || "").toLowerCase()] || "/");
+  }
+);
 
 // ================== GAMING BOOKINGS ==================
 

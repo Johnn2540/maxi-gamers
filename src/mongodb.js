@@ -28,11 +28,16 @@ const userSchema = new mongoose.Schema(
     // Phone number only for local signup
     phone: { type: String, unique: true, sparse: true },
 
-    // Store hashed password only (validation handled before save)
+    // Store hashed password only
     password: { type: String, required: false },
 
     role: { type: String, enum: ["user", "admin"], default: "user" },
-    active: { type: Boolean, default: true },
+
+    // Email verification
+    active: { type: Boolean, default: false }, // Block login until verified
+    verificationToken: { type: String, default: null }, // Store JWT token for verification
+    lastVerificationSent: { type: Date, default: null }, // Track resend attempts
+
     studentId: { type: String },
 
     // Profile image
@@ -44,7 +49,6 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-
 
 // PRODUCT SCHEMA
 const productSchema = new mongoose.Schema({
