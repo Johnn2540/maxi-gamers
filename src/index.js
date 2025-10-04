@@ -11,7 +11,7 @@ const multer = require("multer");
 const http = require("http");
 const { Server } = require("socket.io");
 const { User, Product, Leaderboard, Booking, TopBarMessage, Loan, Message } = require("./mongodb");
-const MongoStore = require('connect-mongo');
+const MongoStore = require("connect-mongo");
 const cloudinary = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const passport = require("passport");
@@ -59,7 +59,7 @@ app.use(
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     },
     store: MongoStore.create({
-      mongoUrl: process.env.MONGO_URI, // make sure this matches your .env
+      mongoUrl: process.env.MONGO_URI,
       collectionName: "sessions",
       ttl: 7 * 24 * 60 * 60, // 7 days
     }),
@@ -72,31 +72,36 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: "https://www.maximumgamers.co.ke/auth/google/callback",
+      callbackURL: process.env.GOOGLE_CALLBACK_URL || "http://localhost:3000/auth/google/callback",
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
         let user = await User.findOne({ googleId: profile.id });
+
+        // Create user if doesn't exist
         if (!user) {
           user = await User.create({
             googleId: profile.id,
             name: profile.displayName,
-            email: profile.emails[0].value,
-            image: profile.photos[0].value,
+            email: profile.emails?.[0]?.value || "no-email@google.com",
+            image: profile.photos?.[0]?.value || "/default-avatar.png",
             role: "user",
             active: true,
           });
         }
+
         return done(null, user);
       } catch (err) {
+        console.error("Google OAuth Error:", err);
         return done(err, null);
       }
     }
   )
 );
 
-// ================== PASSPORT SERIALIZE / DESERIALIZE ==================
+// ================== SERIALIZE / DESERIALIZE ==================
 passport.serializeUser((user, done) => done(null, user.id));
+
 passport.deserializeUser(async (id, done) => {
   try {
     const user = await User.findById(id);
@@ -110,39 +115,54 @@ passport.deserializeUser(async (id, done) => {
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Start Google OAuth login
-app.get('/auth/google',
-  passport.authenticate('google', { scope: ['profile', 'email'] })
-);
+// ================== AUTH ROUTES ==================
 
-// Google OAuth callback
-app.get('/auth/google/callback', 
-  passport.authenticate('google', { failureRedirect: '/login' }),
+// Step 1: Start Google login
+app.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
+
+// Step 2: Google callback
+app.get(
+  "/auth/google/callback",
+  passport.authenticate("google", { failureRedirect: "/login" }),
   (req, res) => {
-    // Successful login, store user in session
-    req.session.user = { 
-      id: req.user._id, 
-      name: req.user.name, 
-      role: req.user.role 
+    // Save user in session
+    req.session.user = {
+      id: req.user._id,
+      name: req.user.name,
+      role: req.user.role,
     };
 
-    // Redirect based on role
-    if (req.user.role === 'admin') return res.redirect('/admin');
-    return res.redirect('/user');
+    // Redirect based on user role
+    if (req.user.role === "admin") {
+      return res.redirect("/admin");
+    } else {
+      return res.redirect("/user");
+    }
   }
 );
+
+// Step 3: Logout route
+app.get("/logout", (req, res) => {
+  req.logout(() => {
+    req.session.destroy();
+    res.redirect("/");
+  });
+});
 
 // ================== HELPER: Send Verification Email ==================
 async function sendVerificationEmail(user, baseUrl) {
   const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: "1h" });
-  user.verificationToken = token; // Save token in DB
+  user.verificationToken = token;
   user.lastVerificationSent = new Date();
   await user.save();
 
   const verifyUrl = `${baseUrl}/verify-email?token=${token}`;
   const transporter = nodemailer.createTransport({
     service: "gmail",
-    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
   });
 
   await transporter.sendMail({
@@ -153,14 +173,14 @@ async function sendVerificationEmail(user, baseUrl) {
       <p>Click the link below to verify your email:</p>
       <a href="${verifyUrl}">${verifyUrl}</a>
       <p>This link expires in 1 hour.</p>
-    `
+    `,
   });
 
   console.log(`Verification email sent: ${verifyUrl}`);
 }
 
 // ================== MIDDLEWARE ==================
-app.set("trust proxy", 1); // required on Render/Heroku
+app.set("trust proxy", 1);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "public")));
@@ -171,17 +191,10 @@ console.log("Mongo URI loaded:", !!process.env.MONGO_URI);
 console.log("Session Secret loaded:", !!process.env.SESSION_SECRET);
 console.log("JWT Secret loaded:", !!process.env.JWT_SECRET);
 
-
 // ================== AUTH MIDDLEWARE ==================
-
-/**
- * Ensures that the user is logged in and active.
- * Attaches the DB-fetched user to req.user.
- * Optionally redirects users based on role.
- */
 async function ensureAuthenticated(req, res, next) {
   if (!req.session.user) {
-    return res.redirect("/login"); // Not logged in
+    return res.redirect("/login");
   }
 
   try {
@@ -192,15 +205,13 @@ async function ensureAuthenticated(req, res, next) {
       return;
     }
 
-    // Only block inactive standard users
     if ((user.role || "").toLowerCase() === "user" && !user.active) {
       req.session.destroy(() => res.status(403).send("Your account is suspended or not verified."));
       return;
     }
 
-    req.user = user; // Attach user to request for downstream middleware
+    req.user = user;
 
-    // Auto-redirect based on role if hitting default dashboard
     if (req.path === "/dashboard" || req.path === "/") {
       if ((user.role || "").toLowerCase() === "admin") return res.redirect("/admin");
       return res.redirect("/user");
@@ -213,10 +224,6 @@ async function ensureAuthenticated(req, res, next) {
   }
 }
 
-/**
- * Ensures the logged-in user is an admin.
- * Use after ensureAuthenticated middleware.
- */
 function requireAdmin(req, res, next) {
   if (!req.user || (req.user.role || "").toLowerCase() !== "admin") {
     return res.status(403).send("Access denied. Admins only.");
@@ -224,10 +231,11 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+// ================== EXPORTS ==================
 module.exports = {
   ensureAuthenticated,
-  requireAdmin
-}; 
+  requireAdmin,
+};
 
 
 // ================== VIEW ENGINE ==================
