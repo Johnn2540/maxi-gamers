@@ -1240,5 +1240,5 @@ pages.forEach(page => app.get("/"+page, (req,res)=>res.render(page)));
 
 // ================== START SERVER ==================
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-}); 
+  console.log(`Server running on port ${PORT}`);
+});
