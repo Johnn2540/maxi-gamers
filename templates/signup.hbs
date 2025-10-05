@@ -93,7 +93,6 @@
     .btn-google:hover { background: #f8f8f8; border-color: #bbb; }
     .input-feedback { font-size: 13px; margin-top: 2px; }
 
-    /* Flash message container */
     #flashMsg {
       position: fixed;
       top: 20px;
@@ -217,13 +216,23 @@
   setupToggle("passwordToggle", "password");
   setupToggle("confirmPasswordToggle", "confirmPassword");
 
-  // Confirm password validation
-  document.getElementById("signupForm").addEventListener("submit", (e) => {
+  // Confirm password validation & prevent signup if duplicate
+  document.getElementById("signupForm").addEventListener("submit", async (e) => {
     const pass = document.getElementById("password").value;
     const confirm = document.getElementById("confirmPassword").value;
+    const emailFeedback = document.getElementById("emailFeedback").textContent;
+    const phoneFeedback = document.getElementById("phoneFeedback").textContent;
+
     if (pass !== confirm) {
       e.preventDefault();
       alert("Passwords do not match.");
+      return;
+    }
+
+    if (emailFeedback || phoneFeedback) {
+      e.preventDefault();
+      alert("Please fix the highlighted issues before signing up.");
+      return;
     }
   });
 
