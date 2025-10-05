@@ -203,7 +203,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  // Password toggle visibility
+  // ================== PASSWORD TOGGLE ==================
   function setupToggle(toggleId, inputId) {
     const toggle = document.getElementById(toggleId);
     const input = document.getElementById(inputId);
@@ -216,12 +216,17 @@
   setupToggle("passwordToggle", "password");
   setupToggle("confirmPasswordToggle", "confirmPassword");
 
-  // Confirm password validation & prevent signup if duplicate
+  // ================== FORM ELEMENTS ==================
+  const signupBtn = document.querySelector(".btn-signup");
+  const emailInput = document.getElementById("email");
+  const phoneInput = document.getElementById("phone");
+  const emailFeedback = document.getElementById("emailFeedback");
+  const phoneFeedback = document.getElementById("phoneFeedback");
+
+  // ================== PASSWORD CONFIRM VALIDATION ==================
   document.getElementById("signupForm").addEventListener("submit", async (e) => {
     const pass = document.getElementById("password").value;
     const confirm = document.getElementById("confirmPassword").value;
-    const emailFeedback = document.getElementById("emailFeedback").textContent;
-    const phoneFeedback = document.getElementById("phoneFeedback").textContent;
 
     if (pass !== confirm) {
       e.preventDefault();
@@ -229,16 +234,22 @@
       return;
     }
 
-    if (emailFeedback || phoneFeedback) {
+    if (signupBtn.disabled) {
       e.preventDefault();
       alert("Please fix the highlighted issues before signing up.");
       return;
     }
   });
 
-  // Live check email & phone uniqueness
+  // ================== CHECK USER FIELD ==================
   async function checkUserField(field, value, feedbackEl) {
-    if (!value) { feedbackEl.textContent = ''; return; }
+    if (!value.trim()) {
+      feedbackEl.textContent = "";
+      feedbackEl.classList.remove("text-danger", "text-success");
+      signupBtn.disabled = false;
+      return;
+    }
+
     try {
       const res = await fetch("/check-user", {
         method: "POST",
@@ -246,19 +257,33 @@
         body: JSON.stringify({ [field]: value })
       });
       const data = await res.json();
-      feedbackEl.textContent = data.exists ? data.message : '';
+
+      if (data.exists) {
+        feedbackEl.textContent = data.message;
+        feedbackEl.classList.remove("text-success");
+        feedbackEl.classList.add("text-danger");
+        signupBtn.disabled = true;
+      } else {
+        feedbackEl.textContent = "✓ Available";
+        feedbackEl.classList.remove("text-danger");
+        feedbackEl.classList.add("text-success");
+        signupBtn.disabled = false;
+      }
     } catch (err) {
       console.error("Check-user error:", err);
+      signupBtn.disabled = false;
     }
   }
 
-  document.getElementById("email").addEventListener("blur", e =>
-    checkUserField("email", e.target.value, document.getElementById("emailFeedback"))
+  // ================== LIVE FIELD CHECK ==================
+  emailInput.addEventListener("blur", (e) =>
+    checkUserField("email", e.target.value, emailFeedback)
   );
-  document.getElementById("phone").addEventListener("blur", e =>
-    checkUserField("phone", e.target.value, document.getElementById("phoneFeedback"))
+  phoneInput.addEventListener("blur", (e) =>
+    checkUserField("phone", e.target.value, phoneFeedback)
   );
 </script>
+
 
 </body>
 </html>

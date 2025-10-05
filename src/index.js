@@ -77,20 +77,20 @@ passport.use(new GoogleStrategy({
     const image = profile.photos?.[0]?.value;
     const name = profile.displayName;
 
-    // ✅ Step 1: Check for existing user by googleId or email
+    //  Step 1: Check for existing user by googleId or email
     let user = await User.findOne({
       $or: [{ googleId: profile.id }, { email }]
     });
 
     if (user) {
-      // ✅ Step 2: Link Google ID if missing
+      //  Step 2: Link Google ID if missing
       if (!user.googleId) {
         user.googleId = profile.id;
         if (image && !user.image) user.image = image;
         await user.save();
       }
 
-      // ✅ Ensure the account is active (in case they registered but never verified)
+      //  Ensure the account is active (in case they registered but never verified)
       if (!user.active) {
         user.active = true;
         await user.save();
@@ -99,7 +99,7 @@ passport.use(new GoogleStrategy({
       return done(null, user);
     }
 
-    // ✅ Step 3: If no user exists, safely create a new one
+    //  Step 3: If no user exists, safely create a new one
     user = await User.create({
       googleId: profile.id,
       name,
@@ -114,7 +114,7 @@ passport.use(new GoogleStrategy({
   } catch (err) {
     console.error("Google OAuth error:", err);
 
-    // ✅ Step 4: Handle duplicate key error gracefully (no crash)
+    //  Step 4: Handle duplicate key error gracefully (no crash)
     if (err.code === 11000 && err.keyPattern?.email) {
       const existingUser = await User.findOne({ email: profile.emails?.[0]?.value });
       if (existingUser) {
@@ -899,17 +899,57 @@ app.post("/reset-password", async (req, res) => {
 app.post("/check-user", async (req, res) => {
   try {
     const { email, phone } = req.body;
-    if (!email && !phone) return res.status(400).json({ exists: false });
 
-    const user = await User.findOne({ $or: [{ email }, { phone }] });
-    if (user) return res.json({ exists: true, message: "User with this email or phone already exists." });
+    // Ensure at least one field is provided
+    if (!email && !phone) {
+      return res.status(400).json({
+        exists: false,
+        message: "Missing email or phone."
+      });
+    }
 
-    res.json({ exists: false });
+    // Clean and validate input types
+    const query = [];
+    if (typeof email === "string" && email.trim()) {
+      query.push({ email: email.toLowerCase().trim() });
+    }
+    if (typeof phone === "string" && phone.trim()) {
+      query.push({ phone: phone.trim() });
+    }
+
+    // If no valid query fields remain, skip DB lookup
+    if (query.length === 0) {
+      return res.status(400).json({
+        exists: false,
+        message: "Invalid email or phone format."
+      });
+    }
+
+    // Check if user already exists
+    const user = await User.findOne({ $or: query });
+
+    if (user) {
+      return res.json({
+        exists: true,
+        message: "A user with this email or phone already exists in the system."
+      });
+    }
+
+    // User does not exist
+    return res.json({
+      exists: false,
+      message: "No matching user found."
+    });
+
   } catch (err) {
     console.error("Check-user error:", err);
-    res.status(500).json({ exists: false, message: "Error checking user." });
+    return res.status(500).json({
+      exists: false,
+      message: "Internal server error."
+    });
   }
 });
+
 
 // ================== GOOGLE OAUTH ROUTES ==================
 app.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
