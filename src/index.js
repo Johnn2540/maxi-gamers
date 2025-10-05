@@ -67,37 +67,73 @@ app.use(
 );
 
 // ================== PASSPORT GOOGLE OAUTH ==================
-passport.use(
-  new GoogleStrategy(
-    {
-      clientID: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: process.env.GOOGLE_CALLBACK_URL || "http://localhost:3000/auth/google/callback",
-    },
-    async (accessToken, refreshToken, profile, done) => {
-      try {
-        let user = await User.findOne({ googleId: profile.id });
+passport.use(new GoogleStrategy({
+  clientID: process.env.GOOGLE_CLIENT_ID,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  callbackURL: "/auth/google/callback"
+}, async (accessToken, refreshToken, profile, done) => {
+  try {
+    const email = profile.emails?.[0]?.value?.toLowerCase().trim();
+    const image = profile.photos?.[0]?.value;
+    const name = profile.displayName;
 
-        // Create user if doesn't exist
-        if (!user) {
-          user = await User.create({
-            googleId: profile.id,
-            name: profile.displayName,
-            email: profile.emails?.[0]?.value || "no-email@google.com",
-            image: profile.photos?.[0]?.value || "/default-avatar.png",
-            role: "user",
-            active: true,
-          });
+    // ✅ Step 1: Check for existing user by googleId or email
+    let user = await User.findOne({
+      $or: [{ googleId: profile.id }, { email }]
+    });
+
+    if (user) {
+      // ✅ Step 2: Link Google ID if missing
+      if (!user.googleId) {
+        user.googleId = profile.id;
+        if (image && !user.image) user.image = image;
+        await user.save();
+      }
+
+      // ✅ Ensure the account is active (in case they registered but never verified)
+      if (!user.active) {
+        user.active = true;
+        await user.save();
+      }
+
+      return done(null, user);
+    }
+
+    // ✅ Step 3: If no user exists, safely create a new one
+    user = await User.create({
+      googleId: profile.id,
+      name,
+      email,
+      image,
+      role: "user",
+      active: true,
+      createdAt: new Date()
+    });
+
+    return done(null, user);
+  } catch (err) {
+    console.error("Google OAuth error:", err);
+
+    // ✅ Step 4: Handle duplicate key error gracefully (no crash)
+    if (err.code === 11000 && err.keyPattern?.email) {
+      const existingUser = await User.findOne({ email: profile.emails?.[0]?.value });
+      if (existingUser) {
+        // Link Google account manually if necessary
+        if (!existingUser.googleId) {
+          existingUser.googleId = profile.id;
+          if (!existingUser.image && profile.photos?.[0]?.value) {
+            existingUser.image = profile.photos[0].value;
+          }
+          await existingUser.save();
         }
-
-        return done(null, user);
-      } catch (err) {
-        console.error("Google OAuth Error:", err);
-        return done(err, null);
+        return done(null, existingUser);
       }
     }
-  )
-);
+
+    return done(err, null);
+  }
+}));
+
 
 // ================== SERIALIZE / DESERIALIZE ==================
 passport.serializeUser((user, done) => done(null, user.id));
@@ -683,22 +719,35 @@ app.post("/admin/loans/:id/status", async (req, res) => {
 app.post("/signup", async (req, res) => {
   try {
     const { name, email, phone, password, studentId } = req.body;
+
     if (!name || !email || !phone || !password) {
-      return res.redirect(`/signup?flash=${encodeURIComponent("Missing required fields.")}&type=error`);
+      return res.redirect(
+        `/signup?flash=${encodeURIComponent("Missing required fields.")}&type=error`
+      );
     }
 
+    // ✅ Check if user already exists
     const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
     if (existingUser) {
-      return res.redirect(`/login?flash=${encodeURIComponent("User already exists. Please login.")}&type=info`);
+      return res.redirect(
+        `/login?flash=${encodeURIComponent("User already exists. Please login.")}&type=info`
+      );
     }
 
+    // ✅ Validate password format
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
     if (!passwordRegex.test(password)) {
-      return res.redirect(`/signup?flash=${encodeURIComponent("Password must be at least 6 characters, include at least one letter and one number.")}&type=error`);
+      return res.redirect(
+        `/signup?flash=${encodeURIComponent(
+          "Password must be at least 6 characters, include at least one letter and one number."
+        )}&type=error`
+      );
     }
 
+    // ✅ Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // ✅ Create new user
     const newUser = await User.create({
       name,
       email: email.toLowerCase().trim(),
@@ -710,13 +759,38 @@ app.post("/signup", async (req, res) => {
       createdAt: new Date(),
     });
 
+    // ✅ Send verification email
     const baseUrl = process.env.BASE_URL || "http://localhost:3000";
     await sendVerificationEmail(newUser, baseUrl);
 
-    return res.redirect(`/login?flash=${encodeURIComponent("Signup successful! Check your email to verify your account.")}&type=success`);
+    return res.redirect(
+      `/login?flash=${encodeURIComponent(
+        "Signup successful! Check your email to verify your account."
+      )}&type=success`
+    );
   } catch (err) {
+    // ✅ Handle duplicate key (email/phone already registered)
+    if (err.code === 11000 && err.keyPattern?.email) {
+      return res.redirect(
+        `/login?flash=${encodeURIComponent(
+          "Email already registered. Please login instead."
+        )}&type=info`
+      );
+    }
+    if (err.code === 11000 && err.keyPattern?.phone) {
+      return res.redirect(
+        `/login?flash=${encodeURIComponent(
+          "Phone number already registered. Please login instead."
+        )}&type=info`
+      );
+    }
+
     console.error("Signup error:", err);
-    return res.redirect(`/signup?flash=${encodeURIComponent("Error during signup. Please try again.")}&type=error`);
+    return res.redirect(
+      `/signup?flash=${encodeURIComponent(
+        "Error during signup. Please try again."
+      )}&type=error`
+    );
   }
 });
 
