@@ -10,63 +10,119 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     body {
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      padding: 20px;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
       background: #000;
+      padding: 20px;
     }
+
+    /* Background */
     .bg-container {
       position: fixed;
       inset: 0;
-      background: url('https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=2070&q=80') no-repeat center/cover;
+      background: url('https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=2070&q=80')
+        no-repeat center center/cover;
       animation: zoomEffect 20s infinite alternate ease-in-out;
       z-index: -2;
     }
+
     .overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.6);
+      background: rgba(0, 0, 0, 0.7);
       z-index: -1;
     }
-    @keyframes zoomEffect { 0% { transform: scale(1);} 100% { transform: scale(1.1);} }
 
-    .login-container { width: 100%; max-width: 450px; }
-    .card { background: rgba(255, 255, 255, 0.95); border-radius: 16px; border: none; backdrop-filter: blur(10px); box-shadow: 0 10px 30px rgba(0,0,0,0.25); }
-    .card-body { padding: 2rem; }
+    @keyframes zoomEffect {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.1); }
+    }
 
-    .logo { font-size: 28px; font-weight: 700; display: flex; justify-content: center; align-items: center; margin-bottom: 10px; color: #212529; }
-    .logo i { margin-right: 10px; color: #6a11cb; }
-    .form-label { font-weight: 600; margin-bottom: 6px; }
+    /* Card */
+    .login-container {
+      width: 100%;
+      max-width: 430px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.96);
+      border: none;
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.35);
+      overflow: hidden;
+    }
+
+    .card-body {
+      padding: 2rem;
+    }
+
+    /* Header */
+    .logo {
+      font-size: 30px;
+      font-weight: 700;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #212529;
+      margin-bottom: 10px;
+    }
+
+    .logo i {
+      margin-right: 10px;
+      color: #6a11cb;
+    }
+
+    /* Form controls */
+    .form-label {
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
     .form-control {
       border-radius: 10px;
       padding: 12px 14px;
       border: 2px solid #eef0f3;
       font-size: 15px;
-      transition: border 0.3s, box-shadow 0.3s;
+      transition: border-color 0.3s, box-shadow 0.3s;
     }
+
     .form-control:focus {
       border-color: #6a11cb;
-      box-shadow: 0 0 0 0.25rem rgba(106,17,203,0.25);
+      box-shadow: 0 0 0 0.25rem rgba(106, 17, 203, 0.25);
     }
-    .input-group-text { border-radius: 0 10px 10px 0; cursor: pointer; }
+
+    .input-group-text {
+      background: #fff;
+      border-radius: 0 10px 10px 0;
+      cursor: pointer;
+    }
+
+    /* Buttons */
     .btn-login {
-      background: linear-gradient(to right, #6a11cb, #2575fc);
+      background: linear-gradient(135deg, #6a11cb, #2575fc);
       color: white;
       border: none;
       padding: 12px;
       border-radius: 10px;
       font-weight: 600;
       font-size: 16px;
-      transition: 0.3s;
+      transition: all 0.3s ease;
     }
+
     .btn-login:hover {
       transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(106,17,203,0.4);
+      box-shadow: 0 6px 18px rgba(106, 17, 203, 0.45);
     }
 
     .btn-google {
@@ -80,13 +136,18 @@
       font-weight: 600;
       font-size: 15px;
       gap: 10px;
-      transition: 0.3s;
+      transition: all 0.3s ease;
     }
-    .btn-google img { width: 20px; }
-    .btn-google:hover { background: #f8f8f8; border-color: #bbb; }
 
-    .forgot-password { color: #6a11cb; font-weight: 500; font-size: 14px; text-decoration: none; }
-    .forgot-password:hover { text-decoration: underline; }
+    .btn-google:hover {
+      background: #f8f8f8;
+      border-color: #bbb;
+    }
+
+    .btn-google img {
+      width: 20px;
+    }
+
     .btn-signup {
       border: 2px solid #6a11cb;
       color: #6a11cb;
@@ -96,17 +157,39 @@
       font-size: 14px;
       transition: 0.3s;
     }
-    .btn-signup:hover { background: #6a11cb; color: #fff; }
 
-    .form-text { font-size: 13px; }
+    .btn-signup:hover {
+      background: #6a11cb;
+      color: #fff;
+    }
+
+    .forgot-password {
+      color: #6a11cb;
+      font-weight: 500;
+      font-size: 14px;
+      text-decoration: none;
+    }
+
+    .forgot-password:hover {
+      text-decoration: underline;
+    }
+
+    .form-text {
+      font-size: 13px;
+    }
+
+    .alert {
+      border-radius: 10px;
+    }
   </style>
 </head>
+
 <body>
   <div class="bg-container"></div>
   <div class="overlay"></div>
 
   <div class="login-container">
-    <div class="card shadow-lg">
+    <div class="card">
       <div class="card-body">
         <div class="text-center mb-4">
           <div class="logo"><i class="fas fa-gamepad"></i> Maximum Gamers</div>
@@ -123,7 +206,7 @@
         {{/if}}
 
         <!-- Login Form -->
-        <form id="loginForm" method="POST" action="/login">
+        <form id="loginForm" method="POST" action="/login" novalidate>
           <div class="mb-3">
             <label for="email" class="form-label">Email Address</label>
             <input type="email" id="email" name="email" class="form-control" placeholder="Enter your email" required />
@@ -151,18 +234,18 @@
           </div>
         </form>
 
-        <div class="text-center my-3"><span class="text-muted">OR</span></div>
+        <div class="text-center my-3 text-muted">— OR —</div>
 
         <!-- Google Login -->
         <div class="d-grid">
           <a href="/auth/google" class="btn-google">
             <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google Logo" />
-            Login with Google
+            Continue with Google
           </a>
         </div>
 
         <div class="text-center mt-4">
-          <p class="mb-2">Don't have an account?</p>
+          <p class="mb-2">Don’t have an account?</p>
           <a href="/signup" class="btn btn-signup">Sign Up Now</a>
         </div>
       </div>
@@ -176,10 +259,12 @@
     document.getElementById("togglePassword").addEventListener("click", function () {
       const pwd = document.getElementById("password");
       const icon = this.querySelector("i");
-      pwd.type = pwd.type === "password" ? "text" : "password";
-      icon.classList.toggle("fa-eye");
-      icon.classList.toggle("fa-eye-slash");
+      const show = pwd.type === "password";
+      pwd.type = show ? "text" : "password";
+      icon.classList.toggle("fa-eye", !show);
+      icon.classList.toggle("fa-eye-slash", show);
     });
   </script>
 </body>
 </html>
+

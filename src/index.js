@@ -185,35 +185,6 @@ app.get("/logout", (req, res) => {
   });
 });
 
-// ================== HELPER: Send Verification Email ==================
-async function sendVerificationEmail(user, baseUrl) {
-  const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: "1h" });
-  user.verificationToken = token;
-  user.lastVerificationSent = new Date();
-  await user.save();
-
-  const verifyUrl = `${baseUrl}/verify-email?token=${token}`;
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
-
-  await transporter.sendMail({
-    to: user.email,
-    subject: "Verify your email - Maximum Gamers",
-    html: `
-      <p>Hello ${user.name},</p>
-      <p>Click the link below to verify your email:</p>
-      <a href="${verifyUrl}">${verifyUrl}</a>
-      <p>This link expires in 1 hour.</p>
-    `,
-  });
-
-  console.log(`Verification email sent: ${verifyUrl}`);
-}
 
 // ================== MIDDLEWARE ==================
 app.set("trust proxy", 1);
@@ -228,49 +199,128 @@ console.log("Session Secret loaded:", !!process.env.SESSION_SECRET);
 console.log("JWT Secret loaded:", !!process.env.JWT_SECRET);
 
 // ================== AUTH MIDDLEWARE ==================
+
+/**
+ * Ensure the user is authenticated before accessing protected routes
+ */
 async function ensureAuthenticated(req, res, next) {
-  if (!req.session.user) {
-    return res.redirect("/login");
-  }
-
   try {
+    // 1️⃣ If no active session, check Remember Me cookie
+    if (!req.session.user) {
+      const token = req.cookies?.rememberMeToken;
+
+      if (token) {
+        const user = await User.findOne({ rememberToken: token });
+        if (user) {
+          req.session.user = { id: user._id, name: user.name, role: user.role };
+          req.session.lastActivity = Date.now();
+        } else {
+          res.clearCookie("rememberMeToken");
+          return res.redirect("/login");
+        }
+      } else {
+        return res.redirect("/login");
+      }
+    }
+
+    // 2️⃣ Session inactivity timeout (30 minutes)
+    const now = Date.now();
+    const TIMEOUT_LIMIT = 30 * 60 * 1000; // 30 min
+    if (req.session.lastActivity && now - req.session.lastActivity > TIMEOUT_LIMIT) {
+      req.session.destroy(() => {
+        res.clearCookie("rememberMeToken");
+        return res.redirect(
+          `/login?flash=${encodeURIComponent("Session expired. Please log in again.")}&type=info`
+        );
+      });
+      return;
+    }
+    req.session.lastActivity = now;
+
+    // 3️⃣ Verify user still exists
     const user = await User.findById(req.session.user.id);
-
     if (!user) {
-      req.session.destroy(() => res.status(403).send("User not found."));
+      req.session.destroy(() => res.redirect("/login"));
       return;
     }
 
-    if ((user.role || "").toLowerCase() === "user" && !user.active) {
-      req.session.destroy(() => res.status(403).send("Your account is suspended or not verified."));
+    // 4️⃣ Check account status for normal users
+    const role = (user.role || "").toLowerCase();
+    if (role === "user" && !user.active) {
+      req.session.destroy(() =>
+        res.status(403).send("Your account is suspended or pending verification.")
+      );
       return;
     }
 
+    // 5️⃣ Attach user object for downstream routes
     req.user = user;
 
-    if (req.path === "/dashboard" || req.path === "/") {
-      if ((user.role || "").toLowerCase() === "admin") return res.redirect("/admin");
-      return res.redirect("/user");
+    // 6️⃣ Smart redirect if visiting root/dashboard
+    if (["/", "/dashboard"].includes(req.path)) {
+      return res.redirect(role === "admin" ? "/admin" : "/user");
     }
 
+    // ✅ Allow access
     next();
   } catch (err) {
-    console.error("Auth check error:", err);
+    console.error("🔴 Auth check error:", err);
     res.status(500).send("Internal server error");
   }
 }
 
+/**
+ * Restrict route to specific user roles (case-insensitive)
+ */
+function requireRole(role) {
+  return (req, res, next) => {
+    const userRole = (req.user?.role || "").toLowerCase();
+    if (userRole !== role.toLowerCase()) {
+      return res.status(403).send("Access denied.");
+    }
+    next();
+  };
+}
+
+/**
+ * Restrict route to admins only
+ */
 function requireAdmin(req, res, next) {
-  if (!req.user || (req.user.role || "").toLowerCase() !== "admin") {
+  const role = (req.user?.role || "").toLowerCase();
+  if (role !== "admin") {
     return res.status(403).send("Access denied. Admins only.");
   }
   next();
+}
+
+/**
+ * Handle "Remember Me" cookie setup
+ */
+async function handleRememberMe(user, res, remember) {
+  if (remember) {
+    const token = crypto.randomBytes(32).toString("hex");
+    user.rememberToken = token;
+    await user.save();
+
+    res.cookie("rememberMeToken", token, {
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
+  } else {
+    user.rememberToken = null;
+    await user.save();
+    res.clearCookie("rememberMeToken");
+  }
 }
 
 // ================== EXPORTS ==================
 module.exports = {
   ensureAuthenticated,
   requireAdmin,
+  requireRole,
+  handleRememberMe,
 };
 
 
@@ -583,11 +633,22 @@ app.post("/admin/products/delete/:id", async (req, res) => {
 
 // ================== USER LOANS ==================
 
-// Render user's loans page (HTML)
-app.get("/loans", async (req, res) => {
-  try {
-    if (!req.session.user) return res.redirect("/login");
+// Middleware to ensure the user is logged in
+function ensureAuthenticated(req, res, next) {
+  if (!req.session.user) {
+    // If AJAX or API request, send JSON error
+    if (req.headers.accept?.includes("application/json")) {
+      return res.status(403).json({ success: false, message: "Login required" });
+    }
+    // If browser request, redirect to login
+    return res.redirect("/login");
+  }
+  next();
+}
 
+// Render user's loans page (HTML)
+app.get("/loans", ensureAuthenticated, async (req, res) => {
+  try {
     const loans = await Loan.find({ user: req.session.user.id }).sort({ createdAt: -1 });
     res.render("loans", { loans });
   } catch (err) {
@@ -596,30 +657,30 @@ app.get("/loans", async (req, res) => {
   }
 });
 
-// Create new loan
-app.post("/loans", upload.single("itemImage"), async (req, res) => {
+// Create a new loan (form submission or API)
+app.post("/loans", ensureAuthenticated, upload.single("itemImage"), async (req, res) => {
   try {
-    if (!req.session.user) {
-      if (req.headers.accept?.includes("application/json")) {
-        return res.status(403).json({ success: false, message: "Login required" });
-      }
-      return res.redirect("/login");
+    const { description, itemValue, loanAmount, loanPeriod } = req.body;
+
+    // Input validation
+    if (!description || !itemValue || !loanAmount || !loanPeriod) {
+      return res.status(400).json({ success: false, message: "All fields are required" });
     }
 
-    // When using CloudinaryStorage, req.file.path is the full Cloudinary URL
     const loan = await Loan.create({
       user: req.session.user.id,
-      itemImage: req.file ? req.file.path : null,   //  Cloudinary URL instead of local filename
-      description: req.body.description,
-      itemValue: req.body.itemValue,
-      loanAmount: req.body.loanAmount,
-      loanPeriod: req.body.loanPeriod,
+      itemImage: req.file ? req.file.path : null, // Cloudinary URL
+      description,
+      itemValue,
+      loanAmount,
+      loanPeriod,
       status: "Pending",
     });
 
-    // Broadcast new loan to admins
+    // Notify admins (via Socket.IO)
     io.emit("loanCreated", loan);
 
+    // Handle response types
     if (req.headers.accept?.includes("application/json")) {
       return res.json({ success: true, loan });
     }
@@ -628,38 +689,45 @@ app.post("/loans", upload.single("itemImage"), async (req, res) => {
   } catch (err) {
     console.error("Loan submission error:", err);
     if (req.headers.accept?.includes("application/json")) {
-      return res.status(500).json({ success: false, message: err.message });
+      return res.status(500).json({ success: false, message: "Server error while creating loan" });
     }
     res.status(500).send("Failed to submit loan");
   }
 });
 
-// Fetch logged-in user's loans (AJAX/json)
-app.get("/loans/list", async (req, res) => {
+// Fetch user's loans (AJAX or API)
+app.get("/loans/list", ensureAuthenticated, async (req, res) => {
   try {
-    if (!req.session.user) return res.json([]);
     const loans = await Loan.find({ user: req.session.user.id }).sort({ createdAt: -1 });
     res.json(loans);
   } catch (err) {
     console.error("Error fetching user loans:", err);
-    res.status(500).json([]);
+    res.status(500).json({ success: false, message: "Failed to load loans" });
   }
 });
 
 
+
 // ================== ADMIN LOANS ==================
 
-// Render admin loans page
-app.get("/admin/loans", async (req, res) => {
+// Middleware to ensure user is logged in and is an admin
+function requireAdmin(req, res, next) {
   if (!req.session.user || req.session.user.role !== "admin") {
+    if (req.headers.accept?.includes("application/json")) {
+      return res.status(403).json({ success: false, message: "Admin access required" });
+    }
     return res.status(403).send("Access Denied");
   }
+  next();
+}
+
+// Render Admin Loans Page (HTML)
+app.get("/admin/loans", requireAdmin, async (req, res) => {
   try {
     const loans = await Loan.find()
       .populate("user", "name email")
       .sort({ createdAt: -1 });
 
-    // images are already part of Loan schema, so they’ll be available here
     res.render("admin-loans", { loans });
   } catch (err) {
     console.error("Error loading admin loans:", err);
@@ -667,31 +735,30 @@ app.get("/admin/loans", async (req, res) => {
   }
 });
 
-// JSON for admin fetch/AJAX
-app.get("/admin/loans/json", async (req, res) => {
-  if (!req.session.user || req.session.user.role !== "admin") {
-    return res.status(403).json({ success: false, message: "Access denied" });
-  }
+// Fetch all loans (Admin JSON/AJAX)
+app.get("/admin/loans/json", requireAdmin, async (req, res) => {
   try {
     const loans = await Loan.find()
       .populate("user", "name email")
       .sort({ createdAt: -1 });
 
-    // includes images array
-    res.json(loans);
+    res.json({ success: true, loans });
   } catch (err) {
     console.error("Error fetching admin loans:", err);
-    res.status(500).json([]);
+    res.status(500).json({ success: false, message: "Failed to load loans" });
   }
 });
 
-// Admin update loan status
-app.post("/admin/loans/:id/status", async (req, res) => {
-  if (!req.session.user || req.session.user.role !== "admin") {
-    return res.status(403).json({ success: false, message: "Access denied" });
+// Admin: Update Loan Status
+app.post("/admin/loans/:id/status", requireAdmin, async (req, res) => {
+  const { status } = req.body;
+
+  // Validate input
+  const validStatuses = ["Pending", "Approved", "Rejected", "Completed"];
+  if (!validStatuses.includes(status)) {
+    return res.status(400).json({ success: false, message: "Invalid loan status" });
   }
 
-  const { status } = req.body;
   try {
     const loan = await Loan.findByIdAndUpdate(
       req.params.id,
@@ -703,195 +770,285 @@ app.post("/admin/loans/:id/status", async (req, res) => {
       return res.status(404).json({ success: false, message: "Loan not found" });
     }
 
-    // Broadcast update (frontend can refresh automatically)
+    // Notify connected clients (e.g., admin dashboard + user)
     io.emit("loanUpdated", loan);
 
     res.json({ success: true, loan });
   } catch (err) {
     console.error("Loan update error:", err);
-    res.status(500).json({ success: false, message: err.message });
+    res.status(500).json({ success: false, message: "Failed to update loan status" });
   }
 });
 
+
 // ================== USER ROUTES ==================
 
-// ================== SIGNUP ==================
+// ================== USER SIGNUP ==================
 app.post("/signup", async (req, res) => {
   try {
     const { name, email, phone, password, studentId } = req.body;
 
-    if (!name || !email || !phone || !password) {
-      return res.redirect(
-        `/signup?flash=${encodeURIComponent("Missing required fields.")}&type=error`
-      );
+    // 1️⃣ Input sanitization
+    const sanitizedEmail = email?.toLowerCase().trim();
+    const sanitizedName = name?.trim();
+    const sanitizedPhone = phone?.trim();
+
+    // 2️⃣ Basic validation
+    if (!sanitizedName || !sanitizedEmail || !sanitizedPhone || !password) {
+      const msg = "All required fields must be filled.";
+      return handleSignupError(req, res, msg, "error");
     }
 
-    // ✅ Check if user already exists
-    const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
-    if (existingUser) {
-      return res.redirect(
-        `/login?flash=${encodeURIComponent("User already exists. Please login.")}&type=info`
-      );
+    // 3️⃣ Email format check
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(sanitizedEmail)) {
+      return handleSignupError(req, res, "Invalid email format.", "error");
     }
 
-    // ✅ Validate password format
+    // 4️⃣ Password strength check
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
     if (!passwordRegex.test(password)) {
-      return res.redirect(
-        `/signup?flash=${encodeURIComponent(
-          "Password must be at least 6 characters, include at least one letter and one number."
-        )}&type=error`
+      return handleSignupError(
+        req,
+        res,
+        "Password must be at least 6 characters long and include at least one letter and one number.",
+        "error"
       );
     }
 
-    // ✅ Hash password
+    // 5️⃣ Check for existing user (email or phone)
+    const existingUser = await User.findOne({
+      $or: [{ email: sanitizedEmail }, { phone: sanitizedPhone }],
+    });
+
+    if (existingUser) {
+      return handleSignupError(
+        req,
+        res,
+        "User already exists. Please login instead.",
+        "info",
+        "/login"
+      );
+    }
+
+    // 6️⃣ Hash password securely
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // ✅ Create new user
-    const newUser = await User.create({
-      name,
-      email: email.toLowerCase().trim(),
-      phone,
+    // 7️⃣ Create user (active immediately)
+    const user = await User.create({
+      name: sanitizedName,
+      email: sanitizedEmail,
+      phone: sanitizedPhone,
       password: hashedPassword,
-      role: "user",
       studentId,
-      active: false,
+      role: "user",
+      active: true,
       createdAt: new Date(),
     });
 
-    // ✅ Send verification email
-    const baseUrl = process.env.BASE_URL || "http://localhost:3000";
-    await sendVerificationEmail(newUser, baseUrl);
+    // 8️⃣ Auto-login after signup
+    req.session.user = {
+      id: user._id,
+      name: user.name,
+      role: user.role,
+    };
 
-    return res.redirect(
-      `/login?flash=${encodeURIComponent(
-        "Signup successful! Check your email to verify your account."
-      )}&type=success`
-    );
+    console.log(`🟢 New user registered: ${user.email}`);
+
+    // 9️⃣ Redirect to user dashboard
+    return res.redirect("/user");
   } catch (err) {
-    // ✅ Handle duplicate key (email/phone already registered)
-    if (err.code === 11000 && err.keyPattern?.email) {
-      return res.redirect(
-        `/login?flash=${encodeURIComponent(
-          "Email already registered. Please login instead."
-        )}&type=info`
-      );
-    }
-    if (err.code === 11000 && err.keyPattern?.phone) {
-      return res.redirect(
-        `/login?flash=${encodeURIComponent(
-          "Phone number already registered. Please login instead."
-        )}&type=info`
-      );
-    }
-
     console.error("Signup error:", err);
-    return res.redirect(
-      `/signup?flash=${encodeURIComponent(
-        "Error during signup. Please try again."
-      )}&type=error`
-    );
-  }
-});
 
-// ================== LOGIN ==================
-app.post("/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email: email.toLowerCase().trim() });
-    if (!user) {
-      return res.redirect(`/login?flash=${encodeURIComponent("Invalid email or password.")}&type=error`);
-    }
-
-    if (user.password) {
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) {
-        return res.redirect(`/login?flash=${encodeURIComponent("Invalid email or password.")}&type=error`);
+    // 10️⃣ Duplicate key (MongoDB 11000 error)
+    if (err.code === 11000) {
+      if (err.keyPattern?.email) {
+        return handleSignupError(
+          req,
+          res,
+          "Email already registered. Please login instead.",
+          "info",
+          "/login"
+        );
+      }
+      if (err.keyPattern?.phone) {
+        return handleSignupError(
+          req,
+          res,
+          "Phone number already registered. Please login instead.",
+          "info",
+          "/login"
+        );
       }
     }
 
-    if ((user.role || "").toLowerCase() === "user" && !user.active) {
-      return res.redirect(`/login?flash=${encodeURIComponent("Please verify your email before logging in.")}&type=error`);
+    // 11️⃣ Generic fallback
+    return handleSignupError(
+      req,
+      res,
+      "An unexpected error occurred during signup. Please try again.",
+      "error"
+    );
+  }
+});
+
+// ================== HELPER FUNCTION ==================
+function handleSignupError(req, res, message, type = "error", redirectPath = "/signup") {
+  if (req.headers.accept?.includes("application/json")) {
+    return res.status(400).json({ success: false, message });
+  }
+  return res.redirect(
+    `${redirectPath}?flash=${encodeURIComponent(message)}&type=${type}`
+  );
+}
+
+
+// ================== USER LOGIN ==================
+app.post("/login", async (req, res) => {
+  try {
+    const { email, password, remember } = req.body;
+
+    // 1️⃣ Sanitize & validate
+    const sanitizedEmail = email?.toLowerCase().trim();
+    if (!sanitizedEmail || !password) {
+      return handleLoginError(req, res, "Email and password are required.");
     }
 
-    req.session.user = { id: user._id, name: user.name, role: user.role };
-    const redirectMap = { admin: "/admin", user: "/user" };
-    return res.redirect(redirectMap[(user.role || "").toLowerCase()] || "/");
-  } catch (err) {
-    console.error("Login error:", err);
-    return res.redirect(`/login?flash=${encodeURIComponent("Login failed. Please try again.")}&type=error`);
-  }
-});
-
-// ================== EMAIL VERIFICATION ==================
-app.get("/verify-email", async (req, res) => {
-  const { token } = req.query;
-  if (!token) return res.redirect(`/login?flash=${encodeURIComponent("Verification token is missing.")}&type=error`);
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findOne({ email: decoded.email });
-    if (!user) return res.redirect(`/login?flash=${encodeURIComponent("Invalid or expired token.")}&type=error`);
-    if (user.active) return res.redirect(`/login?flash=${encodeURIComponent("Account already verified.")}&type=info`);
-    if (user.verificationToken !== token) return res.redirect(`/login?flash=${encodeURIComponent("Invalid verification token.")}&type=error`);
-
-    user.active = true;
-    user.verificationToken = null;
-    await user.save();
-
-    req.session.user = { id: user._id, name: user.name, role: user.role };
-    return res.redirect(user.role === "admin" ? "/admin" : "/user");
-  } catch (err) {
-    console.error("Email verification error:", err);
-    const msg = err.name === "TokenExpiredError"
-      ? "Verification link expired. Please resend verification."
-      : "Invalid verification token.";
-    return res.redirect(`/login?flash=${encodeURIComponent(msg)}&type=error`);
-  }
-});
-
-// ================== RESEND VERIFICATION ==================
-app.post("/resend-verification", async (req, res) => {
-  try {
-    const { email } = req.body;
-    if (!email) return res.redirect(`/login?flash=${encodeURIComponent("Email is required.")}&type=error`);
-
-    const user = await User.findOne({ email: email.toLowerCase().trim() });
-    if (!user) return res.redirect(`/login?flash=${encodeURIComponent("No account found with that email.")}&type=error`);
-    if (user.active) return res.redirect(`/login?flash=${encodeURIComponent("Account already verified. Please log in.")}&type=info`);
-
-    if (user.lastVerificationSent && (Date.now() - user.lastVerificationSent.getTime()) < 5 * 60 * 1000) {
-      return res.redirect(`/login?flash=${encodeURIComponent("Verification email sent recently. Please wait before resending.")}&type=info`);
+    // 2️⃣ Find user by email
+    const user = await User.findOne({ email: sanitizedEmail });
+    if (!user) {
+      return handleLoginError(req, res, "Invalid email or password.");
     }
 
-    const baseUrl = process.env.BASE_URL || "http://localhost:3000";
-    await sendVerificationEmail(user, baseUrl);
+    // 3️⃣ Compare password (hashed)
+    const isMatch = await bcrypt.compare(password, user.password || "");
+    if (!isMatch) {
+      return handleLoginError(req, res, "Invalid email or password.");
+    }
 
-    return res.redirect(`/login?flash=${encodeURIComponent("Verification email resent! Check your inbox.")}&type=success`);
+    // 4️⃣ Check if user is active
+    if (!user.active) {
+      return handleLoginError(
+        req,
+        res,
+        "Your account is inactive or suspended. Please contact support."
+      );
+    }
+
+    // 5️⃣ Create session
+    req.session.user = {
+      id: user._id,
+      name: user.name,
+      role: user.role,
+    };
+    req.session.lastActivity = Date.now();
+
+    // 6️⃣ Handle “Remember Me” feature
+    await handleRememberMe(user, res, remember);
+
+    // 7️⃣ Redirect or respond based on role
+    const role = (user.role || "").toLowerCase();
+    const redirectUrl =
+      role === "admin"
+        ? "/admin"
+        : role === "user"
+        ? "/user"
+        : "/";
+
+    // Support both HTML and JSON login
+    if (req.headers.accept?.includes("application/json")) {
+      return res.json({
+        success: true,
+        message: "Login successful",
+        role,
+        redirect: redirectUrl,
+      });
+    }
+
+    return res.redirect(redirectUrl);
   } catch (err) {
-    console.error("Resend verification error:", err);
-    return res.redirect(`/login?flash=${encodeURIComponent("Something went wrong. Please try again later.")}&type=error`);
+    console.error("🔴 Login error:", err);
+    return handleLoginError(req, res, "Login failed. Please try again.");
   }
 });
+
+// ================== HELPER FUNCTION ==================
+function handleLoginError(req, res, message, type = "error") {
+  if (req.headers.accept?.includes("application/json")) {
+    return res.status(401).json({ success: false, message });
+  }
+  return res.redirect(
+    `/login?flash=${encodeURIComponent(message)}&type=${type}`
+  );
+}
+
 
 // ================== RESET PASSWORD ==================
 app.post("/reset-password", async (req, res) => {
   try {
     const { email, newPassword, confirmPassword } = req.body;
-    if (newPassword !== confirmPassword) {
-      return res.redirect(`/reset-password?flash=${encodeURIComponent("Passwords do not match.")}&type=error`);
+
+    // 1️⃣ Validate inputs
+    if (!email || !newPassword || !confirmPassword) {
+      return handleFlashRedirect(
+        res,
+        "/reset-password",
+        "All fields are required.",
+        "error"
+      );
     }
 
-    const user = await User.findOne({ email: email.toLowerCase().trim() });
-    if (!user) return res.redirect(`/reset-password?flash=${encodeURIComponent("No account found with that email.")}&type=error`);
+    // 2️⃣ Password confirmation
+    if (newPassword !== confirmPassword) {
+      return handleFlashRedirect(
+        res,
+        "/reset-password",
+        "Passwords do not match.",
+        "error"
+      );
+    }
 
+    // 3️⃣ Password strength validation
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
+    if (!passwordRegex.test(newPassword)) {
+      return handleFlashRedirect(
+        res,
+        "/reset-password",
+        "Password must be at least 6 characters long and include at least one letter and one number.",
+        "error"
+      );
+    }
+
+    // 4️⃣ Find user
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) {
+      return handleFlashRedirect(
+        res,
+        "/reset-password",
+        "No account found with that email address.",
+        "error"
+      );
+    }
+
+    // 5️⃣ Hash and update password
     user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
 
-    return res.redirect(`/login?flash=${encodeURIComponent("Password reset successful. You can now login.")}&type=success`);
+    // 6️⃣ Redirect to login
+    return handleFlashRedirect(
+      res,
+      "/login",
+      "Password reset successful. You can now log in.",
+      "success"
+    );
   } catch (err) {
-    console.error("Reset password error:", err);
-    return res.redirect(`/reset-password?flash=${encodeURIComponent("Error resetting password. Please try again.")}&type=error`);
+    console.error("🔴 Reset password error:", err);
+    return handleFlashRedirect(
+      res,
+      "/reset-password",
+      "Error resetting password. Please try again.",
+      "error"
+    );
   }
 });
 
@@ -900,15 +1057,16 @@ app.post("/check-user", async (req, res) => {
   try {
     const { email, phone } = req.body;
 
-    // Ensure at least one field is provided
+    // 1️⃣ Validate input
     if (!email && !phone) {
       return res.status(400).json({
+        success: false,
         exists: false,
-        message: "Missing email or phone."
+        message: "Please provide an email or phone number.",
       });
     }
 
-    // Clean and validate input types
+    // 2️⃣ Build query dynamically
     const query = [];
     if (typeof email === "string" && email.trim()) {
       query.push({ email: email.toLowerCase().trim() });
@@ -917,38 +1075,41 @@ app.post("/check-user", async (req, res) => {
       query.push({ phone: phone.trim() });
     }
 
-    // If no valid query fields remain, skip DB lookup
-    if (query.length === 0) {
+    if (!query.length) {
       return res.status(400).json({
+        success: false,
         exists: false,
-        message: "Invalid email or phone format."
+        message: "Invalid email or phone format.",
       });
     }
 
-    // Check if user already exists
+    // 3️⃣ Search for user
     const user = await User.findOne({ $or: query });
 
+    // 4️⃣ Respond
     if (user) {
       return res.json({
+        success: true,
         exists: true,
-        message: "A user with this email or phone already exists in the system."
+        message: "A user with this email or phone already exists.",
       });
     }
 
-    // User does not exist
     return res.json({
+      success: true,
       exists: false,
-      message: "No matching user found."
+      message: "No matching user found.",
     });
-
   } catch (err) {
-    console.error("Check-user error:", err);
+    console.error("🔴 Check-user error:", err);
     return res.status(500).json({
+      success: false,
       exists: false,
-      message: "Internal server error."
+      message: "Internal server error.",
     });
   }
 });
+
 
 
 // ================== GOOGLE OAUTH ROUTES ==================
@@ -970,16 +1131,32 @@ app.get(
 
 // ================== GAMING BOOKINGS ==================
 
-// User creates a new booking
-app.post("/gaming/book", async (req, res) => {
+// ✅ Middleware for auth checks
+function requireLogin(req, res, next) {
+  if (!req.session.user) {
+    return res.status(403).json({ success: false, message: "Login required" });
+  }
+  next();
+}
+
+function requireAdmin(req, res, next) {
+  if (!req.session.user || req.session.user.role !== "admin") {
+    return res.status(403).json({ success: false, message: "Access denied" });
+  }
+  next();
+}
+
+// ✅ Create a new booking (User)
+app.post("/gaming/book", requireLogin, async (req, res) => {
   try {
-    if (!req.session.user) {
-      return res.status(403).json({ success: false, message: "Login required" });
+    const { game, console, date, timeSlot } = req.body;
+
+    if (!game || !console || !date || !timeSlot) {
+      return res.status(400).json({ success: false, message: "Missing required fields." });
     }
 
-    const { game, console, date, timeSlot } = req.body;
     const booking = await Booking.create({
-      user: req.session.user.id,   // correct field name from schema
+      user: req.session.user.id,
       game,
       console,
       date,
@@ -989,7 +1166,6 @@ app.post("/gaming/book", async (req, res) => {
     const populatedBooking = await Booking.findById(booking._id)
       .populate("user", "name email");
 
-    // Notify all admins/clients via socket.io
     io.emit("newBooking", { ...populatedBooking.toObject(), isNew: true });
 
     res.json({ success: true, booking: populatedBooking });
@@ -999,16 +1175,15 @@ app.post("/gaming/book", async (req, res) => {
   }
 });
 
-// Admin updates booking status
-app.post("/admin/bookings/update/:id", async (req, res) => {
+// ✅ Update booking status (Admin)
+app.post("/admin/bookings/update/:id", requireAdmin, async (req, res) => {
   try {
-    if (!req.session.user || req.session.user.role !== "admin") {
-      return res.status(403).json({ success: false, message: "Access denied" });
+    const { status } = req.body;
+    if (!status) {
+      return res.status(400).json({ success: false, message: "Status is required." });
     }
 
-    const { status } = req.body;
     const booking = await Booking.findById(req.params.id);
-
     if (!booking) {
       return res.status(404).json({ success: false, message: "Booking not found" });
     }
@@ -1019,9 +1194,7 @@ app.post("/admin/bookings/update/:id", async (req, res) => {
     const populatedBooking = await Booking.findById(booking._id)
       .populate("user", "name email");
 
-    // Notify all clients about update
     io.emit("updateBooking", populatedBooking);
-
     res.json({ success: true, booking: populatedBooking });
   } catch (err) {
     console.error("Error updating booking:", err);
@@ -1029,13 +1202,9 @@ app.post("/admin/bookings/update/:id", async (req, res) => {
   }
 });
 
-// Admin fetch all bookings
-app.get("/admin/bookings/json", async (req, res) => {
+// ✅ Fetch all bookings (Admin)
+app.get("/admin/bookings/json", requireAdmin, async (req, res) => {
   try {
-    if (!req.session.user || req.session.user.role !== "admin") {
-      return res.status(403).json({ success: false, message: "Access denied" });
-    }
-
     const bookings = await Booking.find()
       .populate("user", "name email")
       .sort({ createdAt: -1 });
@@ -1043,52 +1212,40 @@ app.get("/admin/bookings/json", async (req, res) => {
     const now = new Date();
     const bookingsWithFlag = bookings.map(b => {
       const bookingObj = b.toObject();
-
-      // prevent crash if user is missing
-      if (!bookingObj.user) {
-        bookingObj.user = { name: "Unknown User", email: "N/A" };
-      }
-
+      bookingObj.user ||= { name: "Unknown User", email: "N/A" };
       const createdAt = b.createdAt instanceof Date ? b.createdAt : null;
-      bookingObj.isNew = createdAt ? ((now - createdAt) / 1000 < 10) : false;
+      bookingObj.isNew = createdAt ? (now - createdAt) / 1000 < 10 : false;
       bookingObj.createdAt = createdAt;
-
       return bookingObj;
     });
 
-    res.json(bookingsWithFlag); // always array
+    res.json(bookingsWithFlag);
   } catch (err) {
     console.error("Error fetching admin bookings:", err);
-    res.status(500).json([]); // keep array shape
+    res.status(500).json([]);
   }
 });
 
-// User fetch their own bookings
-app.get("/gaming/bookings/json", async (req, res) => {
+// ✅ Fetch logged-in user’s bookings
+app.get("/gaming/bookings/json", requireLogin, async (req, res) => {
   try {
-    if (!req.session.user) {
-      return res.status(403).json({ success: false, message: "Login required" });
-    }
-
     const bookings = await Booking.find({ user: req.session.user.id })
       .populate("user", "name email")
       .sort({ createdAt: -1 });
 
-    // make sure every booking has a safe user object
     const safeBookings = bookings.map(b => {
       const bookingObj = b.toObject();
-      if (!bookingObj.user) {
-        bookingObj.user = { name: "Unknown User", email: "N/A" };
-      }
+      bookingObj.user ||= { name: "Unknown User", email: "N/A" };
       return bookingObj;
     });
 
-    res.json(safeBookings); // always array
+    res.json(safeBookings);
   } catch (err) {
     console.error("Error fetching user bookings:", err);
-    res.status(500).json([]); // keep array shape
+    res.status(500).json([]);
   }
 });
+
 
 
 // ================== MESSAGES & TOP BAR ROUTES ==================
