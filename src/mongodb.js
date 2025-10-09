@@ -1,56 +1,57 @@
 const mongoose = require("mongoose");
 require("dotenv").config();
 
-// ------------------ CONNECT TO MONGODB ATLAS ------------------
-const MONGO_URI = process.env.MONGO_URI; // MUST be set in .env
+const MONGO_URI = process.env.MONGO_URI;
 
-if (!MONGO_URI) {
-  console.error("❌ MONGO_URI is not defined in .env");
-  process.exit(1); // stop the server if no Atlas URI is provided
-}
+// ------------------ CONNECT FUNCTION ------------------
+const connectDB = async () => {
+  if (!MONGO_URI) {
+    console.error("❌ MONGO_URI is not defined in .env");
+    process.exit(1);
+  }
 
-mongoose
-  .connect(MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log(" Connected to MongoDB Atlas"))
-  .catch(err => console.error(" MongoDB Atlas connection error:", err));
+  try {
+    await mongoose.connect(MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log("✅ Connected to MongoDB Atlas");
+  } catch (err) {
+    console.error("❌ MongoDB Atlas connection error:", err);
+    process.exit(1);
+  }
+};
 
 // ------------------ SCHEMAS ------------------
 
-// ------------------USER SCHEMA ------------------
+// User schema
 const userSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
-
-    // Phone number only for local signup
-    phone: { type: String, unique: true, sparse: true },
-
-    // Store hashed password only
+    name: { type: String, required: true, trim: true },
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    phone: { type: String, unique: true, sparse: true, trim: true },
     password: { type: String, required: false },
-
     role: { type: String, enum: ["user", "admin"], default: "user" },
-
-    // Email verification
-    active: { type: Boolean, default: false }, // Block login until verified
-    verificationToken: { type: String, default: null }, // Store JWT token for verification
-    lastVerificationSent: { type: Date, default: null }, // Track resend attempts
-
-    studentId: { type: String },
-
-    // Profile image
-    image: { type: String, default: null },
+    active: { type: Boolean, default: true },
+    verificationToken: { type: String, default: null },
+    lastVerificationSent: { type: Date, default: null },
+    studentId: { type: String, default: null },
+    image: { type: String, default: "/images/default-profile.png" },
     imageId: { type: String, default: null },
-
-    // Google OAuth
     googleId: { type: String, unique: true, sparse: true },
+    rememberToken: { type: String, default: null },
   },
   { timestamps: true }
 );
 
-// PRODUCT SCHEMA
+userSchema.pre("save", function (next) {
+  if (this.name) this.name = this.name.trim();
+  if (this.email) this.email = this.email.toLowerCase().trim();
+  if (this.phone) this.phone = this.phone.trim();
+  next();
+});
+
+// Product schema
 const productSchema = new mongoose.Schema({
   title: { type: String, required: true },
   marketPrice: { type: Number, required: true },
@@ -60,13 +61,13 @@ const productSchema = new mongoose.Schema({
   image: { type: String },
 });
 
-// LEADERBOARD SCHEMA
+// Leaderboard schema
 const leaderboardSchema = new mongoose.Schema({
   player: { type: String, required: true },
   score: { type: Number, required: true },
 });
 
-// BOOKING SCHEMA
+// Booking schema
 const bookingSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
@@ -74,16 +75,12 @@ const bookingSchema = new mongoose.Schema(
     console: { type: String, required: true },
     date: { type: Date, required: true },
     timeSlot: { type: String, required: true },
-    status: {
-      type: String,
-      enum: ["Pending", "Confirmed", "Completed", "Cancelled"],
-      default: "Pending",
-    },
+    status: { type: String, enum: ["Pending", "Confirmed", "Completed", "Cancelled"], default: "Pending" },
   },
   { timestamps: true }
 );
 
-// TOP BAR MESSAGE SCHEMA
+// TopBarMessage schema
 const topBarMessageSchema = new mongoose.Schema({
   content: { type: String, required: true },
   active: { type: Boolean, default: true },
@@ -91,9 +88,9 @@ const topBarMessageSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-// LOAN SCHEMA
+// Loan schema
 const loanSchema = new mongoose.Schema({
-  images: [String], // Cloudinary URLs (multiple images)
+  images: [String],
   description: { type: String, required: true },
   itemValue: { type: Number, required: true },
   loanAmount: { type: Number, required: true },
@@ -103,8 +100,7 @@ const loanSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-
-// MESSAGE SCHEMA
+// Message schema
 const messageSchema = new mongoose.Schema({
   sender: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   content: { type: String, required: [true, "Message content is required"] },
@@ -113,24 +109,18 @@ const messageSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-// ------------------ MODELS ------------------
+// ------------------ MODEL REGISTRATION ------------------
 const User = mongoose.models.User || mongoose.model("User", userSchema);
-const Product =
-  mongoose.models.Product || mongoose.model("Product", productSchema);
-const Leaderboard =
-  mongoose.models.Leaderboard ||
-  mongoose.model("Leaderboard", leaderboardSchema);
-const Booking =
-  mongoose.models.Booking || mongoose.model("Booking", bookingSchema);
-const TopBarMessage =
-  mongoose.models.TopBarMessage ||
-  mongoose.model("TopBarMessage", topBarMessageSchema);
+const Product = mongoose.models.Product || mongoose.model("Product", productSchema);
+const Leaderboard = mongoose.models.Leaderboard || mongoose.model("Leaderboard", leaderboardSchema);
+const Booking = mongoose.models.Booking || mongoose.model("Booking", bookingSchema);
+const TopBarMessage = mongoose.models.TopBarMessage || mongoose.model("TopBarMessage", topBarMessageSchema);
 const Loan = mongoose.models.Loan || mongoose.model("Loan", loanSchema);
-const Message =
-  mongoose.models.Message || mongoose.model("Message", messageSchema);
+const Message = mongoose.models.Message || mongoose.model("Message", messageSchema);
 
-// ------------------ EXPORT ------------------
+// ------------------ EXPORTS ------------------
 module.exports = {
+  connectDB, // now properly defined
   User,
   Product,
   Leaderboard,
@@ -138,11 +128,8 @@ module.exports = {
   TopBarMessage,
   Loan,
   Message,
+  mongoose,
 };
-
-
-
-
 
 
 
