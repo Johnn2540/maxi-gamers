@@ -92,66 +92,77 @@ app.use(
 );
 
 // ================== PASSPORT CONFIGURATION ==================
-passport.use(new GoogleStrategy({
-  clientID: process.env.GOOGLE_CLIENT_ID,
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: "/auth/google/callback"
-}, async (accessToken, refreshToken, profile, done) => {
-  try {
-    const email = profile.emails?.[0]?.value?.toLowerCase().trim();
-    const image = profile.photos?.[0]?.value;
-    const name = profile.displayName;
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: "/auth/google/callback",
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        const email = profile.emails?.[0]?.value?.toLowerCase().trim();
+        const image = profile.photos?.[0]?.value;
+        const name = profile.displayName;
 
-    let user = await User.findOne({
-      $or: [{ googleId: profile.id }, { email }]
-    });
+        // First, try to find user by googleId
+        let user = await User.findOne({ googleId: profile.id });
 
-    if (user) {
-      if (!user.googleId) {
-        user.googleId = profile.id;
-        if (image && !user.image) user.image = image;
-        await user.save();
-      }
-
-      if (!user.active) {
-        user.active = true;
-        await user.save();
-      }
-
-      return done(null, user);
-    }
-
-    user = await User.create({
-      googleId: profile.id,
-      name,
-      email,
-      image,
-      role: "user",
-      active: true,
-      createdAt: new Date()
-    });
-
-    return done(null, user);
-  } catch (err) {
-    console.error("Google OAuth error:", err);
-
-    if (err.code === 11000 && err.keyPattern?.email) {
-      const existingUser = await User.findOne({ email: profile.emails?.[0]?.value });
-      if (existingUser) {
-        if (!existingUser.googleId) {
-          existingUser.googleId = profile.id;
-          if (!existingUser.image && profile.photos?.[0]?.value) {
-            existingUser.image = profile.photos[0].value;
-          }
-          await existingUser.save();
+        if (user) {
+          // Update image if missing
+          if (!user.image && image) user.image = image;
+          if (!user.active) user.active = true;
+          await user.save();
+          return done(null, user);
         }
-        return done(null, existingUser);
+
+        // If not found by googleId, try by email
+        user = await User.findOne({ email });
+
+        if (user) {
+          // Attach googleId to existing email account
+          if (!user.googleId) user.googleId = profile.id;
+          if (!user.image && image) user.image = image;
+          if (!user.active) user.active = true;
+          await user.save();
+          return done(null, user);
+        }
+
+        // Create new user WITHOUT phone (null)
+        const newUser = await User.create({
+          googleId: profile.id,
+          name,
+          email,
+          image,
+          role: "user",
+          active: true,
+        });
+
+        return done(null, newUser);
+      } catch (err) {
+        console.error("Google OAuth error:", err);
+
+        // If duplicate key error happens, find existing user by email and merge
+        if (err.code === 11000) {
+          const duplicateEmail = err.keyValue?.email;
+          if (duplicateEmail) {
+            const existingUser = await User.findOne({ email: duplicateEmail });
+            if (existingUser && !existingUser.googleId) {
+              existingUser.googleId = profile.id;
+              if (!existingUser.image && profile.photos?.[0]?.value)
+                existingUser.image = profile.photos[0].value;
+              if (!existingUser.active) existingUser.active = true;
+              await existingUser.save();
+            }
+            return done(null, existingUser);
+          }
+        }
+
+        return done(err, null);
       }
     }
-
-    return done(err, null);
-  }
-}));
+  )
+);
 
 passport.serializeUser((user, done) => done(null, user.id));
 passport.deserializeUser(async (id, done) => {
@@ -1262,14 +1273,16 @@ app.get("/top-bar/active", async (req, res) => {
   }
 });
 
-// ================== USER PROFILE ==================
+// ================== USER PROFILE ROUTES ==================
 
+// GET profile page
 app.get("/profile", ensureAuthenticated, async (req, res) => {
   try {
     const user = await User.findById(req.session.user.id);
     if (!user) return res.status(404).send("User not found");
-    res.render("profile", { 
-      user, 
+
+    res.render("profile", {
+      user,
       title: "Profile",
       currentUser: req.session.user
     });
@@ -1279,6 +1292,7 @@ app.get("/profile", ensureAuthenticated, async (req, res) => {
   }
 });
 
+// POST update profile (name, phone, studentId, and profile image)
 app.post("/profile/update", ensureAuthenticated, upload.single("image"), async (req, res) => {
   const { name, phone, studentId } = req.body;
 
@@ -1286,13 +1300,23 @@ app.post("/profile/update", ensureAuthenticated, upload.single("image"), async (
     const updateData = { name, phone, studentId };
 
     if (req.file) {
+      // Upload new profile image to Cloudinary
       const result = await cloudinary.uploader.upload(req.file.path, {
         folder: "profiles"
       });
+
+      // Remove old image from Cloudinary if exists
+      const user = await User.findById(req.session.user.id);
+      if (user.imageId) {
+        await cloudinary.uploader.destroy(user.imageId);
+      }
+
+      // Save new image URL and Cloudinary public_id
       updateData.image = result.secure_url;
       updateData.imageId = result.public_id;
     }
 
+    // Update user document
     await User.findByIdAndUpdate(req.session.user.id, updateData, { new: true });
     res.redirect("/profile");
   } catch (err) {
@@ -1301,16 +1325,19 @@ app.post("/profile/update", ensureAuthenticated, upload.single("image"), async (
   }
 });
 
+// GET remove profile image
 app.get("/profile/remove-image", ensureAuthenticated, async (req, res) => {
   try {
     const user = await User.findById(req.session.user.id);
     if (!user) return res.status(404).send("User not found");
 
+    // Delete image from Cloudinary if exists
     if (user.imageId) {
       await cloudinary.uploader.destroy(user.imageId);
     }
 
-    user.image = null;
+    // Reset to default profile image
+    user.image = "/images/default-profile.png";
     user.imageId = null;
     await user.save();
 

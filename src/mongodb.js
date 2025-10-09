@@ -29,25 +29,37 @@ const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    phone: { type: String, unique: true, sparse: true, trim: true },
+    phone: { type: String, unique: true, sparse: true, trim: true }, // sparse allows multiple nulls
     password: { type: String, required: false },
     role: { type: String, enum: ["user", "admin"], default: "user" },
     active: { type: Boolean, default: true },
     verificationToken: { type: String, default: null },
     lastVerificationSent: { type: Date, default: null },
     studentId: { type: String, default: null },
-    image: { type: String, default: "/images/default-profile.png" },
-    imageId: { type: String, default: null },
-    googleId: { type: String, unique: true, sparse: true },
+    image: { type: String, default: "/images/default-profile.png" }, // default placeholder
+    imageId: { type: String, default: null }, // Cloudinary public_id
+    googleId: { type: String, unique: true, sparse: true }, // sparse prevents duplicate null error
     rememberToken: { type: String, default: null },
   },
   { timestamps: true }
 );
 
+// Trim and clean fields before saving
 userSchema.pre("save", function (next) {
+  // Trim and clean basic fields
   if (this.name) this.name = this.name.trim();
   if (this.email) this.email = this.email.toLowerCase().trim();
-  if (this.phone) this.phone = this.phone.trim();
+
+  // Handle phone (avoid saving null)
+  this.phone = this.phone ? this.phone.trim() : undefined;
+
+  // Only store googleId if it exists
+  this.googleId = this.googleId || undefined;
+
+  // Ensure default image if none exists
+  if (!this.image) this.image = "/images/default-profile.png";
+  if (!this.imageId) this.imageId = null;
+
   next();
 });
 
@@ -89,16 +101,23 @@ const topBarMessageSchema = new mongoose.Schema({
 });
 
 // Loan schema
-const loanSchema = new mongoose.Schema({
-  images: [String],
-  description: { type: String, required: true },
-  itemValue: { type: Number, required: true },
-  loanAmount: { type: Number, required: true },
-  loanPeriod: { type: Number, required: true },
-  status: { type: String, default: "Pending", enum: ["Pending", "Approved", "Rejected", "Completed"] },
-  user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  createdAt: { type: Date, default: Date.now },
-});
+const loanSchema = new mongoose.Schema(
+  {
+    images: [{ type: String }], // Array of image URLs (Cloudinary)
+    description: { type: String, required: true, trim: true },
+    itemValue: { type: Number, required: true },
+    loanAmount: { type: Number, required: true },
+    loanPeriod: { type: Number, required: true }, // e.g., in months or days
+    status: { 
+      type: String, 
+      enum: ["Pending", "Approved", "Rejected", "Completed"], 
+      default: "Pending" 
+    },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  },
+  { timestamps: true } // adds createdAt and updatedAt automatically
+);
+
 
 // Message schema
 const messageSchema = new mongoose.Schema({
