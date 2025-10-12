@@ -85,7 +85,7 @@ userSchema.pre("save", function (next) {
   next();
 });
 
-// Product Schema
+// ================== PRODUCT SCHEMA ==================
 const productSchema = new mongoose.Schema({
   title: { type: String, required: true },
   marketPrice: { type: Number, required: true },
@@ -93,30 +93,37 @@ const productSchema = new mongoose.Schema({
   description: { type: String },
   onSale: { type: Boolean, default: false },
 
-  // Images: main + optional extras
+  // Array of Cloudinary image URLs (max 4)
   images: {
-    type: [String], // Cloudinary URLs
+    type: [String],
     validate: [
       {
         validator: function (arr) {
-          // Must have at least 1 image and not more than 4
-          return arr.length >= 1 && arr.length <= 4;
+          // Allow 0 for old items
+          return Array.isArray(arr) && arr.length <= 4;
         },
-        message: "Each product must have at least 1 and at most 4 images.",
+        message: "You can upload at most 4 images per product.",
       },
     ],
-    required: true,
+    default: [],
   },
 
-  // Optional: explicitly store main image (for easier querying or UI use)
-  mainImage: { type: String, required: true },
+  // For quick display (first image is auto-set)
+  mainImage: { type: String, default: "" },
 });
 
-// Middleware: always set mainImage as the first image if not manually set
+// ================== MIDDLEWARE ==================
 productSchema.pre("save", function (next) {
-  if (this.images && this.images.length > 0 && !this.mainImage) {
+  // 🔹 1. Fix: If no images but mainImage exists (old data)
+  if ((!this.images || this.images.length === 0) && this.mainImage) {
+    this.images = [this.mainImage];
+  }
+
+  // 🔹 2. Always ensure mainImage is set correctly
+  if (this.images && this.images.length > 0) {
     this.mainImage = this.images[0];
   }
+
   next();
 });
 
