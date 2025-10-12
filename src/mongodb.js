@@ -85,24 +85,40 @@ userSchema.pre("save", function (next) {
   next();
 });
 
-// Product schema
+// Product Schema
 const productSchema = new mongoose.Schema({
   title: { type: String, required: true },
   marketPrice: { type: Number, required: true },
   salePrice: { type: Number, required: true },
   description: { type: String },
   onSale: { type: Boolean, default: false },
+
+  // Images: main + optional extras
   images: {
-    type: [String], // Array of image URLs
-    validate: [arrayLimit, "{PATH} exceeds the limit of 4 images"]
-  }
+    type: [String], // Cloudinary URLs
+    validate: [
+      {
+        validator: function (arr) {
+          // Must have at least 1 image and not more than 4
+          return arr.length >= 1 && arr.length <= 4;
+        },
+        message: "Each product must have at least 1 and at most 4 images.",
+      },
+    ],
+    required: true,
+  },
+
+  // Optional: explicitly store main image (for easier querying or UI use)
+  mainImage: { type: String, required: true },
 });
 
-// Custom validator to limit image array length
-function arrayLimit(val) {
-  return val.length <= 4;
-}
-
+// Middleware: always set mainImage as the first image if not manually set
+productSchema.pre("save", function (next) {
+  if (this.images && this.images.length > 0 && !this.mainImage) {
+    this.mainImage = this.images[0];
+  }
+  next();
+});
 
 // Leaderboard schema
 const leaderboardSchema = new mongoose.Schema({

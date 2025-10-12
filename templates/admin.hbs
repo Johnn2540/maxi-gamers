@@ -188,44 +188,56 @@
   <h2 class="mb-4">📦 Manage Products</h2>
 
   <!-- Add New Product -->
-  <div class="card mb-4">
+  <div class="card mb-4 shadow-sm border-0">
     <div class="card-header bg-primary text-white">
       <h5 class="mb-0">Add New Product</h5>
     </div>
     <div class="card-body">
       <form id="addProductForm" action="/admin/products" method="POST" enctype="multipart/form-data">
         <div class="row g-3">
+          
           <div class="col-md-4">
-            <label class="form-label">Product Title</label>
+            <label class="form-label fw-semibold">Product Title</label>
             <input type="text" name="title" class="form-control" placeholder="Product Title" required>
           </div>
 
           <div class="col-md-2">
-            <label class="form-label">Market Price</label>
+            <label class="form-label fw-semibold">Market Price</label>
             <input type="number" name="marketPrice" class="form-control" placeholder="Market Price" required>
           </div>
 
           <div class="col-md-2">
-            <label class="form-label">Sale Price</label>
+            <label class="form-label fw-semibold">Sale Price</label>
             <input type="number" name="salePrice" class="form-control" placeholder="Sale Price" required>
           </div>
 
           <div class="col-md-4">
-            <label class="form-label">Description</label>
-            <input type="text" name="description" class="form-control" placeholder="Description" required>
+            <label class="form-label fw-semibold">Description</label>
+            <input type="text" name="description" class="form-control" placeholder="Short Description" required>
           </div>
 
           <!-- Multiple Image Upload -->
           <div class="col-md-6">
-            <label class="form-label">Product Images (Up to 4)</label>
-            <input type="file" name="images" class="form-control" id="productImages" accept="image/*" multiple required>
-            <div id="imagePreviewContainer" class="d-flex flex-wrap gap-2 mt-2"></div>
+            <label class="form-label fw-semibold">Product Images (Up to 4)</label>
+            <input 
+              type="file" 
+              name="images" 
+              id="productImages" 
+              class="form-control" 
+              accept="image/*" 
+              multiple 
+              required
+            >
+            <small class="text-muted d-block mt-1">⭐ The first image will be used as the main display image.</small>
+
+            <!-- Image preview -->
+            <div id="imagePreviewContainer" class="d-flex flex-wrap gap-2 mt-3"></div>
           </div>
 
-          <div class="col-md-2">
-            <div class="form-check mt-4 pt-2">
+          <div class="col-md-2 d-flex align-items-center justify-content-center">
+            <div class="form-check mt-3">
               <input class="form-check-input" type="checkbox" name="onSale" id="onSaleCheck" />
-              <label class="form-check-label" for="onSaleCheck">On Sale</label>
+              <label class="form-check-label fw-semibold" for="onSaleCheck">On Sale</label>
             </div>
           </div>
 
@@ -240,8 +252,8 @@
   </div>
 
   <!-- Products Table -->
-  <div class="table-responsive">
-    <table class="table table-striped table-hover" id="productsTable">
+  <div class="table-responsive shadow-sm">
+    <table class="table table-striped table-hover align-middle" id="productsTable">
       <thead class="table-dark">
         <tr>
           <th>ID</th>
@@ -255,11 +267,12 @@
         </tr>
       </thead>
       <tbody>
-        <tr><td colspan="8" class="text-center">Loading products...</td></tr>
+        <tr><td colspan="8" class="text-center py-4">Loading products...</td></tr>
       </tbody>
     </table>
   </div>
 </div>
+
 
       <!-- LOANS TAB -->
 <div class="tab-pane fade" id="loans">
@@ -295,6 +308,8 @@
     </div>
   </div>
 </div>
+
+
       <!-- BANNER-CONTENT TAB -->
       <div class="tab-pane fade" id="content">
         <h2 class="mb-4">📢 Manage Top Bar Messages</h2>
@@ -425,7 +440,9 @@
   </div>
 
   <!-- MODALS -->
- <!-- Edit Product Modal -->
+ <!-- ==================== -->
+<!-- EDIT PRODUCT MODAL -->
+<!-- ==================== -->
 <div class="modal fade" id="editProductModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <form id="editProductForm" class="modal-content" enctype="multipart/form-data">
@@ -456,14 +473,12 @@
           <input type="text" name="description" id="editDescription" class="form-control" required />
         </div>
 
-        <!-- Current Images Preview -->
         <div class="mb-3">
           <label class="form-label">Current Images</label>
           <div id="currentImagesContainer" class="d-flex flex-wrap gap-2 mb-2"></div>
-          <small class="form-text">You can leave these images as-is or replace them with new uploads below.</small>
+          <small class="form-text">You can keep or replace these images below.</small>
         </div>
 
-        <!-- Replace Images -->
         <div class="mb-3">
           <label class="form-label">Replace Images (Up to 4)</label>
           <input type="file" name="images" id="editImages" class="form-control" accept="image/*" multiple />
@@ -778,10 +793,41 @@
 // ================== PRODUCTS TAB ==================
 const editProductModal = new bootstrap.Modal(document.getElementById('editProductModal'));
 const productsTableBody = document.querySelector('#productsTable tbody');
+const toastContainer = document.createElement('div');
+toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+document.body.appendChild(toastContainer);
+
+// ----------------- Toast Helper -----------------
+function showToast(message, type = 'success') {
+  const toast = document.createElement('div');
+  toast.className = `toast align-items-center text-bg-${type} border-0`;
+  toast.setAttribute('role', 'alert');
+  toast.setAttribute('aria-live', 'assertive');
+  toast.setAttribute('aria-atomic', 'true');
+  toast.innerHTML = `
+    <div class="d-flex">
+      <div class="toast-body">${message}</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  `;
+  toastContainer.appendChild(toast);
+  const bsToast = new bootstrap.Toast(toast, { delay: 2500 });
+  bsToast.show();
+  toast.addEventListener('hidden.bs.toast', () => toast.remove());
+}
 
 // ----------------- Load Products -----------------
 async function loadProducts() {
   try {
+    productsTableBody.innerHTML = `
+      <tr>
+        <td colspan="8" class="text-center">
+          <div class="spinner-border text-primary" role="status"></div>
+          <p class="mt-2 text-muted">Loading products...</p>
+        </td>
+      </tr>
+    `;
+
     const res = await fetch('/admin/products/json');
     const products = await res.json();
 
@@ -792,8 +838,8 @@ async function loadProducts() {
 
     productsTableBody.innerHTML = products.map(p => {
       const imagesHtml = p.images && p.images.length
-        ? p.images.map(img => `<img src="${img}" width="50" height="50" class="thumb me-1" alt="${p.title}">`).join('')
-        : '<img src="/images/placeholder.png" width="50" height="50" class="thumb" alt="No Image">';
+        ? p.images.map(img => `<img src="${img}" width="50" height="50" class="rounded me-1 border" alt="${p.title}">`).join('')
+        : '<img src="/images/placeholder.png" width="50" height="50" class="rounded border" alt="No Image">';
 
       return `
         <tr id="product-${p._id}">
@@ -805,7 +851,7 @@ async function loadProducts() {
           <td>${p.onSale ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-secondary">No</span>'}</td>
           <td>${imagesHtml}</td>
           <td class="text-end">
-            <button class="btn btn-sm btn-primary edit-product-btn me-1" data-id="${p._id}"> 
+            <button class="btn btn-sm btn-primary edit-product-btn me-1" data-id="${p._id}">
               <i class="bi bi-pencil"></i> Edit
             </button>
             <button class="btn btn-sm btn-danger delete-product-btn" data-id="${p._id}">
@@ -838,23 +884,20 @@ function attachProductEventListeners(products) {
       document.getElementById('editDescription').value = product.description;
       document.getElementById('editOnSale').checked = product.onSale;
 
-      // Show current images in edit modal
+      // Show current images
       const currentImagesContainer = document.getElementById('currentImagesContainer');
       currentImagesContainer.innerHTML = '';
-      if (product.images && product.images.length) {
+      if (product.images?.length) {
         product.images.forEach(imgUrl => {
-          const img = document.createElement('img');
-          img.src = imgUrl;
-          img.className = 'img-thumbnail';
-          img.style.width = '80px';
-          img.style.height = '80px';
-          currentImagesContainer.appendChild(img);
+          currentImagesContainer.innerHTML += `
+            <img src="${imgUrl}" class="img-thumbnail me-2 mb-2" style="width:80px; height:80px;" alt="${product.title}">
+          `;
         });
       } else {
         currentImagesContainer.innerHTML = '<small>No images available</small>';
       }
 
-      // Clear new image previews
+      // Reset new image input
       document.getElementById('editImagePreviewContainer').innerHTML = '';
       document.getElementById('editImages').value = '';
 
@@ -866,18 +909,17 @@ function attachProductEventListeners(products) {
   document.querySelectorAll('.delete-product-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       if (!confirm('Are you sure you want to delete this product?')) return;
-
       try {
         const res = await fetch(`/admin/products/delete/${btn.dataset.id}`, { method: 'POST' });
         if (res.ok) {
+          showToast('🗑️ Product deleted successfully', 'danger');
           loadProducts();
-          alert('Product deleted successfully');
         } else {
-          alert('Failed to delete product');
+          showToast('Failed to delete product', 'warning');
         }
       } catch (err) {
         console.error('Error deleting product:', err);
-        alert('Failed to delete product');
+        showToast('Error deleting product', 'danger');
       }
     });
   });
@@ -893,14 +935,14 @@ document.getElementById('addProductForm').addEventListener('submit', async e => 
     if (res.ok) {
       e.target.reset();
       loadProducts();
-      alert('Product added successfully');
+      showToast('✅ Product added successfully');
     } else {
       const err = await res.json();
-      alert('Failed to add product: ' + (err.message || res.statusText));
+      showToast('Failed to add product: ' + (err.message || res.statusText), 'warning');
     }
   } catch (err) {
     console.error('Error adding product:', err);
-    alert('Failed to add product');
+    showToast('Error adding product', 'danger');
   }
 });
 
@@ -915,16 +957,38 @@ document.getElementById('editProductForm').addEventListener('submit', async e =>
     if (res.ok) {
       editProductModal.hide();
       loadProducts();
-      alert('Product updated successfully');
+      showToast('✏️ Product updated successfully');
     } else {
       const err = await res.json();
-      alert('Failed to update product: ' + (err.message || res.statusText));
+      showToast('Failed to update product: ' + (err.message || res.statusText), 'warning');
     }
   } catch (err) {
     console.error('Error updating product:', err);
-    alert('Failed to update product');
+    showToast('Error updating product', 'danger');
   }
 });
+
+// ----------------- Preview New Images -----------------
+document.getElementById('productImages')?.addEventListener('change', e => previewImages(e, 'imagePreviewContainer'));
+document.getElementById('editImages')?.addEventListener('change', e => previewImages(e, 'editImagePreviewContainer'));
+
+function previewImages(event, containerId) {
+  const files = event.target.files;
+  const previewContainer = document.getElementById(containerId);
+  previewContainer.innerHTML = '';
+  [...files].forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = document.createElement('img');
+      img.src = e.target.result;
+      img.className = 'img-thumbnail me-2 mb-2';
+      img.style.width = '80px';
+      img.style.height = '80px';
+      previewContainer.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  });
+}
 
 // ----------------- Initial Load -----------------
 document.addEventListener('DOMContentLoaded', loadProducts);

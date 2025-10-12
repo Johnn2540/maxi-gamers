@@ -1,4 +1,3 @@
-{{!-- shop.hbs --}}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,45 +7,30 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
   <link rel="manifest" href="/manifest.json">
-
   <style>
     .card-title { font-weight: bold; }
     .market-price { text-decoration: line-through; color: red; }
     .sale-price { font-weight: bold; font-size: 1.2em; }
     .add-to-cart { width: 100%; }
-
-    /* Cart Sidebar */
     #cart-sidebar {
-      position: fixed;
-      right: 0;
-      top: 0;
-      height: 100%;
-      width: 300px;
-      background: #f8f9fa;
-      border-left: 1px solid #ddd;
-      padding: 1rem;
-      overflow-y: auto;
-      box-shadow: -2px 0 5px rgba(0,0,0,0.1);
-      display: none;
-      z-index: 1050;
+      position: fixed; right: 0; top: 0; height: 100%;
+      width: 300px; background: #f8f9fa;
+      border-left: 1px solid #ddd; padding: 1rem;
+      overflow-y: auto; box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+      display: none; z-index: 1050;
     }
-    #cart-sidebar h4 { margin-bottom: 1rem; }
+    #cart-toggle {
+      position: fixed; right: 320px; top: 1rem; z-index: 1100;
+    }
     .cart-item { border-bottom: 1px solid #ddd; padding: 0.5rem 0; }
     .cart-item:last-child { border-bottom: none; }
-
-    #cart-toggle {
-      position: fixed;
-      right: 320px;
-      top: 1rem;
-      z-index: 1100;
-    }
   </style>
 </head>
 <body>
   <!-- NAVBAR -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-3">
     <div class="container-fluid">
-      <a class="navbar-brand d-lg-none fw-bold" href="#">Maximum Gamers</a>
+      <a class="navbar-brand fw-bold d-lg-none" href="#">Maximum Gamers</a>
       <div class="d-flex align-items-center ms-auto">
         <a href="javascript:void(0)" id="navbar-cart-btn" class="btn position-relative me-2">
           <i class="bi bi-cart3 fs-5 text-white"></i>
@@ -70,26 +54,6 @@
     </div>
   </nav>
 
-  <!-- OFFCANVAS MENU -->
-  <div class="offcanvas offcanvas-end bg-dark text-white" tabindex="-1" id="mobileMenu">
-    <div class="offcanvas-header">
-      <h5 class="offcanvas-title">Menu</h5>
-      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
-    </div>
-    <div class="offcanvas-body d-flex flex-column">
-      <ul class="navbar-nav flex-grow-1">
-        <li class="nav-item"><a class="nav-link text-white" href="/user">Home</a></li>
-        <li class="nav-item"><a class="nav-link text-white active" href="/shop">Shop</a></li>
-        <li class="nav-item"><a class="nav-link text-white" href="/gaming">Booking</a></li>
-        <li class="nav-item"><a class="nav-link text-white" href="/loans">Loans</a></li>
-        <li class="nav-item"><a class="nav-link text-white" href="/contact">Contact</a></li>
-        <li class="nav-item"><a class="nav-link text-white" href="/profile">Profile</a></li>
-        <li class="nav-item"><a class="nav-link text-white" href="/about">About</a></li>
-      </ul>
-      <a href="/login" class="btn btn-danger mt-auto">Logout</a>
-    </div>
-  </div>
-
   <!-- SHOP CONTENT -->
   <div class="container my-5">
     <h1 class="text-center mb-4">🛒 Our Products</h1>
@@ -98,7 +62,7 @@
     </div>
   </div>
 
-  <!-- Floating Cart Toggle Button -->
+  <!-- Floating Cart Button -->
   <button class="btn btn-primary" id="cart-toggle">
     <i class="bi bi-cart"></i> Cart (<span id="cart-count">0</span>)
   </button>
@@ -110,11 +74,11 @@
     <hr>
     <p class="fw-bold">Total: Ksh <span id="cart-total">0</span></p>
     <div class="mb-3">
-      <label for="customer-name" class="form-label">Your Name</label>
+      <label class="form-label">Your Name</label>
       <input type="text" id="customer-name" class="form-control" placeholder="Enter your name">
     </div>
     <div class="mb-3">
-      <label for="customer-phone" class="form-label">Your Phone</label>
+      <label class="form-label">Your Phone</label>
       <input type="text" id="customer-phone" class="form-control" placeholder="07XXXXXXXX">
     </div>
     <button class="btn btn-success w-100" id="checkout-btn">Order via WhatsApp</button>
@@ -131,7 +95,7 @@
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body p-0">
-          <div id="imageCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-touch="true">
+          <div id="imageCarousel" class="carousel slide" data-bs-ride="carousel">
             <div class="carousel-inner" id="carouselInner"></div>
             <button class="carousel-control-prev" type="button" data-bs-target="#imageCarousel" data-bs-slide="prev">
               <span class="carousel-control-prev-icon"></span>
@@ -140,13 +104,12 @@
               <span class="carousel-control-next-icon"></span>
             </button>
           </div>
-          <div class="d-flex justify-content-center align-items-center gap-2 mt-2 flex-wrap" id="carouselThumbs"></div>
+          <div class="d-flex justify-content-center gap-2 mt-2 flex-wrap" id="carouselThumbs"></div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     const cart = [];
@@ -156,7 +119,6 @@
       const totalEl = document.getElementById('cart-total');
       const countEl = document.getElementById('cart-count');
       const badgeEl = document.getElementById('cart-badge');
-
       if (!cart.length) {
         itemsContainer.innerHTML = '<p>Your cart is empty</p>';
         totalEl.textContent = '0';
@@ -164,7 +126,6 @@
         badgeEl.textContent = '0';
         return;
       }
-
       let total = 0;
       itemsContainer.innerHTML = cart.map((item, idx) => {
         total += item.salePrice;
@@ -176,15 +137,12 @@
           </div>
         `;
       }).join('');
-
       totalEl.textContent = total;
       countEl.textContent = cart.length;
       badgeEl.textContent = cart.length;
-
       document.querySelectorAll('.remove-item').forEach(btn => {
         btn.addEventListener('click', () => {
-          const index = btn.dataset.index;
-          cart.splice(index, 1);
+          cart.splice(btn.dataset.index, 1);
           updateCartUI();
         });
       });
@@ -195,33 +153,36 @@
         const res = await fetch('/products/json');
         const products = await res.json();
         const container = document.getElementById('shop-products');
-
         if (!products.length) {
           container.innerHTML = '<p class="text-center">No products available</p>';
           return;
         }
 
-        container.innerHTML = products.map(p => `
-          <div class="col-md-4 col-lg-3 mb-4">
-            <div class="card h-100 shadow-sm">
-              <img src="${p.image}" class="card-img-top" alt="${p.title}" style="height: 200px; object-fit: cover;">
-              <div class="card-body d-flex flex-column">
-                <h5 class="card-title">${p.title}</h5>
-                <p class="card-text text-truncate">${p.description}</p>
-                <p class="card-text mb-2">
-                  <span class="market-price">Ksh ${p.marketPrice}</span>
-                  <span class="sale-price ms-2">Ksh ${p.salePrice}</span>
-                </p>
-                <button class="btn btn-primary mt-auto add-to-cart" data-id="${p._id}" data-title="${p.title}" data-price="${p.salePrice}">
-                  <i class="bi bi-cart-plus"></i> Add to Cart
-                </button>
-                <button class="btn btn-outline-secondary mt-2 view-images-btn" data-images='${JSON.stringify(p.images || [p.image])}'>
-                  <i class="bi bi-eye"></i> View Images
-                </button>
+        container.innerHTML = products.map(p => {
+          const mainImage = (p.images && p.images.length > 0) ? p.images[0] : '/images/placeholder.png';
+          const images = p.images || [];
+          return `
+            <div class="col-md-4 col-lg-3 mb-4">
+              <div class="card h-100 shadow-sm">
+                <img src="${mainImage}" class="card-img-top" alt="${p.title}" style="height: 200px; object-fit: cover;">
+                <div class="card-body d-flex flex-column">
+                  <h5 class="card-title">${p.title}</h5>
+                  <p class="card-text text-truncate">${p.description || ''}</p>
+                  <p class="card-text mb-2">
+                    <span class="market-price">Ksh ${p.marketPrice}</span>
+                    <span class="sale-price ms-2">Ksh ${p.salePrice}</span>
+                  </p>
+                  <button class="btn btn-primary mt-auto add-to-cart" data-id="${p._id}" data-title="${p.title}" data-price="${p.salePrice}">
+                    <i class="bi bi-cart-plus"></i> Add to Cart
+                  </button>
+                  <button class="btn btn-outline-secondary mt-2 view-images-btn" data-images='${JSON.stringify(images)}'>
+                    <i class="bi bi-eye"></i> View Images
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        `).join('');
+          `;
+        }).join('');
 
         document.querySelectorAll('.add-to-cart').forEach(btn => {
           btn.addEventListener('click', () => {
@@ -233,7 +194,7 @@
           });
         });
       } catch (err) {
-        console.error('Failed to load products:', err);
+        console.error('Error loading products:', err);
         document.getElementById('shop-products').innerHTML = '<p class="text-danger text-center">Failed to load products</p>';
       }
     }
@@ -256,25 +217,18 @@
       if (!cart.length) return alert("Your cart is empty!");
       const name = document.getElementById("customer-name").value.trim();
       const phone = document.getElementById("customer-phone").value.trim();
-      if (!name || !phone) return alert("Please enter your name and phone number before ordering.");
+      if (!name || !phone) return alert("Please enter your name and phone number.");
       let orderDetails = cart.map((item, idx) => `${idx + 1}. ${item.title} - Ksh ${item.salePrice}`).join("%0A");
       let total = cart.reduce((sum, item) => sum + item.salePrice, 0);
-      let message = `Hello, my name is ${name}, my phone number is ${phone}.%0AI would like to place an order from Maximum Gamers 🛒%0A%0A${orderDetails}%0A%0ATotal: Ksh ${total}`;
+      let message = `Hello, my name is ${name}, my phone is ${phone}.%0AI want to order:%0A%0A${orderDetails}%0A%0ATotal: Ksh ${total}`;
       window.open(`https://wa.me/254718804786?text=${message}`, "_blank");
-      cart.length = 0;
-      updateCartUI();
-      document.getElementById("customer-name").value = "";
-      document.getElementById("customer-phone").value = "";
-      document.getElementById('cart-sidebar').style.display = 'none';
+      cart.length = 0; updateCartUI();
     });
 
     // Clear cart
     document.getElementById('clear-cart').addEventListener('click', () => {
-      if (!cart.length) return alert("Your cart is already empty.");
-      if (confirm("Are you sure you want to clear your cart?")) {
-        cart.length = 0; 
-        updateCartUI();
-      }
+      if (!cart.length) return alert("Your cart is empty.");
+      if (confirm("Clear your cart?")) { cart.length = 0; updateCartUI(); }
     });
 
     // Image Modal
@@ -298,47 +252,7 @@
       }
     });
 
-    // Load products
     window.addEventListener('DOMContentLoaded', loadProducts);
-
-    // Directions
-    function openDirections() {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(function(position) {
-          let lat = position.coords.latitude;
-          let lng = position.coords.longitude;
-          let iframe = document.getElementById("directionsMap");
-          iframe.src = `https://www.google.com/maps/embed/v1/directions?key=AIzaSyDnphs9rressecIYYKehF89dWILJTWcMEs&origin=${lat},${lng}&destination=Maximum+Gamers+K.M+Opposite+Student+Centre&zoom=17`;
-          let mapsLink = document.getElementById("openInMaps");
-          mapsLink.href = `https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&destination=Maximum+Gamers+K.M+Opposite+Student+Centre`;
-        }, function() {
-          alert("Could not get your location. Please enable GPS.");
-        });
-      } else {
-        alert("Geolocation is not supported by your browser.");
-      }
-    }
   </script>
-
-  <!-- Direction Buttons -->
-  <div class="text-center mt-3">
-    <div class="d-flex justify-content-center flex-wrap gap-2">
-      <button onclick="openDirections()" class="btn btn-success btn-lg">📍 Get Directions</button>
-      <a id="openInMaps" href="https://maps.app.goo.gl/i885AkNKNMcjDaoH9" target="_blank" class="btn btn-outline-primary btn-lg">🚗 Open in Google Maps</a>
-    </div>
-  </div>
-
-  <!-- Embedded Google Map -->
-  <div class="text-center mt-4">
-    <iframe 
-      id="directionsMap"
-      src="https://www.google.com/maps/embed/v1/place?key=AIzaSyDnphs9rressecIYYKehF89dWILJTWcMEs&q=Maximum+Gamers+K.M+Opposite+Student+Centre&zoom=17" 
-      width="100%" 
-      height="400" 
-      style="border:0; border-radius:10px;" 
-      loading="lazy" 
-      allowfullscreen>
-    </iframe>
-  </div>
 </body>
 </html>

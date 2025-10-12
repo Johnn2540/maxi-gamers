@@ -164,16 +164,46 @@ passport.use(
   )
 );
 
-passport.serializeUser((user, done) => done(null, user.id));
-passport.deserializeUser(async (id, done) => {
+// ========================
+// 🔐 PASSPORT SESSION SETUP
+// ========================
+
+// Serialize user into session
+passport.serializeUser((user, done) => {
   try {
-    const user = await User.findById(id);
-    done(null, user);
+    if (!user || !user.id) {
+      console.error("⚠️ SerializeUser: Missing user or user.id");
+      return done(new Error("Invalid user data"));
+    }
+    done(null, user.id);
   } catch (err) {
+    console.error("🔴 SerializeUser error:", err);
     done(err, null);
   }
 });
 
+// Deserialize user from session
+passport.deserializeUser(async (id, done) => {
+  try {
+    if (!id) {
+      console.error("⚠️ DeserializeUser: Missing user ID");
+      return done(new Error("No user ID provided"), null);
+    }
+
+    const user = await User.findById(id).lean();
+    if (!user) {
+      console.error("⚠️ DeserializeUser: User not found:", id);
+      return done(null, false);
+    }
+
+    done(null, user);
+  } catch (err) {
+    console.error("🔴 DeserializeUser error:", err);
+    done(err, null);
+  }
+});
+
+// Initialize Passport middleware
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -524,14 +554,14 @@ app.post("/signup", async (req, res) => {
   }
 });
 
-// ====== LOGIN ROUTE ======
+// ====== LOGIN ROUTE (Updated) ======
 app.post("/login", async (req, res) => {
   try {
     const { email, password, remember } = req.body;
 
     const sanitizedEmail = email?.toLowerCase().trim();
 
-    // Check required fields
+    // Validate required fields
     if (!sanitizedEmail || !password) {
       return handleLoginError(req, res, "Email and password are required.");
     }
@@ -542,13 +572,13 @@ app.post("/login", async (req, res) => {
       return handleLoginError(req, res, "Invalid email or password.");
     }
 
-    // Compare provided password with hashed password in DB
+    // Compare provided password with hashed password
     const isMatch = await bcrypt.compare(password, user.password || "");
     if (!isMatch) {
       return handleLoginError(req, res, "Invalid email or password.");
     }
 
-    // Prevent inactive users (except admins) from logging in
+    // Prevent inactive users (except admins)
     const role = (user.role || "").toLowerCase();
     if (role !== "admin" && !user.active) {
       return handleLoginError(
@@ -558,14 +588,19 @@ app.post("/login", async (req, res) => {
       );
     }
 
-    // Regenerate session for security
+    // 🚨 Prevent MongoDB duplicate key (phone: null) crash
+    if (user.phone === undefined || user.phone === null) {
+      user.phone = undefined; // ensures Mongoose won’t include this field in any update
+    }
+
+    // Regenerate session securely
     req.session.regenerate(async (err) => {
       if (err) {
         console.error("Session regeneration error:", err);
         return handleLoginError(req, res, "Login session failed. Try again.");
       }
 
-      // Save user session
+      // Save user info to session
       req.session.user = {
         id: user._id,
         name: user.name,
@@ -573,10 +608,16 @@ app.post("/login", async (req, res) => {
       };
       req.session.lastActivity = Date.now();
 
-      // Handle "Remember Me" functionality
-      await handleRememberMe(user, res, remember);
+      // Handle "Remember Me" safely
+      try {
+        if (typeof handleRememberMe === "function") {
+          await handleRememberMe(user, res, remember);
+        }
+      } catch (rememberErr) {
+        console.warn("⚠️ Remember Me failed:", rememberErr.message);
+      }
 
-      // Determine redirect based on role
+      // Redirect based on role
       const redirectUrl = role === "admin" ? "/admin" : "/user";
 
       // Save session and redirect
@@ -605,6 +646,7 @@ app.post("/login", async (req, res) => {
     return handleLoginError(req, res, "Login failed. Please try again.");
   }
 });
+
 
 // ====== RESET PASSWORD ROUTE ======
 app.post("/reset-password", async (req, res) => {
@@ -810,7 +852,8 @@ app.get("/products/json", async (req, res) => {
     const products = await Product.find();
     const productsWithPath = products.map(p => ({
       ...p.toObject(),
-      images: p.images || [] // handle multiple images
+      images: p.images || [],
+      mainImage: p.mainImage || (p.images?.[0] || null)
     }));
     res.json(productsWithPath);
   } catch (err) {
@@ -819,70 +862,97 @@ app.get("/products/json", async (req, res) => {
   }
 });
 
-// ========== ADD PRODUCT (Up to 4 Images) ==========
-app.post("/admin/products", upload.array("images", 4), ensureAuthenticated, requireAdmin, async (req, res) => {
-  try {
-    const { title, marketPrice, salePrice, description, onSale } = req.body;
-    let imageUrls = [];
 
-    if (req.files && req.files.length > 0) {
+// ================== ADD PRODUCT (Up to 4 Images) ==================
+app.post(
+  "/admin/products",
+  upload.array("images", 4),
+  ensureAuthenticated,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { title, marketPrice, salePrice, description, onSale } = req.body;
+      let imageUrls = [];
+
+      // Require at least 1 image
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ success: false, message: "At least one image is required." });
+      }
+
+      // Upload all images to Cloudinary
       for (const file of req.files) {
         const result = await cloudinary.uploader.upload(file.path, { folder: "products" });
         imageUrls.push(result.secure_url);
       }
+
+      // Set main image as first image
+      const mainImage = imageUrls[0];
+
+      const newProduct = await Product.create({
+        title,
+        marketPrice,
+        salePrice,
+        description,
+        onSale: onSale === "on" || onSale === "true",
+        images: imageUrls,
+        mainImage
+      });
+
+      io.emit("newProduct", newProduct);
+      res.json({ success: true, product: newProduct });
+    } catch (err) {
+      console.error("Error adding product:", err);
+      res.status(500).json({ success: false, message: err.message });
     }
-
-    const newProduct = await Product.create({
-      title,
-      marketPrice,
-      salePrice,
-      description,
-      onSale: onSale === "on" || onSale === "true",
-      images: imageUrls
-    });
-
-    io.emit("newProduct", newProduct);
-    res.json({ success: true, product: newProduct });
-  } catch (err) {
-    console.error("Error adding product:", err);
-    res.status(500).json({ success: false, message: err.message });
   }
-});
+);
 
-// ========== EDIT PRODUCT (Up to 4 Images) ==========
-app.post("/admin/products/edit/:id", upload.array("images", 4), ensureAuthenticated, requireAdmin, async (req, res) => {
-  try {
-    const { title, marketPrice, salePrice, description, onSale } = req.body;
-    const product = await Product.findById(req.params.id);
-    if (!product) return res.status(404).json({ success: false, message: "Product not found" });
 
-    if (req.files && req.files.length > 0) {
-      const uploadedImages = [];
-      for (const file of req.files) {
-        const result = await cloudinary.uploader.upload(file.path, { folder: "products" });
-        uploadedImages.push(result.secure_url);
+// ================== EDIT PRODUCT (Up to 4 Images) ==================
+app.post(
+  "/admin/products/edit/:id",
+  upload.array("images", 4),
+  ensureAuthenticated,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { title, marketPrice, salePrice, description, onSale } = req.body;
+      const product = await Product.findById(req.params.id);
+      if (!product)
+        return res.status(404).json({ success: false, message: "Product not found" });
+
+      // If new images uploaded, replace the old ones
+      if (req.files && req.files.length > 0) {
+        const uploadedImages = [];
+        for (const file of req.files) {
+          const result = await cloudinary.uploader.upload(file.path, { folder: "products" });
+          uploadedImages.push(result.secure_url);
+        }
+        product.images = uploadedImages;
+        product.mainImage = uploadedImages[0]; // update main image as first
       }
-      product.images = uploadedImages; // Replace old images
+
+      Object.assign(product, {
+        title,
+        marketPrice,
+        salePrice,
+        description,
+        onSale: onSale === "on" || onSale === "true"
+      });
+
+      await product.save();
+
+      io.emit("updateProduct", product);
+      res.json({ success: true, product });
+    } catch (err) {
+      console.error("Error editing product:", err);
+      res.status(500).json({ success: false, message: err.message });
     }
-
-    Object.assign(product, {
-      title,
-      marketPrice,
-      salePrice,
-      description,
-      onSale: onSale === "on" || onSale === "true"
-    });
-
-    await product.save();
-
-    io.emit("updateProduct", product);
-    res.json({ success: true, product });
-  } catch (err) {
-    console.error("Error editing product:", err);
-    res.status(500).json({ success: false, message: err.message });
   }
-});
+);
 
+
+// ================== DELETE PRODUCT ==================
 app.post("/admin/products/delete/:id", ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
     const product = await Product.findByIdAndDelete(req.params.id);
