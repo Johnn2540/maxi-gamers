@@ -28,38 +28,60 @@ const connectDB = async () => {
 const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
-    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    phone: { type: String, unique: true, sparse: true, trim: true }, // sparse allows multiple nulls
+
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
+
+    phone: {
+      type: String,
+      trim: true,
+      default: null,
+      sparse: true,
+      unique: true, // ✅ keep only this
+    },
+
     password: { type: String, required: false },
+
     role: { type: String, enum: ["user", "admin"], default: "user" },
+
     active: { type: Boolean, default: true },
+
     verificationToken: { type: String, default: null },
     lastVerificationSent: { type: Date, default: null },
+
     studentId: { type: String, default: null },
-    image: { type: String, default: "/images/default-profile.png" }, // default placeholder
-    imageId: { type: String, default: null }, // Cloudinary public_id
-    googleId: { type: String, unique: true, sparse: true }, // sparse prevents duplicate null error
+
+    image: {
+      type: String,
+      default: "/images/default-profile.png",
+    },
+
+    imageId: { type: String, default: null },
+
+    googleId: {
+      type: String,
+      default: null,
+      unique: true,
+      sparse: true, // ✅keep only this
+    },
+
     rememberToken: { type: String, default: null },
   },
   { timestamps: true }
 );
 
-// Trim and clean fields before saving
+// 🧹 Trim and normalize before saving
 userSchema.pre("save", function (next) {
-  // Trim and clean basic fields
   if (this.name) this.name = this.name.trim();
   if (this.email) this.email = this.email.toLowerCase().trim();
-
-  // Handle phone (avoid saving null)
-  this.phone = this.phone ? this.phone.trim() : undefined;
-
-  // Only store googleId if it exists
-  this.googleId = this.googleId || undefined;
-
-  // Ensure default image if none exists
+  this.phone = this.phone ? this.phone.trim() : null;
+  this.googleId = this.googleId || null;
   if (!this.image) this.image = "/images/default-profile.png";
-  if (!this.imageId) this.imageId = null;
-
   next();
 });
 
