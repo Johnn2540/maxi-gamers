@@ -42,10 +42,10 @@ try {
   );
 
   // Force push changes
-  console.log("\n🚀 Pushing cleaned repo to remote (overwrites history)...");
+  console.log("\n Pushing cleaned repo to remote (overwrites history)...");
   runCommand("git push origin main --force", "Force pushing to GitHub...");
 
-  console.log("\n✅ Repository cleaned successfully and pushed to remote!");
+  console.log("\ns Repository cleaned successfully and pushed to remote!");
   console.log("🔒 Remember to revoke and regenerate your Firebase key in the Firebase Console.");
 } catch (error) {
   console.error("\n❌ Fatal error:", error.message);
