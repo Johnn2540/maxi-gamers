@@ -46,26 +46,16 @@
   <!-- NAVBAR -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-3">
     <div class="container-fluid">
-      <!-- Small screen brand -->
       <a class="navbar-brand d-lg-none fw-bold" href="#">Maximum Gamers</a>
-
-      <!-- Cart + Toggler (always visible on small screens) -->
       <div class="d-flex align-items-center ms-auto">
-        <!-- Cart Button with Dynamic Badge -->
         <a href="javascript:void(0)" id="navbar-cart-btn" class="btn position-relative me-2">
           <i class="bi bi-cart3 fs-5 text-white"></i>
-          <span id="cart-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-            0
-          </span>
+          <span id="cart-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">0</span>
         </a>
-
-        <!-- Hamburger -->
         <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileMenu">
           <span class="navbar-toggler-icon"></span>
         </button>
       </div>
-
-      <!-- Full nav (hidden on small screens) -->
       <div class="collapse navbar-collapse d-none d-lg-flex justify-content-center">
         <ul class="navbar-nav">
           <li class="nav-item"><a class="nav-link" href="/user">Home</a></li>
@@ -80,7 +70,7 @@
     </div>
   </nav>
 
-  <!-- OFFCANVAS MENU (Mobile Sidebar) -->
+  <!-- OFFCANVAS MENU -->
   <div class="offcanvas offcanvas-end bg-dark text-white" tabindex="-1" id="mobileMenu">
     <div class="offcanvas-header">
       <h5 class="offcanvas-title">Menu</h5>
@@ -113,29 +103,51 @@
     <i class="bi bi-cart"></i> Cart (<span id="cart-count">0</span>)
   </button>
 
-<!-- Cart Sidebar -->
-<div id="cart-sidebar">
-  <h4>🛍 Your Cart</h4>
-  <div id="cart-items"></div>
-  <hr>
-  <p class="fw-bold">Total: Ksh <span id="cart-total">0</span></p>
-
-  <!-- Customer Info -->
-  <div class="mb-3">
-    <label for="customer-name" class="form-label">Your Name</label>
-    <input type="text" id="customer-name" class="form-control" placeholder="Enter your name">
+  <!-- Cart Sidebar -->
+  <div id="cart-sidebar">
+    <h4>🛍 Your Cart</h4>
+    <div id="cart-items"></div>
+    <hr>
+    <p class="fw-bold">Total: Ksh <span id="cart-total">0</span></p>
+    <div class="mb-3">
+      <label for="customer-name" class="form-label">Your Name</label>
+      <input type="text" id="customer-name" class="form-control" placeholder="Enter your name">
+    </div>
+    <div class="mb-3">
+      <label for="customer-phone" class="form-label">Your Phone</label>
+      <input type="text" id="customer-phone" class="form-control" placeholder="07XXXXXXXX">
+    </div>
+    <button class="btn btn-success w-100" id="checkout-btn">Order via WhatsApp</button>
+    <button class="btn btn-warning w-100 mt-2" id="clear-cart">Clear Cart</button>
+    <button class="btn btn-secondary w-100 mt-2" id="close-cart">Close</button>
   </div>
-  <div class="mb-3">
-    <label for="customer-phone" class="form-label">Your Phone</label>
-    <input type="text" id="customer-phone" class="form-control" placeholder="07XXXXXXXX">
-  </div>
 
-  <button class="btn btn-success w-100" id="checkout-btn">Order via WhatsApp</button>
-  <button class="btn btn-warning w-100 mt-2" id="clear-cart">Clear Cart</button>
-  <button class="btn btn-secondary w-100 mt-2" id="close-cart">Close</button>
-</div>
+  <!-- Product Image Modal -->
+  <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+      <div class="modal-content bg-dark border-0">
+        <div class="modal-header border-0">
+          <h5 class="modal-title text-white">Product Images</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-0">
+          <div id="imageCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-touch="true">
+            <div class="carousel-inner" id="carouselInner"></div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#imageCarousel" data-bs-slide="prev">
+              <span class="carousel-control-prev-icon"></span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#imageCarousel" data-bs-slide="next">
+              <span class="carousel-control-next-icon"></span>
+            </button>
+          </div>
+          <div class="d-flex justify-content-center align-items-center gap-2 mt-2 flex-wrap" id="carouselThumbs"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     const cart = [];
 
@@ -169,7 +181,6 @@
       countEl.textContent = cart.length;
       badgeEl.textContent = cart.length;
 
-      // Remove item event
       document.querySelectorAll('.remove-item').forEach(btn => {
         btn.addEventListener('click', () => {
           const index = btn.dataset.index;
@@ -204,31 +215,30 @@
                 <button class="btn btn-primary mt-auto add-to-cart" data-id="${p._id}" data-title="${p.title}" data-price="${p.salePrice}">
                   <i class="bi bi-cart-plus"></i> Add to Cart
                 </button>
+                <button class="btn btn-outline-secondary mt-2 view-images-btn" data-images='${JSON.stringify(p.images || [p.image])}'>
+                  <i class="bi bi-eye"></i> View Images
+                </button>
               </div>
             </div>
           </div>
         `).join('');
 
-// Add to Cart
-document.querySelectorAll('.add-to-cart').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const id = btn.dataset.id;
-    const title = btn.dataset.title;
-    const salePrice = parseFloat(btn.dataset.price);
-    cart.push({ id, title, salePrice });
-    updateCartUI();
-  });
-});
-
-
+        document.querySelectorAll('.add-to-cart').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = btn.dataset.id;
+            const title = btn.dataset.title;
+            const salePrice = parseFloat(btn.dataset.price);
+            cart.push({ id, title, salePrice });
+            updateCartUI();
+          });
+        });
       } catch (err) {
         console.error('Failed to load products:', err);
-        document.getElementById('shop-products').innerHTML =
-          '<p class="text-danger text-center">Failed to load products</p>';
+        document.getElementById('shop-products').innerHTML = '<p class="text-danger text-center">Failed to load products</p>';
       }
     }
 
-    // Toggle cart (floating button + navbar button)
+    // Cart toggle
     document.getElementById('cart-toggle').addEventListener('click', () => {
       const sidebar = document.getElementById('cart-sidebar');
       sidebar.style.display = sidebar.style.display === 'block' ? 'none' : 'block';
@@ -237,120 +247,98 @@ document.querySelectorAll('.add-to-cart').forEach(btn => {
       const sidebar = document.getElementById('cart-sidebar');
       sidebar.style.display = sidebar.style.display === 'block' ? 'none' : 'block';
     });
-
     document.getElementById('close-cart').addEventListener('click', () => {
       document.getElementById('cart-sidebar').style.display = 'none';
     });
 
-// WhatsApp Checkout
-document.getElementById('checkout-btn').addEventListener('click', () => {
-  if (!cart.length) {
-    alert("Your cart is empty!");
-    return;
-  }
+    // WhatsApp checkout
+    document.getElementById('checkout-btn').addEventListener('click', () => {
+      if (!cart.length) return alert("Your cart is empty!");
+      const name = document.getElementById("customer-name").value.trim();
+      const phone = document.getElementById("customer-phone").value.trim();
+      if (!name || !phone) return alert("Please enter your name and phone number before ordering.");
+      let orderDetails = cart.map((item, idx) => `${idx + 1}. ${item.title} - Ksh ${item.salePrice}`).join("%0A");
+      let total = cart.reduce((sum, item) => sum + item.salePrice, 0);
+      let message = `Hello, my name is ${name}, my phone number is ${phone}.%0AI would like to place an order from Maximum Gamers 🛒%0A%0A${orderDetails}%0A%0ATotal: Ksh ${total}`;
+      window.open(`https://wa.me/254718804786?text=${message}`, "_blank");
+      cart.length = 0;
+      updateCartUI();
+      document.getElementById("customer-name").value = "";
+      document.getElementById("customer-phone").value = "";
+      document.getElementById('cart-sidebar').style.display = 'none';
+    });
 
-  const name = document.getElementById("customer-name").value.trim();
-  const phone = document.getElementById("customer-phone").value.trim();
+    // Clear cart
+    document.getElementById('clear-cart').addEventListener('click', () => {
+      if (!cart.length) return alert("Your cart is already empty.");
+      if (confirm("Are you sure you want to clear your cart?")) {
+        cart.length = 0; 
+        updateCartUI();
+      }
+    });
 
-  if (!name || !phone) {
-    alert("Please enter your name and phone number before ordering.");
-    return;
-  }
+    // Image Modal
+    const imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
+    document.addEventListener('click', e => {
+      if (e.target.closest('.view-images-btn')) {
+        const btn = e.target.closest('.view-images-btn');
+        const images = JSON.parse(btn.dataset.images);
+        if (!images.length) return alert("No images available.");
+        const carouselInner = document.getElementById('carouselInner');
+        const carouselThumbs = document.getElementById('carouselThumbs');
+        carouselInner.innerHTML = images.map((img, idx) => `
+          <div class="carousel-item ${idx === 0 ? 'active' : ''}">
+            <img src="${img}" class="d-block w-100" style="max-height:80vh; object-fit:contain;">
+          </div>
+        `).join('');
+        carouselThumbs.innerHTML = images.map((img, idx) => `
+          <img src="${img}" class="img-thumbnail" style="width:80px; height:80px; object-fit:cover; cursor:pointer;" data-bs-target="#imageCarousel" data-bs-slide-to="${idx}">
+        `).join('');
+        imageModal.show();
+      }
+    });
 
-  // Build order details
-  let orderDetails = cart.map((item, idx) =>
-    `${idx + 1}. ${item.title} - Ksh ${item.salePrice}`
-  ).join("%0A");
-
-  let total = cart.reduce((sum, item) => sum + item.salePrice, 0);
-
-  // WhatsApp message
-  let message = `Hello, my name is ${name}, my phone number is ${phone}.%0A` +
-                `I would like to place an order from Maximum Gamers 🛒%0A%0A` +
-                `${orderDetails}%0A%0ATotal: Ksh ${total}`;
-
-  // Redirect to WhatsApp (Kenya code 254)
-  window.open(`https://wa.me/254718804786?text=${message}`, "_blank");
-
-  // Clear cart + reset form
-  cart.length = 0;
-  updateCartUI();
-  document.getElementById("customer-name").value = "";
-  document.getElementById("customer-phone").value = "";
-  document.getElementById('cart-sidebar').style.display = 'none';
-});
-
-    // Clear Cart Button
-document.getElementById('clear-cart').addEventListener('click', () => {
-  if (!cart.length) {
-    alert("Your cart is already empty.");
-    return;
-  }
-  if (confirm("Are you sure you want to clear your cart?")) {
-    cart.length = 0; 
-    updateCartUI();
-  }
-});
-
-
+    // Load products
     window.addEventListener('DOMContentLoaded', loadProducts);
+
+    // Directions
+    function openDirections() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+          let lat = position.coords.latitude;
+          let lng = position.coords.longitude;
+          let iframe = document.getElementById("directionsMap");
+          iframe.src = `https://www.google.com/maps/embed/v1/directions?key=AIzaSyDnphs9rressecIYYKehF89dWILJTWcMEs&origin=${lat},${lng}&destination=Maximum+Gamers+K.M+Opposite+Student+Centre&zoom=17`;
+          let mapsLink = document.getElementById("openInMaps");
+          mapsLink.href = `https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&destination=Maximum+Gamers+K.M+Opposite+Student+Centre`;
+        }, function() {
+          alert("Could not get your location. Please enable GPS.");
+        });
+      } else {
+        alert("Geolocation is not supported by your browser.");
+      }
+    }
   </script>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-<!-- Direction Buttons -->
-<div class="text-center mt-3">
-  <div class="d-flex justify-content-center flex-wrap gap-2">
-    <button onclick="openDirections()" class="btn btn-success btn-lg">
-      📍 Get Directions
-    </button>
-    <a id="openInMaps" href="https://maps.app.goo.gl/i885AkNKNMcjDaoH9" 
-       target="_blank" 
-       class="btn btn-outline-primary btn-lg">
-      🚗 Open in Google Maps
-    </a>
+  <!-- Direction Buttons -->
+  <div class="text-center mt-3">
+    <div class="d-flex justify-content-center flex-wrap gap-2">
+      <button onclick="openDirections()" class="btn btn-success btn-lg">📍 Get Directions</button>
+      <a id="openInMaps" href="https://maps.app.goo.gl/i885AkNKNMcjDaoH9" target="_blank" class="btn btn-outline-primary btn-lg">🚗 Open in Google Maps</a>
+    </div>
   </div>
-</div>
 
-<!-- Embedded Google Map -->
-<div class="text-center mt-4">
-  <iframe 
-    id="directionsMap"
-    src="https://www.google.com/maps/embed/v1/place?key=AIzaSyDnphs9rressecIYYKehF89dWILJTWcMEs
-    &q=Maximum+Gamers+K.M+Opposite+Student+Centre&zoom=17" 
-    width="100%" 
-    height="400" 
-    style="border:0; border-radius:10px;" 
-    loading="lazy" 
-    allowfullscreen>
-  </iframe>
-</div>
-
-<script>
-  function openDirections() {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(function(position) {
-        let lat = position.coords.latitude;
-        let lng = position.coords.longitude;
-
-        // Update iframe with live directions (with closer zoom)
-        let iframe = document.getElementById("directionsMap");
-        iframe.src = `https://www.google.com/maps/embed/v1/directions?key=AIzaSyDnphs9rressecIYYKehF89dWILJTWcMEs
-          &origin=${lat},${lng}
-          &destination=Maximum+Gamers+K.M+Opposite+Student+Centre&zoom=17`;
-
-        // Update "Open in Maps" link for mobile
-        let mapsLink = document.getElementById("openInMaps");
-        mapsLink.href = `https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&destination=Maximum+Gamers+K.M+Opposite+Student+Centre`;
-      }, function() {
-        alert("Could not get your location. Please enable GPS.");
-      });
-    } else {
-      alert("Geolocation is not supported by your browser.");
-    }
-  }
-</script>
-
-
+  <!-- Embedded Google Map -->
+  <div class="text-center mt-4">
+    <iframe 
+      id="directionsMap"
+      src="https://www.google.com/maps/embed/v1/place?key=AIzaSyDnphs9rressecIYYKehF89dWILJTWcMEs&q=Maximum+Gamers+K.M+Opposite+Student+Centre&zoom=17" 
+      width="100%" 
+      height="400" 
+      style="border:0; border-radius:10px;" 
+      loading="lazy" 
+      allowfullscreen>
+    </iframe>
+  </div>
 </body>
 </html>

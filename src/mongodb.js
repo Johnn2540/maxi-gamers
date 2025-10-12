@@ -70,8 +70,17 @@ const productSchema = new mongoose.Schema({
   salePrice: { type: Number, required: true },
   description: { type: String },
   onSale: { type: Boolean, default: false },
-  image: { type: String },
+  images: {
+    type: [String], // Array of image URLs
+    validate: [arrayLimit, "{PATH} exceeds the limit of 4 images"]
+  }
 });
+
+// Custom validator to limit image array length
+function arrayLimit(val) {
+  return val.length <= 4;
+}
+
 
 // Leaderboard schema
 const leaderboardSchema = new mongoose.Schema({

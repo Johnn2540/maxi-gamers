@@ -810,7 +810,7 @@ app.get("/products/json", async (req, res) => {
     const products = await Product.find();
     const productsWithPath = products.map(p => ({
       ...p.toObject(),
-      image: p.image || null
+      images: p.images || [] // handle multiple images
     }));
     res.json(productsWithPath);
   } catch (err) {
@@ -819,16 +819,17 @@ app.get("/products/json", async (req, res) => {
   }
 });
 
-app.post("/admin/products", upload.single("image"), ensureAuthenticated, requireAdmin, async (req, res) => {
+// ========== ADD PRODUCT (Up to 4 Images) ==========
+app.post("/admin/products", upload.array("images", 4), ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
     const { title, marketPrice, salePrice, description, onSale } = req.body;
-    let imageUrl = null;
+    let imageUrls = [];
 
-    if (req.file) {
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: "products"
-      });
-      imageUrl = result.secure_url;
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        const result = await cloudinary.uploader.upload(file.path, { folder: "products" });
+        imageUrls.push(result.secure_url);
+      }
     }
 
     const newProduct = await Product.create({
@@ -837,35 +838,47 @@ app.post("/admin/products", upload.single("image"), ensureAuthenticated, require
       salePrice,
       description,
       onSale: onSale === "on" || onSale === "true",
-      image: imageUrl
+      images: imageUrls
     });
 
     io.emit("newProduct", newProduct);
     res.json({ success: true, product: newProduct });
   } catch (err) {
+    console.error("Error adding product:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
-app.post("/admin/products/edit/:id", upload.single("image"), ensureAuthenticated, requireAdmin, async (req, res) => {
+// ========== EDIT PRODUCT (Up to 4 Images) ==========
+app.post("/admin/products/edit/:id", upload.array("images", 4), ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
     const { title, marketPrice, salePrice, description, onSale } = req.body;
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ success: false, message: "Product not found" });
 
-    if (req.file) {
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: "products"
-      });
-      product.image = result.secure_url;
+    if (req.files && req.files.length > 0) {
+      const uploadedImages = [];
+      for (const file of req.files) {
+        const result = await cloudinary.uploader.upload(file.path, { folder: "products" });
+        uploadedImages.push(result.secure_url);
+      }
+      product.images = uploadedImages; // Replace old images
     }
 
-    Object.assign(product, { title, marketPrice, salePrice, description, onSale: onSale === "on" || onSale === "true" });
+    Object.assign(product, {
+      title,
+      marketPrice,
+      salePrice,
+      description,
+      onSale: onSale === "on" || onSale === "true"
+    });
+
     await product.save();
 
     io.emit("updateProduct", product);
     res.json({ success: true, product });
   } catch (err) {
+    console.error("Error editing product:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
@@ -880,6 +893,7 @@ app.post("/admin/products/delete/:id", ensureAuthenticated, requireAdmin, async 
     res.status(500).json({ success: false, message: err.message });
   }
 });
+
 
 // ================== LEADERBOARD ROUTES ==================
 
