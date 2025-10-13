@@ -1,176 +1,169 @@
+{{!-- loan.hbs --}}
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Loan Application | Maximum Gamers</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{title}}</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+  <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    rel="stylesheet"
+  />
   <style>
-    body { background-color: #f5f7fa; font-family: "Poppins", sans-serif; }
-    .card { border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-    .navbar-brand { font-weight: 600; letter-spacing: 0.5px; }
-    .form-control, .form-select { border-radius: 10px; }
-    .preview-img { width: 100%; max-width: 180px; margin-top: 10px; display: none; border-radius: 10px; }
-    .loan-table th { background-color: #343a40; color: white; }
-    .status-badge { font-size: 0.9rem; border-radius: 10px; padding: 5px 10px; }
-    .highlight { background-color: #d1ffd1 !important; transition: background-color 1s ease; }
+    .loan-card { margin-bottom: 1rem; }
+    .loan-image { max-height: 150px; object-fit: cover; }
+    .loan-status { font-weight: bold; }
   </style>
 </head>
 <body>
-  <!-- NAVBAR -->
+  <!-- Navbar -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
-      <a class="navbar-brand" href="/user">Maximum Gamers</a>
-      <div>
-        <a href="/logout" class="btn btn-danger btn-sm">Logout</a>
+      <a class="navbar-brand" href="/">Maximum Gamers</a>
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="/loans">My Loans</a>
+          </li>
+          <li class="nav-item">
+            <span class="nav-link">{{user.name}}</span>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/logout">Logout</a>
+          </li>
+        </ul>
       </div>
     </div>
   </nav>
 
-  <!-- MAIN CONTAINER -->
-  <div class="container my-5">
-    <div class="row g-4">
-      <!-- Loan Application Form -->
-      <div class="col-lg-5">
-        <div class="card p-4">
-          <h4 class="text-center mb-3">Apply for a Loan</h4>
-          <div id="flashMessage"></div>
-          <form id="loanForm" action="/loans" method="POST" enctype="multipart/form-data">
-            <div class="mb-3">
-              <label for="item" class="form-label">Item for Loan</label>
-              <input type="text" class="form-control" id="item" name="item" placeholder="e.g., PlayStation 5, Controller" required />
-            </div>
-            <div class="mb-3">
-              <label for="amount" class="form-label">Loan Amount (KSH)</label>
-              <input type="number" class="form-control" id="amount" name="loanAmount" min="100" required />
-            </div>
-            <div class="mb-3">
-              <label for="image" class="form-label">Upload Item Image</label>
-              <input type="file" class="form-control" id="image" name="itemImage" accept="image/*" required />
-              <img id="imagePreview" class="preview-img" alt="Preview" />
-            </div>
-            <button type="submit" class="btn btn-primary w-100">
-              <i class="fa-solid fa-paper-plane me-2"></i> Submit Application
-            </button>
-          </form>
-        </div>
-      </div>
+  <!-- Container -->
+  <div class="container mt-4">
+    <!-- Intro -->
+    <div class="mb-4">
+      <h2>Welcome, {{user.name}}!</h2>
+      <p>
+        Here you can view all your loan applications, apply for new loans,
+        and track their current status in real time. Your approved loans will
+        appear with a green badge, pending loans in yellow, and rejected loans
+        in red.
+      </p>
+    </div>
 
-      <!-- Loan Records -->
-      <div class="col-lg-7">
-        <div class="card p-4">
-          <h4 class="text-center mb-3">Your Loan Requests</h4>
-          <div class="table-responsive">
-            <table class="table table-bordered loan-table align-middle text-center">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Item</th>
-                  <th>Amount</th>
-                  <th>Status</th>
-                  <th>Date</th>
-                </tr>
-              </thead>
-              <tbody id="loanList">
-                <!-- Filled dynamically -->
-              </tbody>
-            </table>
+    <!-- Loan Submission Form -->
+    <div class="card mb-4">
+      <div class="card-header">Apply for a New Loan</div>
+      <div class="card-body">
+        <form id="loanForm" action="/loans" method="POST" enctype="multipart/form-data">
+          <div class="mb-3">
+            <label for="description" class="form-label">Item Description</label>
+            <input type="text" class="form-control" id="description" name="description" required />
           </div>
-        </div>
+          <div class="mb-3">
+            <label for="itemValue" class="form-label">Item Value ($)</label>
+            <input type="number" class="form-control" id="itemValue" name="itemValue" step="0.01" min="0" required />
+          </div>
+          <div class="mb-3">
+            <label for="loanAmount" class="form-label">Loan Amount ($)</label>
+            <input type="number" class="form-control" id="loanAmount" name="loanAmount" step="0.01" min="0" required />
+          </div>
+          <div class="mb-3">
+            <label for="loanPeriod" class="form-label">Loan Period (days)</label>
+            <input type="number" class="form-control" id="loanPeriod" name="loanPeriod" min="1" required />
+          </div>
+          <div class="mb-3">
+            <label for="itemImage" class="form-label">Item Image</label>
+            <input class="form-control" type="file" id="itemImage" name="itemImage" accept="image/*" />
+          </div>
+          <button type="submit" class="btn btn-primary">Submit Loan</button>
+        </form>
       </div>
+    </div>
+
+    <!-- Loan List -->
+    <div class="row" id="loanList">
+      {{#if loans.length}}
+        {{#each loans}}
+          <div class="col-md-6 loan-card" id="loan-{{_id}}">
+            <div class="card">
+              {{#if itemImage}}
+                <img src="{{itemImage}}" class="card-img-top loan-image" alt="Item Image">
+              {{/if}}
+              <div class="card-body">
+                <h5 class="card-title">{{description}}</h5>
+                <p class="card-text"><strong>Item Value:</strong> ${{itemValue}}</p>
+                <p class="card-text"><strong>Loan Amount:</strong> ${{loanAmount}}</p>
+                <p class="card-text"><strong>Loan Period:</strong> {{loanPeriod}} days</p>
+                <p class="card-text loan-status">
+                  <strong>Status:</strong>
+                  {{#ifEquals status "Pending"}}
+                    <span class="badge bg-warning text-dark">{{status}}</span>
+                  {{else ifEquals status "Approved"}}
+                    <span class="badge bg-success">{{status}}</span>
+                  {{else ifEquals status "Rejected"}}
+                    <span class="badge bg-danger">{{status}}</span>
+                  {{else}}
+                    <span class="badge bg-secondary">{{status}}</span>
+                  {{/ifEquals}}
+                </p>
+                <p class="card-text"><small class="text-muted">Applied on: {{createdAt}}</small></p>
+              </div>
+            </div>
+          </div>
+        {{/each}}
+      {{else}}
+        <p>No loans found. Apply for a new loan above.</p>
+      {{/if}}
     </div>
   </div>
 
-  <!-- SOCKET.IO -->
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
 
-    // === Image Preview ===
-    const imageInput = document.getElementById("image");
-    const imagePreview = document.getElementById("imagePreview");
-    imageInput.addEventListener("change", () => {
-      const file = imageInput.files[0];
-      if (file) {
-        imagePreview.src = URL.createObjectURL(file);
-        imagePreview.style.display = "block";
-      } else {
-        imagePreview.style.display = "none";
-      }
-    });
-
-    // === Load Loans ===
-    async function loadLoans() {
-      try {
-        const res = await fetch("/loans/list");
-        if (!res.ok) return;
-        const loans = await res.json();
-        const tbody = document.getElementById("loanList");
-        tbody.innerHTML = loans
-          .map((loan, index) => `
-            <tr data-id="${loan._id}">
-              <td>${index + 1}</td>
-              <td>${loan.item}</td>
-              <td>KSH ${loan.loanAmount.toLocaleString()}</td>
-              <td>
-                <span class="status-badge badge ${
-                  loan.status === "Approved"
-                    ? "bg-success"
-                    : loan.status === "Rejected"
-                    ? "bg-danger"
-                    : "bg-warning text-dark"
-                }">${loan.status}</span>
-              </td>
-              <td>${new Date(loan.createdAt).toLocaleDateString()}</td>
-            </tr>
-          `).join("");
-      } catch (err) {
-        console.error("Error loading loans:", err);
-      }
-    }
-
-    loadLoans();
-
-    // === Real-Time Loan Creation ===
-    const loanForm = document.getElementById("loanForm");
-    loanForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const formData = new FormData(loanForm);
-      try {
-        const res = await fetch("/loans", { method: "POST", body: formData });
-        if (!res.ok) throw new Error("Failed to submit loan");
-        const data = await res.json();
-        const loan = data.loan;
-
-        // Emit to socket (optional if backend already emits)
-        socket.emit("loanCreated", loan);
-
-        // Reset form
-        loanForm.reset();
-        imagePreview.style.display = "none";
-      } catch (err) {
-        console.error(err);
-        alert(err.message);
-      }
-    });
-
-    // === Receive new loan in real-time ===
+    // Listen for new loans
     socket.on("loanCreated", (loan) => {
-      const tbody = document.getElementById("loanList");
-      const row = document.createElement("tr");
-      row.dataset.id = loan._id;
-      row.innerHTML = `
-        <td>${tbody.children.length + 1}</td>
-        <td>${loan.item}</td>
-        <td>KSH ${loan.loanAmount.toLocaleString()}</td>
-        <td><span class="status-badge badge bg-warning text-dark">${loan.status}</span></td>
-        <td>${new Date(loan.createdAt).toLocaleDateString()}</td>
+      const loanList = document.getElementById("loanList");
+      const loanCard = document.createElement("div");
+      loanCard.className = "col-md-6 loan-card";
+      loanCard.id = "loan-" + loan._id;
+      loanCard.innerHTML = `
+        <div class="card">
+          ${loan.itemImage ? `<img src="${loan.itemImage}" class="card-img-top loan-image" alt="Item Image">` : ""}
+          <div class="card-body">
+            <h5 class="card-title">${loan.description}</h5>
+            <p class="card-text"><strong>Item Value:</strong> $${loan.itemValue}</p>
+            <p class="card-text"><strong>Loan Amount:</strong> $${loan.loanAmount}</p>
+            <p class="card-text"><strong>Loan Period:</strong> ${loan.loanPeriod} days</p>
+            <p class="card-text loan-status">
+              <strong>Status:</strong>
+              <span class="badge bg-warning text-dark">${loan.status}</span>
+            </p>
+            <p class="card-text"><small class="text-muted">Applied on: ${new Date(loan.createdAt).toLocaleString()}</small></p>
+          </div>
+        </div>
       `;
-      tbody.prepend(row);
-      row.classList.add("highlight");
-      setTimeout(() => row.classList.remove("highlight"), 2000);
+      loanList.prepend(loanCard);
+    });
+
+    // Listen for loan updates
+    socket.on("loanUpdated", (loan) => {
+      const loanCard = document.getElementById("loan-" + loan._id);
+      if (loanCard) {
+        const badge = loanCard.querySelector(".loan-status span");
+        badge.textContent = loan.status;
+        if (loan.status === "Pending") badge.className = "badge bg-warning text-dark";
+        else if (loan.status === "Approved") badge.className = "badge bg-success";
+        else if (loan.status === "Rejected") badge.className = "badge bg-danger";
+        else badge.className = "badge bg-secondary";
+      }
     });
   </script>
 </body>
 </html>
+
