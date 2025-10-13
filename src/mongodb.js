@@ -3,20 +3,21 @@ const mongoose = require("mongoose");
 require("dotenv").config();
 
 // ------------------ CONNECT TO MONGODB ATLAS ------------------
-const MONGO_URI = process.env.MONGO_URI;
+const connectDB = async () => {
+  const MONGO_URI = process.env.MONGO_URI;
+  if (!MONGO_URI) {
+    console.error("❌ MONGO_URI is not defined in .env");
+    process.exit(1);
+  }
 
-if (!MONGO_URI) {
-  console.error("❌ MONGO_URI is not defined in .env");
-  process.exit(1);
-}
-
-mongoose
-  .connect(MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log("✅ Connected to MongoDB Atlas"))
-  .catch((err) => console.error("❌ MongoDB Atlas connection error:", err));
+  try {
+    await mongoose.connect(MONGO_URI);
+    console.log("✅ Connected to MongoDB Atlas");
+  } catch (err) {
+    console.error("❌ MongoDB Atlas connection error:", err);
+    process.exit(1);
+  }
+};
 
 // ------------------ SCHEMAS ------------------
 
@@ -24,54 +25,23 @@ mongoose
 const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
-
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-      lowercase: true,
-      trim: true,
-    },
-
-    phone: {
-      type: String,
-      trim: true,
-      default: null,
-      sparse: true,
-      unique: true,
-    },
-
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    phone: { type: String, trim: true, default: null, sparse: true, unique: true },
     password: { type: String, required: false },
-
     role: { type: String, enum: ["user", "admin"], default: "user" },
-
     active: { type: Boolean, default: true },
-
     verificationToken: { type: String, default: null },
     lastVerificationSent: { type: Date, default: null },
-
     studentId: { type: String, default: null },
-
-    image: {
-      type: String,
-      default: "/images/default-profile.png",
-    },
-
+    image: { type: String, default: "/images/default-profile.png" },
     imageId: { type: String, default: null },
-
-    googleId: {
-      type: String,
-      default: null,
-      unique: true,
-      sparse: true,
-    },
-
+    googleId: { type: String, default: null, unique: true, sparse: true },
     rememberToken: { type: String, default: null },
   },
   { timestamps: true }
 );
 
-// 🧹 Trim and normalize before saving
+// Trim and normalize before saving
 userSchema.pre("save", function (next) {
   if (this.name) this.name = this.name.trim();
   if (this.email) this.email = this.email.toLowerCase().trim();
@@ -81,23 +51,19 @@ userSchema.pre("save", function (next) {
   next();
 });
 
-// 🖼 Method to update profile image and delete old Cloudinary image
+// Method to update profile image and delete old Cloudinary image
 userSchema.methods.updateProfileImage = async function (newImagePath, cloudinary) {
   try {
-    // Delete old image if it exists
     if (this.imageId) {
       await cloudinary.uploader.destroy(this.imageId);
     }
 
-    // Upload new image to Cloudinary
     const result = await cloudinary.uploader.upload(newImagePath, { folder: "profiles" });
-
-    // Update user document
     this.image = result.secure_url;
     this.imageId = result.public_id;
     await this.save();
 
-    return this; // return updated user
+    return this;
   } catch (err) {
     console.error("Error updating profile image:", err);
     throw err;
@@ -181,16 +147,15 @@ const messageSchema = new mongoose.Schema({
 // ------------------ MODELS ------------------
 const User = mongoose.models.User || mongoose.model("User", userSchema);
 const Product = mongoose.models.Product || mongoose.model("Product", productSchema);
-const Leaderboard =
-  mongoose.models.Leaderboard || mongoose.model("Leaderboard", leaderboardSchema);
+const Leaderboard = mongoose.models.Leaderboard || mongoose.model("Leaderboard", leaderboardSchema);
 const Booking = mongoose.models.Booking || mongoose.model("Booking", bookingSchema);
-const TopBarMessage =
-  mongoose.models.TopBarMessage || mongoose.model("TopBarMessage", topBarMessageSchema);
+const TopBarMessage = mongoose.models.TopBarMessage || mongoose.model("TopBarMessage", topBarMessageSchema);
 const Loan = mongoose.models.Loan || mongoose.model("Loan", loanSchema);
 const Message = mongoose.models.Message || mongoose.model("Message", messageSchema);
 
 // ------------------ EXPORT ------------------
 module.exports = {
+  connectDB,
   User,
   Product,
   Leaderboard,
