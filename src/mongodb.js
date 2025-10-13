@@ -123,17 +123,16 @@ const topBarMessageSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-// LOAN SCHEMA
 const loanSchema = new mongoose.Schema({
   itemImage: String,
-  description: String,
-  itemValue: Number,
-  loanAmount: Number,
-  loanPeriod: Number,
-  status: { type: String, default: "Pending" },
-  user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  createdAt: { type: Date, default: Date.now },
-});
+  description: { type: String, required: true },
+  itemValue: { type: Number, required: true },
+  loanAmount: { type: Number, required: true },
+  loanPeriod: { type: Number, required: true },
+  status: { type: String, enum: ["Pending", "Approved", "Visit shop", "Rejected"], default: "Pending" },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+}, { timestamps: true });
+
 
 // MESSAGE SCHEMA
 const messageSchema = new mongoose.Schema({

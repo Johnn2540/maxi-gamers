@@ -51,10 +51,7 @@
       border-color: var(--primary-color);
     }
 
-    .form-label {
-      color: var(--text-light); /* labels in white */
-      font-weight: 500;
-    }
+    .form-label { color: var(--text-light); font-weight: 500; }
 
     .btn-primary {
       background: var(--primary-color);
@@ -107,7 +104,7 @@
     <!-- Loan Application Form -->
     <div class="card">
       <h2 class="text-success mb-4 text-center">💰 Apply for a Loan</h2>
-      <form id="loanForm" action="/loans" method="POST" enctype="multipart/form-data" class="row g-3">
+      <form id="loanForm" method="POST" enctype="multipart/form-data" class="row g-3">
         <div class="col-md-6">
           <label class="form-label">Item Description</label>
           <input type="text" class="form-control" name="description" required>
@@ -176,11 +173,19 @@
       return new Date(dateString).toLocaleString('en-GB', options);
     }
 
+    function getBadgeClass(status) {
+      switch(status) {
+        case "Pending": return "warning";
+        case "Approved": return "success";
+        case "Rejected": return "danger";
+        case "Visit shop": return "info";
+        default: return "secondary";
+      }
+    }
+
     function addOrUpdateLoan(loan) {
       let row = document.getElementById("loan-" + loan._id);
-      const badgeClass = loan.status === "Pending" ? "warning" :
-                         loan.status === "Approved" ? "success" :
-                         loan.status === "Rejected" ? "danger" : "secondary";
+      const badgeClass = getBadgeClass(loan.status);
 
       if(row){
         row.querySelector("td:nth-child(2)").textContent = loan.description;
@@ -269,6 +274,7 @@
     socket.on("loanCreated", addOrUpdateLoan);
     socket.on("loanUpdated", addOrUpdateLoan);
 
+    // Initial fetch
     fetchLoans();
   </script>
 </body>

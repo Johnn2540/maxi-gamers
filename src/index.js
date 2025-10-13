@@ -1046,10 +1046,10 @@ app.delete("/admin/leaderboard/:id", ensureAuthenticated, requireAdmin, async (r
 
 // ================== LOAN ROUTES ==================
 
-// Get user loans (page)
+// Get user loans page
 app.get("/loans", ensureAuthenticated, async (req, res) => {
   try {
-    const userId = req.session.user?._id || req.session.user?.id;
+    const userId = req.session.user?._id;
     if (!userId) return res.status(401).send("Not logged in");
 
     const loans = await Loan.find({ user: userId }).sort({ createdAt: -1 });
@@ -1067,8 +1067,15 @@ app.get("/loans", ensureAuthenticated, async (req, res) => {
 // Submit a new loan
 app.post("/loans", ensureAuthenticated, upload.single("itemImage"), async (req, res) => {
   try {
-    const userId = req.session.user?._id || req.session.user?.id;
-    if (!userId) return res.status(401).send("Not logged in");
+    const userId = req.session.user?._id;
+    if (!userId) return res.status(401).json({ success: false, message: "Not logged in" });
+
+    const { description, itemValue, loanAmount, loanPeriod } = req.body;
+
+    // Validate required fields
+    if (!description || !itemValue || !loanAmount || !loanPeriod) {
+      return res.status(400).json({ success: false, message: "All fields are required" });
+    }
 
     let imageUrl = null;
     if (req.file) {
@@ -1079,30 +1086,27 @@ app.post("/loans", ensureAuthenticated, upload.single("itemImage"), async (req, 
     const loan = await Loan.create({
       user: userId,
       itemImage: imageUrl,
-      description: req.body.description,
-      itemValue: req.body.itemValue,
-      loanAmount: req.body.loanAmount,
-      loanPeriod: req.body.loanPeriod,
+      description,
+      itemValue,
+      loanAmount,
+      loanPeriod,
       status: "Pending",
     });
 
+    // Emit event to all clients; frontend can filter by user
     io.emit("loanCreated", loan);
 
-    if (req.headers.accept?.includes("application/json")) {
-      return res.json({ success: true, loan });
-    }
-
-    res.redirect("/loans");
+    res.json({ success: true, loan });
   } catch (err) {
     console.error("Loan submission error:", err);
-    res.status(500).send("Failed to submit loan");
+    res.status(500).json({ success: false, message: "Failed to submit loan" });
   }
 });
 
-// Get user loans as JSON
+// Get user loans JSON
 app.get("/loans/list", ensureAuthenticated, async (req, res) => {
   try {
-    const userId = req.session.user?._id || req.session.user?.id;
+    const userId = req.session.user?._id;
     if (!userId) return res.status(401).json([]);
 
     const loans = await Loan.find({ user: userId }).sort({ createdAt: -1 });
@@ -1113,7 +1117,7 @@ app.get("/loans/list", ensureAuthenticated, async (req, res) => {
   }
 });
 
-// Admin view loans (page)
+// Admin view loans page
 app.get("/admin/loans", ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
     const loans = await Loan.find().populate("user", "name email").sort({ createdAt: -1 });
@@ -1143,6 +1147,11 @@ app.get("/admin/loans/json", ensureAuthenticated, requireAdmin, async (req, res)
 app.post("/admin/loans/:id/status", ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
     const { status } = req.body;
+    const validStatuses = ["Pending", "Approved", "Rejected", "Visit shop"];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ success: false, message: "Invalid status" });
+    }
+
     const loan = await Loan.findByIdAndUpdate(
       req.params.id,
       { status },
