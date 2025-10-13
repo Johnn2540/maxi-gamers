@@ -278,8 +278,15 @@ async function ensureAuthenticated(req, res, next) {
       return;
     }
 
+    //  Original user assignment
     req.user = user;
     res.locals.user = user;
+
+    // ===================== ADD FALLBACK FOR MOBILE NAVBAR =====================
+    // This ensures templates always have a profilePic & username
+    res.locals.user.profilePic = res.locals.user.profilePic || 'https://via.placeholder.com/40';
+    res.locals.user.username = res.locals.user.name || 'Guest';
+    // ==========================================================================
 
     if (["/", "/dashboard"].includes(req.path)) {
       return res.redirect(role === "admin" ? "/admin" : "/user");
@@ -292,38 +299,6 @@ async function ensureAuthenticated(req, res, next) {
   }
 }
 
-function requireRole(role) {
-  return (req, res, next) => {
-    const userRole = (req.user?.role || "").toLowerCase();
-    if (userRole !== role.toLowerCase()) return res.status(403).send("Access denied.");
-    next();
-  };
-}
-
-function requireAdmin(req, res, next) {
-  const userRole = (req.user?.role || "").toLowerCase();
-  if (userRole !== "admin") return res.status(403).send("Access denied. Admins only.");
-  next();
-}
-
-async function handleRememberMe(user, res, remember) {
-  if (remember) {
-    const token = crypto.randomBytes(32).toString("hex");
-    user.rememberToken = token;
-    await user.save();
-
-    res.cookie("rememberMeToken", token, {
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-    });
-  } else {
-    user.rememberToken = null;
-    await user.save();
-    res.clearCookie("rememberMeToken");
-  }
-}
 
 // ================== HELPER FUNCTIONS ==================
 function handleSignupError(req, res, message, type = "error", redirectPath = "/signup") {
