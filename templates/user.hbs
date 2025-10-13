@@ -299,29 +299,23 @@
   <!-- NAVBAR -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-3 sticky-top">
   <div class="container-fluid">
-    <!-- Brand with improved styling -->
+
+    <!-- Brand -->
     <a class="navbar-brand fw-bold fs-3 d-none d-lg-block" href="#">
       <span class="text-primary">Maximum</span> <span class="text-success">Gamers</span>
     </a>
-    
-    <nav class="navbar navbar-expand-lg navbar-light bg-light px-3">
-  <div class="container-fluid">
-    <!-- Small screen brand -->
     <a class="navbar-brand d-lg-none fw-bold fs-4" href="#">
       <span class="text-primary">M</span><span class="text-success">G</span>
     </a>
 
-    <!-- User info + Hamburger for mobile -->
-    <div class="d-flex align-items-center ms-auto d-lg-none">
-      <!-- Profile pic -->
-      <img src="{{user.profilePic || 'https://via.placeholder.com/40'}}" alt="Profile" class="rounded-circle me-2" width="40" height="40">
-      <!-- Username -->
-      <span class="me-2">{{user.username || 'Guest'}}</span>
-      <!-- Hamburger -->
-      <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileMenu" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-    </div>
+<!-- User info + Hamburger for mobile -->
+<div class="d-flex align-items-center ms-auto d-lg-none">
+  <img src="{{user.profilePic}}" alt="Profile" class="rounded-circle me-2" width="40" height="40">
+  <span class="me-2">{{user.username}}</span>
+  <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileMenu" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+</div>
 
     <!-- Full nav (desktop only) -->
     <div class="collapse navbar-collapse d-none d-lg-flex justify-content-center">
@@ -337,6 +331,7 @@
         <li class="nav-item"><a class="nav-link text-danger" href="/home">Logout</a></li>
       </ul>
     </div>
+
   </div>
 </nav>
 
