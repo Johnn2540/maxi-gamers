@@ -304,17 +304,26 @@
       <span class="text-primary">Maximum</span> <span class="text-success">Gamers</span>
     </a>
     
+    <nav class="navbar navbar-expand-lg navbar-light bg-light px-3">
+  <div class="container-fluid">
     <!-- Small screen brand -->
     <a class="navbar-brand d-lg-none fw-bold fs-4" href="#">
       <span class="text-primary">M</span><span class="text-success">G</span>
     </a>
 
-    <!-- Hamburger -->
-    <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileMenu">
-      <span class="navbar-toggler-icon"></span>
-    </button>
+    <!-- User info + Hamburger for mobile -->
+    <div class="d-flex align-items-center ms-auto d-lg-none">
+      <!-- Profile pic -->
+      <img src="{{user.profilePic || 'https://via.placeholder.com/40'}}" alt="Profile" class="rounded-circle me-2" width="40" height="40">
+      <!-- Username -->
+      <span class="me-2">{{user.username || 'Guest'}}</span>
+      <!-- Hamburger -->
+      <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileMenu" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+    </div>
 
-    <!-- Full nav (hidden on small screens) -->
+    <!-- Full nav (desktop only) -->
     <div class="collapse navbar-collapse d-none d-lg-flex justify-content-center">
       <ul class="navbar-nav">
         <li class="nav-item"><a class="nav-link" href="/user">Home</a></li>
@@ -325,7 +334,7 @@
         <li class="nav-item"><a class="nav-link" href="/profile">Profile</a></li>
         <li class="nav-item"><a class="nav-link" href="/about">About</a></li>
         <li class="nav-item"><a class="nav-link" href="/blog">Blog</a></li>
-        <li class="nav-item"><a class="nav-link" href="/home">Logout</a></li>
+        <li class="nav-item"><a class="nav-link text-danger" href="/home">Logout</a></li>
       </ul>
     </div>
   </div>
@@ -337,22 +346,23 @@
     <h5 class="offcanvas-title">
       <span class="text-primary">Maximum</span> <span class="text-success">Gamers</span>
     </h5>
-    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
   </div>
   <div class="offcanvas-body d-flex flex-column">
     <ul class="navbar-nav flex-grow-1">
       <li class="nav-item"><a class="nav-link text-white" href="/">Home</a></li>
       <li class="nav-item"><a class="nav-link text-white" href="/shop">Shop</a></li>
-<li class="nav-item"><a class="nav-link text-white" href="/gaming">Booking</a></li>
+      <li class="nav-item"><a class="nav-link text-white" href="/gaming">Booking</a></li>
       <li class="nav-item"><a class="nav-link text-white" href="/loans">Loans</a></li>
       <li class="nav-item"><a class="nav-link text-white" href="/contact">Contact</a></li>
       <li class="nav-item"><a class="nav-link text-white" href="/profile">Profile</a></li>
       <li class="nav-item"><a class="nav-link text-white" href="/about">About</a></li>
-       <li class="nav-item"><a class="nav-link text-white" href="/blog">Blog</a></li>
+      <li class="nav-item"><a class="nav-link text-white" href="/blog">Blog</a></li>
     </ul>
     <a href="/home" class="btn btn-danger mt-auto">Logout</a>
   </div>
 </div>
+
   
   <!-- Top Bar Messages -->
 <div id="topBar" class="bg-dark text-white text-center sticky-top" style="height:30px; z-index: 1030;">
@@ -482,7 +492,7 @@
 <!-- Direction Buttons -->
 <div class="text-center mt-3">
   <div class="d-flex justify-content-center flex-wrap gap-2">
-    <button onclick="openDirections()" class="btn btn-success btn-lg">
+    <button onclick="getDirections()" class="btn btn-success btn-lg">
       📍 Get Directions
     </button>
     <a id="openInMaps" href="https://maps.app.goo.gl/i885AkNKNMcjDaoH9" 
@@ -493,43 +503,118 @@
   </div>
 </div>
 
-<!-- Embedded Google Map -->
-<div class="text-center mt-4">
-  <iframe 
-    id="directionsMap"
-    src="https://www.google.com/maps/embed/v1/place?key=AIzaSyDnphs9rressecIYYKehF89dWILJTWcMEs
-    &q=Maximum+Gamers+K.M+Opposite+Student+Centre&zoom=17" 
-    width="100%" 
-    height="400" 
-    style="border:0; border-radius:10px;" 
-    loading="lazy" 
-    allowfullscreen>
-  </iframe>
-</div>
+<!-- Interactive Google Map -->
+<div id="map" style="width:100%; height:400px; border-radius:10px;" class="mt-4"></div>
+
+<!-- Google Maps API with geometry library -->
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDnphs9rressecIYYKehF89dWILJTWcMEs&libraries=geometry"></script>
 
 <script>
-  function openDirections() {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(function(position) {
-        let lat = position.coords.latitude;
-        let lng = position.coords.longitude;
+let map, directionsService, directionsRenderer, carMarker, routePolyline;
 
-        // Update iframe with live directions (with closer zoom)
-        let iframe = document.getElementById("directionsMap");
-        iframe.src = `https://www.google.com/maps/embed/v1/directions?key=AIzaSyDnphs9rressecIYYKehF89dWILJTWcMEs
-          &origin=${lat},${lng}
-          &destination=Maximum+Gamers+K.M+Opposite+Student+Centre&zoom=17`;
+function initMap() {
+  const destination = { lat: -4.0575, lng: 39.6682 }; // Maximum Gamers coordinates
+  map = new google.maps.Map(document.getElementById("map"), {
+    center: destination,
+    zoom: 17
+  });
 
-        // Update "Open in Maps" link for mobile
-        let mapsLink = document.getElementById("openInMaps");
-        mapsLink.href = `https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&destination=Maximum+Gamers+K.M+Opposite+Student+Centre`;
-      }, function() {
-        alert("Could not get your location. Please enable GPS.");
-      });
-    } else {
-      alert("Geolocation is not supported by your browser.");
-    }
-  }
+  directionsService = new google.maps.DirectionsService();
+  directionsRenderer = new google.maps.DirectionsRenderer({ map: map, suppressMarkers: true });
+
+  // Destination marker
+  new google.maps.Marker({ position: destination, map: map, title: "Maximum Gamers K.M Opposite Student Centre" });
+
+  // Car marker
+  carMarker = new google.maps.Marker({
+    map: map,
+    icon: {
+      url: "https://maps.google.com/mapfiles/kml/shapes/cabs.png",
+      scaledSize: new google.maps.Size(40, 40),
+      anchor: new google.maps.Point(20, 20)
+    },
+    visible: false
+  });
+
+  // Polyline for route
+  routePolyline = new google.maps.Polyline({
+    map: map,
+    strokeColor: "#FF0000",
+    strokeOpacity: 0.8,
+    strokeWeight: 5,
+    path: []
+  });
+}
+
+window.onload = initMap;
+
+// Function to calculate heading for car rotation
+function calculateHeading(p1, p2) {
+  return google.maps.geometry.spherical.computeHeading(p1, p2);
+}
+
+// Animate car along the route
+function animateCar(route) {
+  let index = 0;
+  let animatedPath = [];
+
+  carMarker.setPosition(route[0]);
+  carMarker.setVisible(true);
+
+  const interval = setInterval(() => {
+    index++;
+    if (index >= route.length) { clearInterval(interval); return; }
+
+    const point = route[index];
+    const prevPoint = route[index - 1];
+
+    // Update car rotation
+    const heading = calculateHeading(prevPoint, point);
+    carMarker.setIcon({
+      url: "https://maps.google.com/mapfiles/kml/shapes/cabs.png",
+      scaledSize: new google.maps.Size(40, 40),
+      anchor: new google.maps.Point(20, 20),
+      rotation: heading
+    });
+
+    carMarker.setPosition(point);
+    animatedPath.push(point);
+    routePolyline.setPath(animatedPath);
+
+    map.panTo(point);
+  }, 300); // Adjust speed here
+}
+
+// Get directions from user location
+function getDirections() {
+  if (!navigator.geolocation) { alert("Geolocation not supported."); return; }
+
+  navigator.geolocation.getCurrentPosition(position => {
+    const origin = { lat: position.coords.latitude, lng: position.coords.longitude };
+    const destination = { lat: -4.0575, lng: 39.6682 };
+
+    directionsService.route(
+      { origin, destination, travelMode: google.maps.TravelMode.DRIVING },
+      (result, status) => {
+        if (status === "OK") {
+          directionsRenderer.setDirections(result);
+
+          const route = result.routes[0].overview_path;
+          routePolyline.setPath([]);
+          animateCar(route);
+        } else {
+          alert("Directions request failed: " + status);
+        }
+      }
+    );
+
+    // Update mobile Maps link
+    document.getElementById("openInMaps").href =
+      `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${destination.lat},${destination.lng}&travelmode=driving`;
+  },
+  () => alert("Could not get your location. Please enable GPS."),
+  { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+}
 </script>
 
 
