@@ -1,350 +1,176 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Apply for a Loan | Maximum Gamers</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-
-
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Loan Application | Maximum Gamers</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
   <style>
-    .shiny-line {
-      height: 4px;
-      width: 100%;
-      background: linear-gradient(90deg, #ffd700, #ff8c00, #ffd700);
-      animation: shine 2s linear infinite;
-      margin-bottom: 15px;
-      background-size: 200% 100%;
-    }
-    
-    @keyframes shine {
-      0% { background-position: 0% 50%; }
-      100% { background-position: 100% 50%; }
-    }
-    
-    footer a {
-      transition: color 0.3s ease;
-    }
-    
-    footer a:hover {
-      color: #00ff99 !important;
-    }
-    
-    /* Mobile optimizations */
-    @media (max-width: 768px) {
-      .container {
-        padding: 15px;
-      }
-      
-      h1 {
-        font-size: 1.75rem;
-      }
-      
-      .table th, .table td {
-        padding: 0.5rem;
-        font-size: 0.875rem;
-      }
-      
-      .alert ul {
-        padding-left: 1rem;
-      }
-      
-      .card {
-        padding: 1rem !important;
-      }
-    }
-    
-    @media (max-width: 576px) {
-      h1 {
-        font-size: 1.5rem;
-      }
-      
-      h3 {
-        font-size: 1.25rem;
-      }
-      
-      .alert {
-        padding: 0.75rem;
-      }
-      
-      .table-responsive {
-        font-size: 0.8rem;
-      }
-      
-      .badge {
-        font-size: 0.7rem;
-      }
-    }
+    body { background-color: #f5f7fa; font-family: "Poppins", sans-serif; }
+    .card { border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .navbar-brand { font-weight: 600; letter-spacing: 0.5px; }
+    .form-control, .form-select { border-radius: 10px; }
+    .preview-img { width: 100%; max-width: 180px; margin-top: 10px; display: none; border-radius: 10px; }
+    .loan-table th { background-color: #343a40; color: white; }
+    .status-badge { font-size: 0.9rem; border-radius: 10px; padding: 5px 10px; }
+    .highlight { background-color: #d1ffd1 !important; transition: background-color 1s ease; }
   </style>
 </head>
-<body class="bg-light d-flex flex-column min-vh-100">
-
-  <div class="container py-5 flex-grow-1">
-    <h1 class="mb-4 text-center text-primary">💰 Apply for a Loan</h1>
-
-    <!-- Intro Section -->
-    <div class="alert alert-info shadow-sm mb-4">
-      <h5 class="fw-bold">Welcome to Maximum Gamers Loan Services</h5>
-      <p class="mb-2">
-        Thank you for trusting us with your valuable items. Our quick-loan service is designed to help you access instant cash by using your gaming consoles, accessories, or other items as collateral.
-      </p>
-      <p class="mb-1 fw-bold">📌 Loan Status Explained:</p>
-      <ul class="mb-0">
-        <li><span class="badge bg-warning">Pending</span> — Your application is under review.</li>
-        <li><span class="badge bg-info">Visit Shop</span> — Please bring the item to our shop for final verification.</li>
-        <li><span class="badge bg-success">Approved</span> — Congratulations! Your loan is ready to be disbursed.</li>
-        <li><span class="badge bg-danger">Rejected</span> — Unfortunately, your item did not qualify. You may try again with a different item.</li>
-      </ul>
-    </div>
-
-    <!-- Loan Application Form -->
-    <div class="card shadow p-4 mb-5">
-      <form id="loanForm" enctype="multipart/form-data">
-        <div class="mb-3">
-          <label class="form-label">Upload Image of Item</label>
-          <input type="file" class="form-control" name="itemImage" accept="image/*" required>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Item Description</label>
-          <textarea class="form-control" name="description" rows="3" required></textarea>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Estimated Item Value (Ksh)</label>
-          <input type="number" class="form-control" name="itemValue" required>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Loan Amount Requested (Ksh)</label>
-          <input type="number" class="form-control" name="loanAmount" required>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Loan Duration (Months)</label>
-          <input type="number" class="form-control" name="loanPeriod" required>
-        </div>
-        <button type="submit" class="btn btn-success w-100">Submit Loan Application</button>
-      </form>
-    </div>
-
-    <!-- Status Messages -->
-    <div id="loanStatus" class="mt-3"></div>
-
-    <!-- User Loan Status Updates -->
-    <div class="mt-5">
-      <h3 class="text-primary">📋 Your Loan Applications</h3>
-      <div class="table-responsive">
-        <table class="table table-bordered table-striped mt-3 align-middle">
-          <thead class="table-dark text-center">
-            <tr>
-              <th>Item</th>
-              <th>Description</th>
-              <th>Value</th>
-              <th>Requested</th>
-              <th>Months</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="loanList">
-            <tr><td colspan="6" class="text-center">No loans yet</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-<!-- Direction Buttons -->
-<div class="text-center mt-3">
-  <div class="d-flex justify-content-center flex-wrap gap-2">
-    <button onclick="openDirections()" class="btn btn-success btn-lg">
-      📍 Get Directions
-    </button>
-    <a id="openInMaps" href="https://maps.app.goo.gl/i885AkNKNMcjDaoH9" 
-       target="_blank" 
-       class="btn btn-outline-primary btn-lg">
-      🚗 Open in Google Maps
-    </a>
-  </div>
-</div>
-
-<!-- Embedded Google Map -->
-<div class="text-center mt-4">
-  <iframe 
-    id="directionsMap"
-    src="https://www.google.com/maps/embed/v1/place?key=AIzaSyDnphs9rressecIYYKehF89dWILJTWcMEs
-    &q=Maximum+Gamers+K.M+Opposite+Student+Centre&zoom=17" 
-    width="100%" 
-    height="400" 
-    style="border:0; border-radius:10px;" 
-    loading="lazy" 
-    allowfullscreen>
-  </iframe>
-</div>
-
-<script>
-  function openDirections() {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(function(position) {
-        let lat = position.coords.latitude;
-        let lng = position.coords.longitude;
-
-        // Update iframe with live directions (with closer zoom)
-        let iframe = document.getElementById("directionsMap");
-        iframe.src = `https://www.google.com/maps/embed/v1/directions?key=AIzaSyDnphs9rressecIYYKehF89dWILJTWcMEs
-          &origin=${lat},${lng}
-          &destination=Maximum+Gamers+K.M+Opposite+Student+Centre&zoom=17`;
-
-        // Update "Open in Maps" link for mobile
-        let mapsLink = document.getElementById("openInMaps");
-        mapsLink.href = `https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&destination=Maximum+Gamers+K.M+Opposite+Student+Centre`;
-      }, function() {
-        alert("Could not get your location. Please enable GPS.");
-      });
-    } else {
-      alert("Geolocation is not supported by your browser.");
-    }
-  }
-</script>
-
-
-
-  <!-- Footer -->
-  <footer class="bg-dark text-white pt-3 position-relative mt-auto">
-    <!-- Shiny Line -->
-    <div class="shiny-line"></div>
-
-    <div class="text-center mb-3">
-      <p class="mt-2 small">Empowering gamers to play, earn, and connect.</p>
-    </div>
-
+<body>
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
-      <div class="row text-center text-md-start g-3">
-        <div class="col-6 col-md-3">
-          <h6 class="fw-bold">Discover</h6>
-          <ul class="list-unstyled">
-            <li><a href="/gaming" class="text-white text-decoration-none">Gaming Sessions</a></li>
-            <li><a href="/loans" class="text-white text-decoration-none">Quick Loans</a></li>
-            <li><a href="/shop" class="text-white text-decoration-none">Store</a></li>
-          </ul>
-        </div>
-        <div class="col-6 col-md-3">
-          <h6 class="fw-bold">Our Shop</h6>
-          <ul class="list-unstyled">
-            <li><a href="/about" class="text-white text-decoration-none">About Us</a></li>
-            <li><a href="/contact" class="text-white text-decoration-none">Contact</a></li>
-            <li><a href="/whatscoming" class="text-white text-decoration-none">What's Coming</a></li>
-          </ul>
-        </div>
-        <div class="col-6 col-md-3">
-          <h6 class="fw-bold">Connect</h6>
-          <ul class="list-unstyled">
-            <li><a href="#" class="text-white text-decoration-none">Instagram</a></li>
-            <li><a href="#" class="text-white text-decoration-none">Twitter</a></li>
-            <li><a href="#" class="text-white text-decoration-none">Facebook</a></li>
-          </ul>
-        </div>
-        <div class="col-6 col-md-3">
-          <h6 class="fw-bold">Legal</h6>
-          <ul class="list-unstyled">
-            <li><a href="/privacy-policy" class="text-white text-decoration-none">Privacy Policy</a></li>
-            <li><a href="/terms" class="text-white text-decoration-none">Terms & Conditions</a></li>
-            <li><a href="/refund-policy" class="text-white text-decoration-none">Refund Policy</a></li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="mt-4 text-center small">
-        &copy; 2025 Maximum Gamers. All Rights Reserved.
+      <a class="navbar-brand" href="/user">Maximum Gamers</a>
+      <div>
+        <a href="/logout" class="btn btn-danger btn-sm">Logout</a>
       </div>
     </div>
-  </footer>
+  </nav>
 
+  <!-- MAIN CONTAINER -->
+  <div class="container my-5">
+    <div class="row g-4">
+      <!-- Loan Application Form -->
+      <div class="col-lg-5">
+        <div class="card p-4">
+          <h4 class="text-center mb-3">Apply for a Loan</h4>
+          <div id="flashMessage"></div>
+          <form id="loanForm" action="/loans" method="POST" enctype="multipart/form-data">
+            <div class="mb-3">
+              <label for="item" class="form-label">Item for Loan</label>
+              <input type="text" class="form-control" id="item" name="item" placeholder="e.g., PlayStation 5, Controller" required />
+            </div>
+            <div class="mb-3">
+              <label for="amount" class="form-label">Loan Amount (KSH)</label>
+              <input type="number" class="form-control" id="amount" name="loanAmount" min="100" required />
+            </div>
+            <div class="mb-3">
+              <label for="image" class="form-label">Upload Item Image</label>
+              <input type="file" class="form-control" id="image" name="itemImage" accept="image/*" required />
+              <img id="imagePreview" class="preview-img" alt="Preview" />
+            </div>
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="fa-solid fa-paper-plane me-2"></i> Submit Application
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Loan Records -->
+      <div class="col-lg-7">
+        <div class="card p-4">
+          <h4 class="text-center mb-3">Your Loan Requests</h4>
+          <div class="table-responsive">
+            <table class="table table-bordered loan-table align-middle text-center">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Item</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody id="loanList">
+                <!-- Filled dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SOCKET.IO -->
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
-    const loanForm = document.getElementById("loanForm");
-    const loanStatus = document.getElementById("loanStatus");
-    const loanList = document.getElementById("loanList");
 
-    // Submit loan application
-    loanForm.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const formData = new FormData(loanForm);
-
-      fetch("/loans", { method: "POST", body: formData, headers: { Accept: "application/json" } })
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            loanStatus.innerHTML = `<div class="alert alert-success">✅ Loan submitted successfully!</div>`;
-            loanForm.reset();
-            fetchLoans(); // refresh immediately
-          } else {
-            loanStatus.innerHTML = `<div class="alert alert-danger"> ${data.message || "Failed to submit loan. Try again."}</div>`;
-          }
-        })
-        .catch(() => {
-          loanStatus.innerHTML = `<div class="alert alert-danger"> Failed to submit loan. Try again.</div>`;
-        });
-    });
-
-    // Real-time: new loan added
-    socket.on("loanCreated", (loan) => {
-      if (loan.user === window.currentUserId) {
-        fetchLoans();
-      }
-    });
-
-    // Real-time: loan status updated
-    socket.on("loanUpdated", (loan) => {
-      const row = loanList.querySelector(`tr[data-id="${loan._id}"]`);
-      if (row) {
-        row.innerHTML = renderLoanRow(loan);
+    // === Image Preview ===
+    const imageInput = document.getElementById("image");
+    const imagePreview = document.getElementById("imagePreview");
+    imageInput.addEventListener("change", () => {
+      const file = imageInput.files[0];
+      if (file) {
+        imagePreview.src = URL.createObjectURL(file);
+        imagePreview.style.display = "block";
       } else {
-        fetchLoans();
+        imagePreview.style.display = "none";
       }
     });
 
-    // Render loans table
-    function renderLoanRow(loan) {
-  return `
-    <td>
-      ${loan.itemImage 
-        ? `<img src="${loan.itemImage}" class="img-fluid rounded" width="60">`
-        : "—"}
-    </td>
-    <td>${loan.description}</td>
-    <td>Ksh ${loan.itemValue}</td>
-    <td>Ksh ${loan.loanAmount}</td>
-    <td>${loan.loanPeriod}</td>
-    <td>
-      <span class="badge ${
-        loan.status === "Approved"
-          ? "bg-success"
-          : loan.status === "Rejected"
-          ? "bg-danger"
-          : loan.status === "Visit Shop"
-          ? "bg-info"
-          : "bg-warning"
-      }">
-        ${loan.status}
-      </span>
-    </td>
-  `;
-}
-
-    // Fetch loans list for logged-in user
-    function fetchLoans() {
-      fetch("/loans/list")
-        .then(res => res.json())
-        .then(data => renderLoans(data))
-        .catch(() => {
-          loanList.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error loading loans</td></tr>`;
-        });
+    // === Load Loans ===
+    async function loadLoans() {
+      try {
+        const res = await fetch("/loans/list");
+        if (!res.ok) return;
+        const loans = await res.json();
+        const tbody = document.getElementById("loanList");
+        tbody.innerHTML = loans
+          .map((loan, index) => `
+            <tr data-id="${loan._id}">
+              <td>${index + 1}</td>
+              <td>${loan.item}</td>
+              <td>KSH ${loan.loanAmount.toLocaleString()}</td>
+              <td>
+                <span class="status-badge badge ${
+                  loan.status === "Approved"
+                    ? "bg-success"
+                    : loan.status === "Rejected"
+                    ? "bg-danger"
+                    : "bg-warning text-dark"
+                }">${loan.status}</span>
+              </td>
+              <td>${new Date(loan.createdAt).toLocaleDateString()}</td>
+            </tr>
+          `).join("");
+      } catch (err) {
+        console.error("Error loading loans:", err);
+      }
     }
 
+    loadLoans();
 
-    
-    // Initial load
-    fetchLoans();
+    // === Real-Time Loan Creation ===
+    const loanForm = document.getElementById("loanForm");
+    loanForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = new FormData(loanForm);
+      try {
+        const res = await fetch("/loans", { method: "POST", body: formData });
+        if (!res.ok) throw new Error("Failed to submit loan");
+        const data = await res.json();
+        const loan = data.loan;
+
+        // Emit to socket (optional if backend already emits)
+        socket.emit("loanCreated", loan);
+
+        // Reset form
+        loanForm.reset();
+        imagePreview.style.display = "none";
+      } catch (err) {
+        console.error(err);
+        alert(err.message);
+      }
+    });
+
+    // === Receive new loan in real-time ===
+    socket.on("loanCreated", (loan) => {
+      const tbody = document.getElementById("loanList");
+      const row = document.createElement("tr");
+      row.dataset.id = loan._id;
+      row.innerHTML = `
+        <td>${tbody.children.length + 1}</td>
+        <td>${loan.item}</td>
+        <td>KSH ${loan.loanAmount.toLocaleString()}</td>
+        <td><span class="status-badge badge bg-warning text-dark">${loan.status}</span></td>
+        <td>${new Date(loan.createdAt).toLocaleDateString()}</td>
+      `;
+      tbody.prepend(row);
+      row.classList.add("highlight");
+      setTimeout(() => row.classList.remove("highlight"), 2000);
+    });
   </script>
-
 </body>
 </html>

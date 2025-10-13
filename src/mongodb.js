@@ -42,7 +42,7 @@ const userSchema = new mongoose.Schema(
       trim: true,
       default: null,
       sparse: true,
-      unique: true, // ✅ keep only this
+      unique: true,
     },
 
     password: { type: String, required: false },
@@ -67,7 +67,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: null,
       unique: true,
-      sparse: true, // ✅keep only this
+      sparse: true,
     },
 
     rememberToken: { type: String, default: null },
@@ -85,32 +85,28 @@ userSchema.pre("save", function (next) {
   next();
 });
 
-// ================== PRODUCT SCHEMA ==================
-const productSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  marketPrice: { type: Number, required: true },
-  salePrice: { type: Number, required: true },
-  description: { type: String },
-  onSale: { type: Boolean, default: false },
+// 🖼 Method to update profile image and delete old Cloudinary image
+userSchema.methods.updateProfileImage = async function (newImagePath, cloudinary) {
+  try {
+    // Delete old image if it exists
+    if (this.imageId) {
+      await cloudinary.uploader.destroy(this.imageId);
+    }
 
-  // Array of Cloudinary image URLs (max 4)
-  images: {
-    type: [String],
-    validate: [
-      {
-        validator: function (arr) {
-          // Allow 0 for old items
-          return Array.isArray(arr) && arr.length <= 4;
-        },
-        message: "You can upload at most 4 images per product.",
-      },
-    ],
-    default: [],
-  },
+    // Upload new image to Cloudinary
+    const result = await cloudinary.uploader.upload(newImagePath, { folder: "profiles" });
 
-  // For quick display (first image is auto-set)
-  mainImage: { type: String, default: "" },
-});
+    // Update user document
+    this.image = result.secure_url;
+    this.imageId = result.public_id;
+    await this.save();
+
+    return this; // return updated user
+  } catch (err) {
+    console.error("Error updating profile image:", err);
+    throw err;
+  }
+};
 
 // ================== MIDDLEWARE ==================
 productSchema.pre("save", function (next) {

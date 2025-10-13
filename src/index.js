@@ -835,29 +835,53 @@ app.post("/admin/users/update/:id", ensureAuthenticated, requireAdmin, async (re
   }
 });
 
-// ================== PRODUCT ROUTES ==================
+// ================== PRODUCT ROUTES =================
 
 app.get("/admin/products/json", ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
     const products = await Product.find();
-    res.json(products);
+
+    const formattedProducts = products.map(p => {
+      const obj = p.toObject();
+
+      // If "images" is missing but an old single image exists (e.g., mainImage)
+      if ((!obj.images || obj.images.length === 0) && obj.mainImage) {
+        obj.images = [obj.mainImage];
+      }
+
+      // Always set mainImage to the first image
+      obj.mainImage = obj.images?.[0] || null;
+
+      return obj;
+    });
+
+    res.json(formattedProducts);
   } catch (err) {
     console.error("Error loading admin products:", err);
     res.status(500).json({ success: false, message: "Failed to load products" });
   }
 });
 
+// =================== PUBLIC PRODUCT JSON (Shop) ===================
 app.get("/products/json", async (req, res) => {
   try {
     const products = await Product.find();
+
     const productsWithPath = products.map(p => ({
       ...p.toObject(),
-      images: p.images || [],
+
+      //  Fallback: if "images" array is empty, use mainImage instead
+      images: (p.images && p.images.length > 0)
+        ? p.images
+        : (p.mainImage ? [p.mainImage] : []),
+
+      //  Always ensure mainImage exists for UI display
       mainImage: p.mainImage || (p.images?.[0] || null)
     }));
+
     res.json(productsWithPath);
   } catch (err) {
-    console.error("Failed to fetch products:", err);
+    console.error(" Failed to fetch products:", err);
     res.status(500).json({ success: false, message: "Failed to fetch products" });
   }
 });
@@ -1015,9 +1039,13 @@ app.delete("/admin/leaderboard/:id", ensureAuthenticated, requireAdmin, async (r
 
 // ================== LOAN ROUTES ==================
 
+// Get user loans (page)
 app.get("/loans", ensureAuthenticated, async (req, res) => {
   try {
-    const loans = await Loan.find({ user: req.session.user.id }).sort({ createdAt: -1 });
+    const userId = req.session.user?._id || req.session.user?.id;
+    if (!userId) return res.status(401).send("Not logged in");
+
+    const loans = await Loan.find({ user: userId }).sort({ createdAt: -1 });
     res.render("loans", { 
       loans,
       user: req.session.user,
@@ -1029,18 +1057,20 @@ app.get("/loans", ensureAuthenticated, async (req, res) => {
   }
 });
 
+// Submit a new loan
 app.post("/loans", ensureAuthenticated, upload.single("itemImage"), async (req, res) => {
   try {
+    const userId = req.session.user?._id || req.session.user?.id;
+    if (!userId) return res.status(401).send("Not logged in");
+
     let imageUrl = null;
     if (req.file) {
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: "loans"
-      });
+      const result = await cloudinary.uploader.upload(req.file.path, { folder: "loans" });
       imageUrl = result.secure_url;
     }
 
     const loan = await Loan.create({
-      user: req.session.user.id,
+      user: userId,
       itemImage: imageUrl,
       description: req.body.description,
       itemValue: req.body.itemValue,
@@ -1062,9 +1092,13 @@ app.post("/loans", ensureAuthenticated, upload.single("itemImage"), async (req, 
   }
 });
 
+// Get user loans as JSON
 app.get("/loans/list", ensureAuthenticated, async (req, res) => {
   try {
-    const loans = await Loan.find({ user: req.session.user.id }).sort({ createdAt: -1 });
+    const userId = req.session.user?._id || req.session.user?.id;
+    if (!userId) return res.status(401).json([]);
+
+    const loans = await Loan.find({ user: userId }).sort({ createdAt: -1 });
     res.json(loans);
   } catch (err) {
     console.error("Error fetching user loans:", err);
@@ -1072,6 +1106,7 @@ app.get("/loans/list", ensureAuthenticated, async (req, res) => {
   }
 });
 
+// Admin view loans (page)
 app.get("/admin/loans", ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
     const loans = await Loan.find().populate("user", "name email").sort({ createdAt: -1 });
@@ -1086,6 +1121,7 @@ app.get("/admin/loans", ensureAuthenticated, requireAdmin, async (req, res) => {
   }
 });
 
+// Admin loans JSON
 app.get("/admin/loans/json", ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
     const loans = await Loan.find().populate("user", "name email").sort({ createdAt: -1 });
@@ -1096,6 +1132,7 @@ app.get("/admin/loans/json", ensureAuthenticated, requireAdmin, async (req, res)
   }
 });
 
+// Update loan status (admin)
 app.post("/admin/loans/:id/status", ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
     const { status } = req.body;
@@ -1114,6 +1151,7 @@ app.post("/admin/loans/:id/status", ensureAuthenticated, requireAdmin, async (re
     res.status(500).json({ success: false, message: err.message });
   }
 });
+
 
 // ================== GAMING BOOKINGS ==================
 
@@ -1362,14 +1400,26 @@ app.get("/top-bar/active", async (req, res) => {
 // GET profile page
 app.get("/profile", ensureAuthenticated, async (req, res) => {
   try {
+    if (!req.session.user?.id) {
+      console.error("No user session found");
+      return res.redirect("/login");
+    }
+
     const user = await User.findById(req.session.user.id);
-    if (!user) return res.status(404).send("User not found");
+    if (!user) {
+      console.error("User not found in DB");
+      return res.status(404).send("User not found");
+    }
 
     res.render("profile", {
       user,
       title: "Profile",
-      currentUser: req.session.user
+      currentUser: req.session.user,
+      flash: req.session.flash || null,
     });
+
+    // Clear flash after rendering
+    req.session.flash = null;
   } catch (err) {
     console.error("Error loading profile:", err);
     res.status(500).send("Failed to load profile");
@@ -1381,6 +1431,11 @@ app.post("/profile/update", ensureAuthenticated, upload.single("image"), async (
   const { name, phone, studentId } = req.body;
 
   try {
+    if (!req.session.user?.id) {
+      req.session.flash = { type: "error", message: "Session expired. Please login again." };
+      return res.redirect("/login");
+    }
+
     const updateData = { name, phone, studentId };
 
     if (req.file) {
@@ -1391,8 +1446,12 @@ app.post("/profile/update", ensureAuthenticated, upload.single("image"), async (
 
       // Remove old image from Cloudinary if exists
       const user = await User.findById(req.session.user.id);
-      if (user.imageId) {
-        await cloudinary.uploader.destroy(user.imageId);
+      if (user?.imageId) {
+        try {
+          await cloudinary.uploader.destroy(user.imageId);
+        } catch (destroyErr) {
+          console.warn("Old profile image could not be removed:", destroyErr.message);
+        }
       }
 
       // Save new image URL and Cloudinary public_id
@@ -1402,22 +1461,34 @@ app.post("/profile/update", ensureAuthenticated, upload.single("image"), async (
 
     // Update user document
     await User.findByIdAndUpdate(req.session.user.id, updateData, { new: true });
+
+    req.session.flash = { type: "success", message: "Profile updated successfully!" };
     res.redirect("/profile");
   } catch (err) {
     console.error("Profile update error:", err);
-    res.status(500).send("Failed to update profile");
+    req.session.flash = { type: "error", message: "Failed to update profile." };
+    res.redirect("/profile");
   }
 });
 
 // GET remove profile image
 app.get("/profile/remove-image", ensureAuthenticated, async (req, res) => {
   try {
+    if (!req.session.user?.id) {
+      req.session.flash = { type: "error", message: "Session expired. Please login again." };
+      return res.redirect("/login");
+    }
+
     const user = await User.findById(req.session.user.id);
     if (!user) return res.status(404).send("User not found");
 
     // Delete image from Cloudinary if exists
     if (user.imageId) {
-      await cloudinary.uploader.destroy(user.imageId);
+      try {
+        await cloudinary.uploader.destroy(user.imageId);
+      } catch (destroyErr) {
+        console.warn("Failed to remove image from Cloudinary:", destroyErr.message);
+      }
     }
 
     // Reset to default profile image
@@ -1425,12 +1496,15 @@ app.get("/profile/remove-image", ensureAuthenticated, async (req, res) => {
     user.imageId = null;
     await user.save();
 
+    req.session.flash = { type: "success", message: "Profile image removed successfully!" };
     res.redirect("/profile");
   } catch (err) {
     console.error("Error removing profile image:", err);
-    res.status(500).send("Failed to remove profile image");
+    req.session.flash = { type: "error", message: "Failed to remove profile image." };
+    res.redirect("/profile");
   }
 });
+
 
 // ================== ERROR HANDLING ==================
 app.use((err, req, res, next) => {

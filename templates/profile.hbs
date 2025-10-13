@@ -43,18 +43,27 @@
 
       <form action="/profile/update" method="POST" enctype="multipart/form-data" class="row g-4">
 
-        <!-- Profile Image -->
-        <div class="col-md-4 text-center">
-          <img 
-            src="{{#if user.image}}{{user.image}}{{else}}/images/default-profile.png{{/if}}" 
-            alt="Profile Picture" 
-            class="profile-img mb-3"
-          >
-          <div class="mb-3">
-            <label for="image" class="form-label">Change Profile Picture</label>
-            <input type="file" class="form-control" id="image" name="image">
-          </div>
-        </div>
+<!-- Profile Image -->
+<div class="col-md-4 text-center">
+  <img 
+    src="{{#if user.image}}{{user.image}}{{else}}/images/default-profile.png{{/if}}" 
+    alt="Profile Picture" 
+    class="profile-img mb-3"
+  >
+  <div class="mb-3">
+    <label for="image" class="form-label">Change Profile Picture</label>
+    <input type="file" class="form-control" id="image" name="image">
+  </div>
+
+  {{#if user.image}}
+    <div class="d-grid mt-2">
+      <a href="/profile/remove-image" class="btn btn-outline-danger btn-sm">
+         Remove Profile Picture
+      </a>
+    </div>
+  {{/if}}
+</div>
+
 
         <!-- User Info -->
         <div class="col-md-8">
