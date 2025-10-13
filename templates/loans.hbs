@@ -14,9 +14,14 @@
     rel="stylesheet"
   />
   <style>
-    .loan-card { margin-bottom: 1rem; }
-    .loan-image { max-height: 150px; object-fit: cover; }
-    .loan-status { font-weight: bold; }
+    .loan-thumbnail {
+      max-height: 80px;
+      width: auto;
+      border-radius: 4px;
+    }
+    .loan-table td, .loan-table th {
+      vertical-align: middle;
+    }
   </style>
 </head>
 <body>
@@ -40,16 +45,14 @@
     </div>
   </nav>
 
-  <!-- Container -->
   <div class="container mt-4">
     <!-- Intro -->
     <div class="mb-4">
       <h2>Welcome, {{user.name}}!</h2>
       <p>
         Here you can view all your loan applications, apply for new loans,
-        and track their current status in real time. Your approved loans will
-        appear with a green badge, pending loans in yellow, and rejected loans
-        in red.
+        and track their current status in real time. Amounts are shown in
+        Kenyan Shillings (KSH), and loan periods are displayed in months.
       </p>
     </div>
 
@@ -63,15 +66,15 @@
             <input type="text" class="form-control" id="description" name="description" required />
           </div>
           <div class="mb-3">
-            <label for="itemValue" class="form-label">Item Value ($)</label>
-            <input type="number" class="form-control" id="itemValue" name="itemValue" step="0.01" min="0" required />
+            <label for="itemValue" class="form-label">Item Value (KSH)</label>
+            <input type="number" class="form-control" id="itemValue" name="itemValue" min="0" required />
           </div>
           <div class="mb-3">
-            <label for="loanAmount" class="form-label">Loan Amount ($)</label>
-            <input type="number" class="form-control" id="loanAmount" name="loanAmount" step="0.01" min="0" required />
+            <label for="loanAmount" class="form-label">Loan Amount (KSH)</label>
+            <input type="number" class="form-control" id="loanAmount" name="loanAmount" min="0" required />
           </div>
           <div class="mb-3">
-            <label for="loanPeriod" class="form-label">Loan Period (days)</label>
+            <label for="loanPeriod" class="form-label">Loan Period (Months)</label>
             <input type="number" class="form-control" id="loanPeriod" name="loanPeriod" min="1" required />
           </div>
           <div class="mb-3">
@@ -83,22 +86,37 @@
       </div>
     </div>
 
-    <!-- Loan List -->
-    <div class="row" id="loanList">
-      {{#if loans.length}}
-        {{#each loans}}
-          <div class="col-md-6 loan-card" id="loan-{{_id}}">
-            <div class="card">
-              {{#if itemImage}}
-                <img src="{{itemImage}}" class="card-img-top loan-image" alt="Item Image">
-              {{/if}}
-              <div class="card-body">
-                <h5 class="card-title">{{description}}</h5>
-                <p class="card-text"><strong>Item Value:</strong> ${{itemValue}}</p>
-                <p class="card-text"><strong>Loan Amount:</strong> ${{loanAmount}}</p>
-                <p class="card-text"><strong>Loan Period:</strong> {{loanPeriod}} days</p>
-                <p class="card-text loan-status">
-                  <strong>Status:</strong>
+    <!-- Loan History Table -->
+    <div class="card">
+      <div class="card-header">My Loan History</div>
+      <div class="card-body table-responsive">
+        <table class="table table-bordered table-hover loan-table" id="loanTable">
+          <thead class="table-dark">
+            <tr>
+              <th>Item</th>
+              <th>Description</th>
+              <th>Item Value (KSH)</th>
+              <th>Loan Amount (KSH)</th>
+              <th>Loan Period (Months)</th>
+              <th>Status</th>
+              <th>Applied On</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each loans}}
+              <tr id="loan-{{_id}}">
+                <td>
+                  {{#if itemImage}}
+                    <img src="{{itemImage}}" class="loan-thumbnail" alt="Item Image">
+                  {{else}}
+                    N/A
+                  {{/if}}
+                </td>
+                <td>{{description}}</td>
+                <td>{{itemValue}}</td>
+                <td>{{loanAmount}}</td>
+                <td>{{loanPeriod}}</td>
+                <td>
                   {{#ifEquals status "Pending"}}
                     <span class="badge bg-warning text-dark">{{status}}</span>
                   {{else ifEquals status "Approved"}}
@@ -108,15 +126,13 @@
                   {{else}}
                     <span class="badge bg-secondary">{{status}}</span>
                   {{/ifEquals}}
-                </p>
-                <p class="card-text"><small class="text-muted">Applied on: {{createdAt}}</small></p>
-              </div>
-            </div>
-          </div>
-        {{/each}}
-      {{else}}
-        <p>No loans found. Apply for a new loan above.</p>
-      {{/if}}
+                </td>
+                <td>{{formatDate createdAt}}</td>
+              </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -126,36 +142,33 @@
   <script>
     const socket = io();
 
-    // Listen for new loans
+    function formatDate(dateString) {
+      const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+      return new Date(dateString).toLocaleString('en-GB', options);
+    }
+
+    // Add new loan to table with image thumbnail
     socket.on("loanCreated", (loan) => {
-      const loanList = document.getElementById("loanList");
-      const loanCard = document.createElement("div");
-      loanCard.className = "col-md-6 loan-card";
-      loanCard.id = "loan-" + loan._id;
-      loanCard.innerHTML = `
-        <div class="card">
-          ${loan.itemImage ? `<img src="${loan.itemImage}" class="card-img-top loan-image" alt="Item Image">` : ""}
-          <div class="card-body">
-            <h5 class="card-title">${loan.description}</h5>
-            <p class="card-text"><strong>Item Value:</strong> $${loan.itemValue}</p>
-            <p class="card-text"><strong>Loan Amount:</strong> $${loan.loanAmount}</p>
-            <p class="card-text"><strong>Loan Period:</strong> ${loan.loanPeriod} days</p>
-            <p class="card-text loan-status">
-              <strong>Status:</strong>
-              <span class="badge bg-warning text-dark">${loan.status}</span>
-            </p>
-            <p class="card-text"><small class="text-muted">Applied on: ${new Date(loan.createdAt).toLocaleString()}</small></p>
-          </div>
-        </div>
+      const tableBody = document.querySelector("#loanTable tbody");
+      const row = document.createElement("tr");
+      row.id = "loan-" + loan._id;
+      row.innerHTML = `
+        <td>${loan.itemImage ? `<img src="${loan.itemImage}" class="loan-thumbnail" alt="Item Image">` : "N/A"}</td>
+        <td>${loan.description}</td>
+        <td>${loan.itemValue}</td>
+        <td>${loan.loanAmount}</td>
+        <td>${loan.loanPeriod}</td>
+        <td><span class="badge bg-warning text-dark">${loan.status}</span></td>
+        <td>${formatDate(loan.createdAt)}</td>
       `;
-      loanList.prepend(loanCard);
+      tableBody.prepend(row);
     });
 
-    // Listen for loan updates
+    // Update loan status
     socket.on("loanUpdated", (loan) => {
-      const loanCard = document.getElementById("loan-" + loan._id);
-      if (loanCard) {
-        const badge = loanCard.querySelector(".loan-status span");
+      const row = document.getElementById("loan-" + loan._id);
+      if (row) {
+        const badge = row.querySelector("td:nth-child(6) span");
         badge.textContent = loan.status;
         if (loan.status === "Pending") badge.className = "badge bg-warning text-dark";
         else if (loan.status === "Approved") badge.className = "badge bg-success";
@@ -166,4 +179,5 @@
   </script>
 </body>
 </html>
+
 
