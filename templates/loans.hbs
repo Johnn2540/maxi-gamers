@@ -28,10 +28,7 @@
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
 
-    .container {
-      max-width: 900px;
-      padding: 1rem;
-    }
+    .container { max-width: 900px; padding: 1rem; }
 
     .card {
       background: var(--card-bg);
@@ -54,6 +51,11 @@
       border-color: var(--primary-color);
     }
 
+    .form-label {
+      color: var(--text-light); /* labels in white */
+      font-weight: 500;
+    }
+
     .btn-primary {
       background: var(--primary-color);
       border: none;
@@ -63,53 +65,19 @@
       transition: all 0.3s ease;
     }
 
-    .btn-primary:hover {
-      background: #0b5ed7;
-      transform: translateY(-2px);
-    }
+    .btn-primary:hover { background: #0b5ed7; transform: translateY(-2px); }
+    .badge { font-weight: 500; padding: 0.5em 0.75em; border-radius: 6px; }
+    .loan-thumbnail { max-height: 80px; width: auto; border-radius: 6px; }
+    .table thead th { border-bottom: 2px solid var(--border-color); color: var(--text-light); }
+    .alert { border-radius: 10px; border: none; }
 
-    .badge {
-      font-weight: 500;
-      padding: 0.5em 0.75em;
-      border-radius: 6px;
-    }
+    @keyframes highlightUpdate { 0% { background-color: rgba(0, 255, 255, 0.3); } 100% { background-color: transparent; } }
+    .updated { animation: highlightUpdate 2s ease; }
 
-    .loan-thumbnail {
-      max-height: 80px;
-      width: auto;
-      border-radius: 6px;
-    }
+    @media (max-width: 768px) { .card { padding: 1.5rem; } }
+    @media (max-width: 576px) { .card { padding: 1rem; } }
 
-    .table thead th {
-      border-bottom: 2px solid var(--border-color);
-    }
-
-    .alert {
-      border-radius: 10px;
-      border: none;
-    }
-
-    @keyframes highlightUpdate {
-      0% { background-color: rgba(0, 255, 255, 0.3); }
-      100% { background-color: transparent; }
-    }
-
-    .updated {
-      animation: highlightUpdate 2s ease;
-    }
-
-    @media (max-width: 768px) {
-      .card { padding: 1.5rem; }
-    }
-
-    @media (max-width: 576px) {
-      .card { padding: 1rem; }
-    }
-
-    @keyframes shine {
-      0% { background-position: 0% 50%; }
-      100% { background-position: 100% 50%; }
-    }
+    @keyframes shine { 0% { background-position: 0% 50%; } 100% { background-position: 100% 50%; } }
   </style>
 </head>
 <body>
@@ -185,9 +153,7 @@
               <th>Applied On</th>
             </tr>
           </thead>
-          <tbody>
-            <!-- Loans will populate dynamically -->
-          </tbody>
+          <tbody></tbody>
         </table>
       </div>
     </div>
@@ -199,12 +165,11 @@
     <p class="small">Empowering gamers to play, earn, and connect. &copy; 2025 Maximum Gamers</p>
   </footer>
 
-  <!-- Scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
     const tableBody = document.querySelector("#loanTable tbody");
+    const loanForm = document.getElementById("loanForm");
+    const loanMessage = document.getElementById("loanMessage");
 
     function formatDate(dateString) {
       const options = { year: 'numeric', month: 'short', day: 'numeric', hour:'2-digit', minute:'2-digit' };
@@ -245,12 +210,19 @@
       }
     }
 
-    // Fetch all loans on page load
+    function showMessage(message, type="success") {
+      loanMessage.innerHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+          ${message}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      `;
+    }
+
     async function fetchLoans() {
       try {
-        const res = await fetch("/loans/json");
+        const res = await fetch("/loans/list");
         const loans = await res.json();
-
         tableBody.innerHTML = "";
         if(loans.length === 0){
           tableBody.innerHTML = `
@@ -275,12 +247,29 @@
       }
     }
 
-    fetchLoans();
+    loanForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = new FormData(loanForm);
+      try {
+        const res = await fetch("/loans", { method: "POST", body: formData });
+        const data = await res.json();
+        if(data.success){
+          addOrUpdateLoan(data.loan);
+          loanForm.reset();
+          showMessage("Loan submitted successfully!", "success");
+        } else {
+          showMessage("Failed to submit loan.", "danger");
+        }
+      } catch(err){
+        console.error(err);
+        showMessage("Error submitting loan. Please try again.", "danger");
+      }
+    });
 
-    // Real-time updates
     socket.on("loanCreated", addOrUpdateLoan);
     socket.on("loanUpdated", addOrUpdateLoan);
+
+    fetchLoans();
   </script>
 </body>
 </html>
-
