@@ -5,22 +5,110 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{{title}}</title>
-  <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-    rel="stylesheet"
-  />
-  <link
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-    rel="stylesheet"
-  />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
   <style>
+    :root {
+      --primary-bg: #121212;
+      --card-bg: #1e1e1e;
+      --input-bg: #2a2a2a;
+      --primary-color: #0d6efd;
+      --success-color: #198754;
+      --text-light: #ffffff;
+      --text-muted: #aaaaaa;
+      --border-color: #444444;
+    }
+
+    body {
+      background: var(--primary-bg);
+      color: var(--text-light);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .container {
+      max-width: 900px;
+      padding: 1rem;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 2rem;
+      margin-top: 2rem;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+      border: 1px solid var(--border-color);
+    }
+
+    .form-control {
+      background: var(--input-bg);
+      color: var(--text-light);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+    }
+
+    .form-control:focus {
+      box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+      border-color: var(--primary-color);
+    }
+
+    .btn-primary {
+      background: var(--primary-color);
+      border: none;
+      border-radius: 8px;
+      padding: 0.75rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+      background: #0b5ed7;
+      transform: translateY(-2px);
+    }
+
+    .badge {
+      font-weight: 500;
+      padding: 0.5em 0.75em;
+      border-radius: 6px;
+    }
+
     .loan-thumbnail {
       max-height: 80px;
       width: auto;
-      border-radius: 4px;
+      border-radius: 6px;
     }
-    .loan-table td, .loan-table th {
-      vertical-align: middle;
+
+    .table thead th {
+      border-bottom: 2px solid var(--border-color);
+    }
+
+    .alert {
+      border-radius: 10px;
+      border: none;
+    }
+
+    /* Animation for updated rows */
+    @keyframes highlightUpdate {
+      0% { background-color: rgba(0, 255, 255, 0.3); }
+      100% { background-color: transparent; }
+    }
+
+    .updated {
+      animation: highlightUpdate 2s ease;
+    }
+
+    @media (max-width: 768px) {
+      .card {
+        padding: 1.5rem;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .card {
+        padding: 1rem;
+      }
     }
   </style>
 </head>
@@ -31,67 +119,63 @@
       <a class="navbar-brand" href="/">Maximum Gamers</a>
       <div class="collapse navbar-collapse">
         <ul class="navbar-nav ms-auto">
-          <li class="nav-item">
-            <a class="nav-link" href="/loans">My Loans</a>
-          </li>
-          <li class="nav-item">
-            <span class="nav-link">{{user.name}}</span>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/logout">Logout</a>
-          </li>
+          <li class="nav-item"><a class="nav-link" href="/loans">My Loans</a></li>
+          <li class="nav-item"><span class="nav-link">{{user.name}}</span></li>
+          <li class="nav-item"><a class="nav-link" href="/logout">Logout</a></li>
         </ul>
       </div>
     </div>
   </nav>
 
-  <div class="container mt-4">
-    <!-- Intro -->
-    <div class="mb-4">
-      <h2>Welcome, {{user.name}}!</h2>
-      <p>
-        Here you can view all your loan applications, apply for new loans,
-        and track their current status in real time. Amounts are shown in
-        Kenyan Shillings (KSH), and loan periods are displayed in months.
+  <div class="container">
+    <!-- Welcome -->
+    <div class="text-center mt-4">
+      <h1 class="fw-bold text-success mb-3">Welcome, {{user.name}}!</h1>
+      <p class="lead text-light mb-4">
+        Track and apply for loans in real time. Amounts are in Kenyan Shillings (KSH), and periods in months.
       </p>
     </div>
 
-    <!-- Loan Submission Form -->
-    <div class="card mb-4">
-      <div class="card-header">Apply for a New Loan</div>
-      <div class="card-body">
-        <form id="loanForm" action="/loans" method="POST" enctype="multipart/form-data">
-          <div class="mb-3">
-            <label for="description" class="form-label">Item Description</label>
-            <input type="text" class="form-control" id="description" name="description" required />
-          </div>
-          <div class="mb-3">
-            <label for="itemValue" class="form-label">Item Value (KSH)</label>
-            <input type="number" class="form-control" id="itemValue" name="itemValue" min="0" required />
-          </div>
-          <div class="mb-3">
-            <label for="loanAmount" class="form-label">Loan Amount (KSH)</label>
-            <input type="number" class="form-control" id="loanAmount" name="loanAmount" min="0" required />
-          </div>
-          <div class="mb-3">
-            <label for="loanPeriod" class="form-label">Loan Period (Months)</label>
-            <input type="number" class="form-control" id="loanPeriod" name="loanPeriod" min="1" required />
-          </div>
-          <div class="mb-3">
-            <label for="itemImage" class="form-label">Item Image</label>
-            <input class="form-control" type="file" id="itemImage" name="itemImage" accept="image/*" />
-          </div>
-          <button type="submit" class="btn btn-primary">Submit Loan</button>
-        </form>
-      </div>
+    <!-- Loan Application Form -->
+    <div class="card">
+      <h2 class="text-success mb-4 text-center">💰 Apply for a Loan</h2>
+      <form id="loanForm" action="/loans" method="POST" enctype="multipart/form-data" class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Item Description</label>
+          <input type="text" class="form-control" name="description" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Item Value (KSH)</label>
+          <input type="number" class="form-control" name="itemValue" min="0" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Loan Amount (KSH)</label>
+          <input type="number" class="form-control" name="loanAmount" min="0" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Loan Period (Months)</label>
+          <input type="number" class="form-control" name="loanPeriod" min="1" required>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Item Image</label>
+          <input type="file" class="form-control" name="itemImage" accept="image/*">
+        </div>
+        <div class="col-12 mt-3">
+          <button type="submit" class="btn btn-primary w-100 py-2">
+            <i class="fas fa-paper-plane me-2"></i> Submit Loan
+          </button>
+        </div>
+      </form>
+
+      <div id="loanMessage" class="mt-3"></div>
     </div>
 
     <!-- Loan History Table -->
-    <div class="card">
-      <div class="card-header">My Loan History</div>
-      <div class="card-body table-responsive">
-        <table class="table table-bordered table-hover loan-table" id="loanTable">
-          <thead class="table-dark">
+    <div class="card mt-4">
+      <h5 class="text-success mb-3">📋 My Loan History</h5>
+      <div class="table-responsive">
+        <table class="table table-striped table-dark" id="loanTable">
+          <thead>
             <tr>
               <th>Item</th>
               <th>Description</th>
@@ -108,9 +192,7 @@
                 <td>
                   {{#if itemImage}}
                     <img src="{{itemImage}}" class="loan-thumbnail" alt="Item Image">
-                  {{else}}
-                    N/A
-                  {{/if}}
+                  {{else}} N/A {{/if}}
                 </td>
                 <td>{{description}}</td>
                 <td>{{itemValue}}</td>
@@ -136,47 +218,70 @@
     </div>
   </div>
 
+  <!-- Footer -->
+  <footer class="bg-dark text-white pt-3 mt-5 text-center">
+    <div class="shiny-line mb-3" style="height:4px;width:100%;background:linear-gradient(90deg,#ffd700,#ff8c00,#ffd700);animation:shine 2s linear infinite;background-size:200% 100%;"></div>
+    <p class="small">Empowering gamers to play, earn, and connect. &copy; 2025 Maximum Gamers</p>
+  </footer>
+
   <!-- Scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
+    const tableBody = document.querySelector("#loanTable tbody");
 
     function formatDate(dateString) {
-      const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+      const options = { year: 'numeric', month: 'short', day: 'numeric', hour:'2-digit', minute:'2-digit' };
       return new Date(dateString).toLocaleString('en-GB', options);
     }
 
-    // Add new loan to table with image thumbnail
-    socket.on("loanCreated", (loan) => {
-      const tableBody = document.querySelector("#loanTable tbody");
-      const row = document.createElement("tr");
-      row.id = "loan-" + loan._id;
-      row.innerHTML = `
-        <td>${loan.itemImage ? `<img src="${loan.itemImage}" class="loan-thumbnail" alt="Item Image">` : "N/A"}</td>
-        <td>${loan.description}</td>
-        <td>${loan.itemValue}</td>
-        <td>${loan.loanAmount}</td>
-        <td>${loan.loanPeriod}</td>
-        <td><span class="badge bg-warning text-dark">${loan.status}</span></td>
-        <td>${formatDate(loan.createdAt)}</td>
-      `;
-      tableBody.prepend(row);
-    });
+    function addOrUpdateLoan(loan) {
+      let row = document.getElementById("loan-" + loan._id);
+      const badgeClass = loan.status === "Pending" ? "warning" :
+                         loan.status === "Approved" ? "success" :
+                         loan.status === "Rejected" ? "danger" : "secondary";
 
-    // Update loan status
-    socket.on("loanUpdated", (loan) => {
-      const row = document.getElementById("loan-" + loan._id);
-      if (row) {
-        const badge = row.querySelector("td:nth-child(6) span");
-        badge.textContent = loan.status;
-        if (loan.status === "Pending") badge.className = "badge bg-warning text-dark";
-        else if (loan.status === "Approved") badge.className = "badge bg-success";
-        else if (loan.status === "Rejected") badge.className = "badge bg-danger";
-        else badge.className = "badge bg-secondary";
+      if(row){
+        // Update row
+        row.querySelector("td:nth-child(2)").textContent = loan.description;
+        row.querySelector("td:nth-child(3)").textContent = loan.itemValue;
+        row.querySelector("td:nth-child(4)").textContent = loan.loanAmount;
+        row.querySelector("td:nth-child(5)").textContent = loan.loanPeriod;
+        const statusCell = row.querySelector("td:nth-child(6) span");
+        statusCell.textContent = loan.status;
+        statusCell.className = `badge bg-${badgeClass}`;
+        row.classList.add("updated");
+        setTimeout(()=>row.classList.remove("updated"), 3000);
+      } else {
+        // New row
+        row = document.createElement("tr");
+        row.id = "loan-" + loan._id;
+        row.classList.add("updated");
+        row.innerHTML = `
+          <td>${loan.itemImage ? `<img src="${loan.itemImage}" class="loan-thumbnail" alt="Item Image">` : "N/A"}</td>
+          <td>${loan.description}</td>
+          <td>${loan.itemValue}</td>
+          <td>${loan.loanAmount}</td>
+          <td>${loan.loanPeriod}</td>
+          <td><span class="badge bg-${badgeClass}">${loan.status}</span></td>
+          <td>${formatDate(loan.createdAt)}</td>
+        `;
+        tableBody.prepend(row);
+        setTimeout(()=>row.classList.remove("updated"), 3000);
       }
-    });
+    }
+
+    socket.on("loanCreated", addOrUpdateLoan);
+    socket.on("loanUpdated", addOrUpdateLoan);
   </script>
+
+  <style>
+    @keyframes shine {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 100% 50%; }
+    }
+  </style>
 </body>
 </html>
 
