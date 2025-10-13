@@ -1438,36 +1438,23 @@ app.post("/profile/update", ensureAuthenticated, upload.single("image"), async (
   const { name, phone, studentId } = req.body;
 
   try {
-    if (!req.session.user?.id) {
-      req.session.flash = { type: "error", message: "Session expired. Please login again." };
+    const user = await User.findById(req.session.user.id);
+    if (!user) {
+      req.session.flash = { type: "error", message: "User not found." };
       return res.redirect("/login");
     }
 
-    const updateData = { name, phone, studentId };
+    // Update basic fields
+    user.name = name || user.name;
+    user.phone = phone || user.phone;
+    user.studentId = studentId || user.studentId;
 
+    // Update profile image if new file uploaded
     if (req.file) {
-      // Upload new profile image to Cloudinary
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: "profiles"
-      });
-
-      // Remove old image from Cloudinary if exists
-      const user = await User.findById(req.session.user.id);
-      if (user?.imageId) {
-        try {
-          await cloudinary.uploader.destroy(user.imageId);
-        } catch (destroyErr) {
-          console.warn("Old profile image could not be removed:", destroyErr.message);
-        }
-      }
-
-      // Save new image URL and Cloudinary public_id
-      updateData.image = result.secure_url;
-      updateData.imageId = result.public_id;
+      await user.updateProfileImage(req.file.path, cloudinary);
     }
 
-    // Update user document
-    await User.findByIdAndUpdate(req.session.user.id, updateData, { new: true });
+    await user.save();
 
     req.session.flash = { type: "success", message: "Profile updated successfully!" };
     res.redirect("/profile");
@@ -1481,24 +1468,21 @@ app.post("/profile/update", ensureAuthenticated, upload.single("image"), async (
 // GET remove profile image
 app.get("/profile/remove-image", ensureAuthenticated, async (req, res) => {
   try {
-    if (!req.session.user?.id) {
-      req.session.flash = { type: "error", message: "Session expired. Please login again." };
+    const user = await User.findById(req.session.user.id);
+    if (!user) {
+      req.session.flash = { type: "error", message: "User not found." };
       return res.redirect("/login");
     }
 
-    const user = await User.findById(req.session.user.id);
-    if (!user) return res.status(404).send("User not found");
-
-    // Delete image from Cloudinary if exists
+    // Delete image using the schema method
     if (user.imageId) {
       try {
         await cloudinary.uploader.destroy(user.imageId);
-      } catch (destroyErr) {
-        console.warn("Failed to remove image from Cloudinary:", destroyErr.message);
+      } catch (err) {
+        console.warn("Failed to remove image from Cloudinary:", err.message);
       }
     }
 
-    // Reset to default profile image
     user.image = "/images/default-profile.png";
     user.imageId = null;
     await user.save();
