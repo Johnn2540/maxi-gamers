@@ -1,30 +1,26 @@
+// mongodb.js
 const mongoose = require("mongoose");
 require("dotenv").config();
 
+// ------------------ CONNECT TO MONGODB ATLAS ------------------
 const MONGO_URI = process.env.MONGO_URI;
 
-// ------------------ CONNECT FUNCTION ------------------
-const connectDB = async () => {
-  if (!MONGO_URI) {
-    console.error("❌ MONGO_URI is not defined in .env");
-    process.exit(1);
-  }
+if (!MONGO_URI) {
+  console.error("❌ MONGO_URI is not defined in .env");
+  process.exit(1);
+}
 
-  try {
-    await mongoose.connect(MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log("✅ Connected to MongoDB Atlas");
-  } catch (err) {
-    console.error("❌ MongoDB Atlas connection error:", err);
-    process.exit(1);
-  }
-};
+mongoose
+  .connect(MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("✅ Connected to MongoDB Atlas"))
+  .catch((err) => console.error("❌ MongoDB Atlas connection error:", err));
 
 // ------------------ SCHEMAS ------------------
 
-// User schema
+// USER SCHEMA
 const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
@@ -108,28 +104,35 @@ userSchema.methods.updateProfileImage = async function (newImagePath, cloudinary
   }
 };
 
-// ================== MIDDLEWARE ==================
-productSchema.pre("save", function (next) {
-  // 🔹 1. Fix: If no images but mainImage exists (old data)
-  if ((!this.images || this.images.length === 0) && this.mainImage) {
-    this.images = [this.mainImage];
-  }
+// PRODUCT SCHEMA
+const productSchema = new mongoose.Schema(
+  {
+    title: { type: String, required: true },
+    marketPrice: { type: Number, required: true },
+    salePrice: { type: Number, required: true },
+    description: { type: String },
+    onSale: { type: Boolean, default: false },
+    images: {
+      type: [String],
+      validate: [
+        {
+          validator: (arr) => arr.length <= 4,
+          message: "You can upload at most 4 images per product.",
+        },
+      ],
+      default: [],
+    },
+  },
+  { timestamps: true }
+);
 
-  // 🔹 2. Always ensure mainImage is set correctly
-  if (this.images && this.images.length > 0) {
-    this.mainImage = this.images[0];
-  }
-
-  next();
-});
-
-// Leaderboard schema
+// LEADERBOARD SCHEMA
 const leaderboardSchema = new mongoose.Schema({
   player: { type: String, required: true },
   score: { type: Number, required: true },
 });
 
-// Booking schema
+// BOOKING SCHEMA
 const bookingSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
@@ -137,12 +140,16 @@ const bookingSchema = new mongoose.Schema(
     console: { type: String, required: true },
     date: { type: Date, required: true },
     timeSlot: { type: String, required: true },
-    status: { type: String, enum: ["Pending", "Confirmed", "Completed", "Cancelled"], default: "Pending" },
+    status: {
+      type: String,
+      enum: ["Pending", "Confirmed", "Completed", "Cancelled"],
+      default: "Pending",
+    },
   },
   { timestamps: true }
 );
 
-// TopBarMessage schema
+// TOP BAR MESSAGE SCHEMA
 const topBarMessageSchema = new mongoose.Schema({
   content: { type: String, required: true },
   active: { type: Boolean, default: true },
@@ -150,26 +157,19 @@ const topBarMessageSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-// Loan schema
-const loanSchema = new mongoose.Schema(
-  {
-    images: [{ type: String }], // Array of image URLs (Cloudinary)
-    description: { type: String, required: true, trim: true },
-    itemValue: { type: Number, required: true },
-    loanAmount: { type: Number, required: true },
-    loanPeriod: { type: Number, required: true }, // e.g., in months or days
-    status: { 
-      type: String, 
-      enum: ["Pending", "Approved", "Rejected", "Completed"], 
-      default: "Pending" 
-    },
-    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  },
-  { timestamps: true } // adds createdAt and updatedAt automatically
-);
+// LOAN SCHEMA
+const loanSchema = new mongoose.Schema({
+  itemImage: String,
+  description: String,
+  itemValue: Number,
+  loanAmount: Number,
+  loanPeriod: Number,
+  status: { type: String, default: "Pending" },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  createdAt: { type: Date, default: Date.now },
+});
 
-
-// Message schema
+// MESSAGE SCHEMA
 const messageSchema = new mongoose.Schema({
   sender: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   content: { type: String, required: [true, "Message content is required"] },
@@ -178,18 +178,19 @@ const messageSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-// ------------------ MODEL REGISTRATION ------------------
+// ------------------ MODELS ------------------
 const User = mongoose.models.User || mongoose.model("User", userSchema);
 const Product = mongoose.models.Product || mongoose.model("Product", productSchema);
-const Leaderboard = mongoose.models.Leaderboard || mongoose.model("Leaderboard", leaderboardSchema);
+const Leaderboard =
+  mongoose.models.Leaderboard || mongoose.model("Leaderboard", leaderboardSchema);
 const Booking = mongoose.models.Booking || mongoose.model("Booking", bookingSchema);
-const TopBarMessage = mongoose.models.TopBarMessage || mongoose.model("TopBarMessage", topBarMessageSchema);
+const TopBarMessage =
+  mongoose.models.TopBarMessage || mongoose.model("TopBarMessage", topBarMessageSchema);
 const Loan = mongoose.models.Loan || mongoose.model("Loan", loanSchema);
 const Message = mongoose.models.Message || mongoose.model("Message", messageSchema);
 
-// ------------------ EXPORTS ------------------
+// ------------------ EXPORT ------------------
 module.exports = {
-  connectDB, // now properly defined
   User,
   Product,
   Leaderboard,
@@ -197,8 +198,5 @@ module.exports = {
   TopBarMessage,
   Loan,
   Message,
-  mongoose,
 };
-
-
 
