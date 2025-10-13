@@ -310,12 +310,19 @@
 
 <!-- User info + Hamburger for mobile -->
 <div class="d-flex align-items-center ms-auto d-lg-none">
-  <img src="{{user.profilePic}}" alt="Profile" class="rounded-circle me-2" width="40" height="40">
-  <span class="me-2">{{user.username}}</span>
+  <img 
+    src="{{#if user.image}}{{user.image}}{{else}}/images/default-profile.png{{/if}}" 
+    alt="Profile" 
+    class="rounded-circle me-2" 
+    width="40" 
+    height="40"
+  >
+  <span class="me-2">{{#if user.name}}{{user.name}}{{else}}Guest{{/if}}</span>
   <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileMenu" aria-label="Toggle navigation">
     <span class="navbar-toggler-icon"></span>
   </button>
 </div>
+
 
     <!-- Full nav (desktop only) -->
     <div class="collapse navbar-collapse d-none d-lg-flex justify-content-center">

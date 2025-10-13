@@ -4,12 +4,8 @@
   <meta charset="UTF-8">
   <title>{{title}} | Profile</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
- 
-
   <style>
-    body {
-      background-color: #f8f9fa;
-    }
+    body { background-color: #f8f9fa; }
     .profile-card {
       background: #fff;
       border-radius: 12px;
@@ -24,9 +20,7 @@
       border: 4px solid #0d6efd;
       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
-    h2 {
-      font-weight: 700;
-    }
+    h2 { font-weight: 700; }
     h5 {
       border-bottom: 2px solid #e9ecef;
       padding-bottom: .5rem;
@@ -43,27 +37,28 @@
 
       <form action="/profile/update" method="POST" enctype="multipart/form-data" class="row g-4">
 
-<!-- Profile Image -->
-<div class="col-md-4 text-center">
-  <img 
-    src="{{#if user.image}}{{user.image}}{{else}}/images/default-profile.png{{/if}}" 
-    alt="Profile Picture" 
-    class="profile-img mb-3"
-  >
-  <div class="mb-3">
-    <label for="image" class="form-label">Change Profile Picture</label>
-    <input type="file" class="form-control" id="image" name="image">
-  </div>
+        <!-- Profile Image -->
+        <div class="col-md-4 text-center">
+          <img 
+            src="{{user.image}}" 
+            alt="Profile Picture" 
+            class="profile-img mb-3"
+          >
+          <div class="mb-3">
+            <label for="image" class="form-label">Change Profile Picture</label>
+            <input type="file" class="form-control" id="image" name="image" accept="image/*">
+          </div>
 
-  {{#if user.image}}
-    <div class="d-grid mt-2">
-      <a href="/profile/remove-image" class="btn btn-outline-danger btn-sm">
-         Remove Profile Picture
-      </a>
-    </div>
-  {{/if}}
-</div>
-
+          {{#if user.image}}
+            {{#unless (eq user.image '/images/default-profile.png')}}
+              <div class="d-grid mt-2">
+                <a href="/profile/remove-image" class="btn btn-outline-danger btn-sm">
+                  Remove Profile Picture
+                </a>
+              </div>
+            {{/unless}}
+          {{/if}}
+        </div>
 
         <!-- User Info -->
         <div class="col-md-8">
@@ -108,5 +103,18 @@
     </div>
   </div>
 
+  <script>
+    // Live preview for uploaded profile image
+    const input = document.getElementById('image');
+    const img = document.querySelector('.profile-img');
+
+    input.addEventListener('change', function() {
+      if (this.files && this.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => img.src = e.target.result;
+        reader.readAsDataURL(this.files[0]);
+      }
+    });
+  </script>
 </body>
 </html>
