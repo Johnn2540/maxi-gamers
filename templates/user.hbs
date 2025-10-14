@@ -348,30 +348,34 @@
 
 <!-- OFFCANVAS MENU (Mobile Sidebar) -->
 <div class="offcanvas offcanvas-end bg-dark text-white" tabindex="-1" id="mobileMenu">
-  <div class="offcanvas-header">
-    <h5 class="offcanvas-title">
+  <!-- Header -->
+  <div class="offcanvas-header border-bottom border-secondary">
+    <h5 class="offcanvas-title mb-0">
       <span class="text-primary">Maximum</span> <span class="text-success">Gamers</span>
     </h5>
     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
   </div>
-<div class="offcanvas-body d-flex flex-column bg-dark">
-  <ul class="navbar-nav flex-grow-1">
-    <li class="nav-item"><a class="nav-link text-white" href="/user">Home</a></li>
-    <li class="nav-item"><a class="nav-link text-white" href="/shop">Shop</a></li>
-    <li class="nav-item"><a class="nav-link text-white" href="/gaming">Booking</a></li>
-    <li class="nav-item"><a class="nav-link text-white" href="/loans">Loans</a></li>
-    <li class="nav-item"><a class="nav-link text-white" href="/contact">Contact</a></li>
-    <li class="nav-item"><a class="nav-link text-white" href="/profile">Profile</a></li>
-    <li class="nav-item"><a class="nav-link text-white" href="/about">About</a></li>
-    <li class="nav-item"><a class="nav-link text-white" href="/blog">Blog</a></li>
-  </ul>
 
-  <!-- Logout Button -->
-  <a href="/" class="btn btn-danger mt-auto d-flex align-items-center justify-content-center gap-2">
-    <i class="bi bi-box-arrow-right"></i> Logout
-  </a>
+  <!-- Body -->
+  <div class="offcanvas-body d-flex flex-column">
+    <ul class="navbar-nav flex-grow-1">
+      <li class="nav-item"><a class="nav-link text-white" href="/user">Home</a></li>
+      <li class="nav-item"><a class="nav-link text-white" href="/shop">Shop</a></li>
+      <li class="nav-item"><a class="nav-link text-white" href="/gaming">Booking</a></li>
+      <li class="nav-item"><a class="nav-link text-white" href="/loans">Loans</a></li>
+      <li class="nav-item"><a class="nav-link text-white" href="/contact">Contact</a></li>
+      <li class="nav-item"><a class="nav-link text-white" href="/profile">Profile</a></li>
+      <li class="nav-item"><a class="nav-link text-white" href="/about">About</a></li>
+      <li class="nav-item"><a class="nav-link text-white" href="/blog">Blog</a></li>
+    </ul>
+
+    <!-- Logout Button -->
+    <a href="/home" 
+       class="btn btn-danger mt-auto d-flex align-items-center justify-content-center gap-2">
+      <i class="bi bi-box-arrow-right"></i> Logout
+    </a>
+  </div>
 </div>
-
 
   
   <!-- Top Bar Messages -->
