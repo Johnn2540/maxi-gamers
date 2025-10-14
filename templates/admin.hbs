@@ -161,7 +161,7 @@
       <li><a href="#messages-tab" class="nav-link" data-bs-toggle="tab"><i class="bi bi-chat-dots"></i> <span>Messages</span></a></li>
     </ul>
     <hr />
-    <a href="/home" class="btn btn-sm btn-danger w-100"><i class="bi bi-box-arrow-right"></i> <span>Logout</span></a>
+    <a href="/" class="btn btn-sm btn-danger w-100"><i class="bi bi-box-arrow-right"></i> <span>Logout</span></a>
   </div>
 
   <!-- Main Content -->
@@ -789,9 +789,12 @@
       UsersManager.init();
     });
 
+
 // ================== PRODUCTS TAB ==================
 const editProductModal = new bootstrap.Modal(document.getElementById('editProductModal'));
 const productsTableBody = document.querySelector('#productsTable tbody');
+
+// Toast container
 const toastContainer = document.createElement('div');
 toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
 document.body.appendChild(toastContainer);
@@ -888,9 +891,13 @@ function attachProductEventListeners(products) {
       currentImagesContainer.innerHTML = '';
       if (product.images?.length) {
         product.images.forEach(imgUrl => {
-          currentImagesContainer.innerHTML += `
-            <img src="${imgUrl}" class="img-thumbnail me-2 mb-2" style="width:80px; height:80px;" alt="${product.title}">
-          `;
+          const imgEl = document.createElement('img');
+          imgEl.src = imgUrl;
+          imgEl.alt = product.title;
+          imgEl.className = 'img-thumbnail me-2 mb-2';
+          imgEl.style.width = '80px';
+          imgEl.style.height = '80px';
+          currentImagesContainer.appendChild(imgEl);
         });
       } else {
         currentImagesContainer.innerHTML = '<small>No images available</small>';
@@ -929,10 +936,17 @@ document.getElementById('addProductForm').addEventListener('submit', async e => 
   e.preventDefault();
   const formData = new FormData(e.target);
 
+  // Validate number of images
+  if (formData.getAll('images').length > 4) {
+    showToast('You can upload up to 4 images only', 'warning');
+    return;
+  }
+
   try {
     const res = await fetch('/admin/products', { method: 'POST', body: formData });
     if (res.ok) {
       e.target.reset();
+      document.getElementById('imagePreviewContainer').innerHTML = '';
       loadProducts();
       showToast('✅ Product added successfully');
     } else {
@@ -951,6 +965,11 @@ document.getElementById('editProductForm').addEventListener('submit', async e =>
   const formData = new FormData(e.target);
   const productId = document.getElementById('editProductId').value;
 
+  if (formData.getAll('images').length > 4) {
+    showToast('You can upload up to 4 images only', 'warning');
+    return;
+  }
+
   try {
     const res = await fetch(`/admin/products/edit/${productId}`, { method: 'POST', body: formData });
     if (res.ok) {
@@ -968,14 +987,18 @@ document.getElementById('editProductForm').addEventListener('submit', async e =>
 });
 
 // ----------------- Preview New Images -----------------
-document.getElementById('productImages')?.addEventListener('change', e => previewImages(e, 'imagePreviewContainer'));
-document.getElementById('editImages')?.addEventListener('change', e => previewImages(e, 'editImagePreviewContainer'));
-
 function previewImages(event, containerId) {
   const files = event.target.files;
   const previewContainer = document.getElementById(containerId);
   previewContainer.innerHTML = '';
-  [...files].forEach(file => {
+
+  if (files.length > 4) {
+    alert('You can upload up to 4 images only.');
+    event.target.value = '';
+    return;
+  }
+
+  Array.from(files).forEach(file => {
     const reader = new FileReader();
     reader.onload = e => {
       const img = document.createElement('img');
@@ -989,8 +1012,13 @@ function previewImages(event, containerId) {
   });
 }
 
+// Attach image preview listeners
+document.getElementById('productImages')?.addEventListener('change', e => previewImages(e, 'imagePreviewContainer'));
+document.getElementById('editImages')?.addEventListener('change', e => previewImages(e, 'editImagePreviewContainer'));
+
 // ----------------- Initial Load -----------------
 document.addEventListener('DOMContentLoaded', loadProducts);
+
 
 
     // ===== LOANS TAB =====
