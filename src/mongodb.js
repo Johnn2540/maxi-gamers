@@ -21,13 +21,12 @@ const connectDB = async () => {
 
 // ------------------ SCHEMAS ------------------
 
-// USER SCHEMA
 const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    phone: { type: String, trim: true, default: null, sparse: true, unique: true },
-    password: { type: String, required: false },
+    phone: { type: String, trim: true, sparse: true, unique: true }, // no default: null
+    password: { type: String },
     role: { type: String, enum: ["user", "admin"], default: "user" },
     active: { type: Boolean, default: true },
     verificationToken: { type: String, default: null },
@@ -41,15 +40,17 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Trim and normalize before saving
+// Pre-save cleanup
 userSchema.pre("save", function (next) {
   if (this.name) this.name = this.name.trim();
   if (this.email) this.email = this.email.toLowerCase().trim();
-  this.phone = this.phone ? this.phone.trim() : null;
+  if (this.phone) this.phone = this.phone.trim();
+  else this.phone = undefined; //  critical change
   this.googleId = this.googleId || null;
   if (!this.image) this.image = "/images/default-profile.png";
   next();
 });
+
 
 // Method to update profile image and delete old Cloudinary image
 userSchema.methods.updateProfileImage = async function (newImagePath, cloudinary) {
