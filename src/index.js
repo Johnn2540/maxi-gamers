@@ -1285,6 +1285,18 @@ app.get("/gaming/bookings/json", ensureAuthenticated, async (req, res) => {
   }
 });
 
+// DELETE /admin/bookings/:id/delete
+app.delete("/admin/bookings/:id/delete", ensureAuthenticated, requireAdmin, async (req, res) => {
+  try {
+    const booking = await Booking.findByIdAndDelete(req.params.id);
+    if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
+    res.json({ success: true, message: "Booking deleted" });
+  } catch (err) {
+    console.error("Error deleting booking:", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // ================== MESSAGES ==================
 
 app.get("/messages", ensureAuthenticated, async (req, res) => {
