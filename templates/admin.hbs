@@ -139,6 +139,19 @@
       .btn-sm { padding: 0.25rem 0.5rem; font-size: 0.75rem; }
       .table td, .table th { padding: 0.5rem; }
     }
+    .new-booking {
+  background-color: #d4edda !important;
+  transition: background-color 1s ease-out;
+}
+.updated {
+  background-color: #fff3cd !important;
+  transition: background-color 1s ease-out;
+}
+.fade-out {
+  opacity: 0;
+  transition: opacity 0.5s ease-out;
+}
+
   </style>
 </head>
 <body>
@@ -497,6 +510,12 @@
     </select>
   </div>
 
+  <!-- Notification for Real-Time Updates -->
+  <div id="bookingNotification" class="alert alert-info d-none" role="alert">
+    🔔 New booking received! 
+    <button id="refreshBookings" class="btn btn-sm btn-primary ms-2">Refresh</button>
+  </div>
+
   <!-- Bookings Table -->
   <div class="table-responsive">
     <table class="table table-striped table-hover align-middle" id="bookingsTable">
@@ -520,7 +539,6 @@
     </table>
   </div>
 </div>
-
 
       <!-- MESSAGES TAB -->
       <div class="tab-pane fade" id="messages-tab">
@@ -1562,15 +1580,16 @@ loadAdminLoans();
       }
     });
     
-// ===== BOOKINGS =====
+// ===== BOOKINGS MANAGEMENT =====
 const bookingsTbody = document.querySelector('#bookingsTable tbody');
 const searchInput = document.getElementById('bookingSearch');
 const statusFilter = document.getElementById('statusFilter');
 const fromDateInput = document.getElementById('fromDate');
 const toDateInput = document.getElementById('toDate');
 const clearFiltersBtn = document.getElementById('clearFilters');
-let allBookings = []; // store all bookings globally
+let allBookings = [];
 
+// ===== RENDER SINGLE ROW =====
 function renderBookingRow(b, isNew = false) {
   const badgeClass =
     b.status === 'Pending'
@@ -1584,37 +1603,49 @@ function renderBookingRow(b, isNew = false) {
   let row = document.getElementById(`booking-${b._id}`);
 
   if (row) {
+    // Update existing row
     row.querySelector('td:nth-child(3)').textContent = b.game;
     row.querySelector('td:nth-child(4)').textContent = b.console;
     row.querySelector('td:nth-child(5)').textContent = new Date(b.date).toLocaleDateString();
     row.querySelector('td:nth-child(6)').textContent = b.timeSlot;
+
     const statusSpan = row.querySelector('td:nth-child(7) span');
     statusSpan.textContent = b.status;
     statusSpan.className = `badge bg-${badgeClass}`;
+
     row.classList.add('updated');
-    setTimeout(() => row.classList.remove('updated'), 3000);
+    setTimeout(() => row.classList.remove('updated'), 2000);
   } else {
+    // Create new row
     row = document.createElement('tr');
     row.id = `booking-${b._id}`;
     if (isNew) row.classList.add('new-booking');
+
     row.innerHTML = `
       <td>${b._id}</td>
-      <td>${b.user.name} (${b.user.email})</td>
+      <td>${b.user?.name || 'Unknown'} (${b.user?.email || 'N/A'})</td>
       <td>${b.game}</td>
       <td>${b.console}</td>
       <td>${new Date(b.date).toLocaleDateString()}</td>
       <td>${b.timeSlot}</td>
       <td><span class="badge bg-${badgeClass}">${b.status}</span></td>
       <td class="text-end">
-        <select class="form-select form-select-sm status-select" data-id="${b._id}">
-          <option value="Pending"   ${b.status === 'Pending' ? 'selected' : ''}>Pending</option>
-          <option value="Confirmed" ${b.status === 'Confirmed' ? 'selected' : ''}>Confirmed</option>
-          <option value="Completed" ${b.status === 'Completed' ? 'selected' : ''}>Completed</option>
-          <option value="Cancelled" ${b.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
-        </select>
-      </td>`;
+        <div class="d-flex justify-content-end gap-1">
+          <select class="form-select form-select-sm status-select" data-id="${b._id}">
+            <option value="Pending"   ${b.status === 'Pending' ? 'selected' : ''}>Pending</option>
+            <option value="Confirmed" ${b.status === 'Confirmed' ? 'selected' : ''}>Confirmed</option>
+            <option value="Completed" ${b.status === 'Completed' ? 'selected' : ''}>Completed</option>
+            <option value="Cancelled" ${b.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
+          </select>
+          <button class="btn btn-sm btn-outline-danger delete-booking" data-id="${b._id}">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
+      </td>
+    `;
     bookingsTbody.appendChild(row);
-    setTimeout(() => row.classList.remove('new-booking'), 3000);
+
+    setTimeout(() => row.classList.remove('new-booking'), 2500);
   }
 }
 
@@ -1623,10 +1654,12 @@ async function fetchBookings() {
   try {
     const res = await fetch('/admin/bookings/json');
     const data = await res.json();
-    const bookings = Array.isArray(data) ? data : data.bookings || [];
 
-    allBookings = bookings;
-    if (!bookings.length) {
+    if (!data.success || !Array.isArray(data.data)) throw new Error('Invalid response format');
+
+    allBookings = data.data;
+
+    if (allBookings.length === 0) {
       bookingsTbody.innerHTML = '<tr><td colspan="8" class="text-center">No bookings found</td></tr>';
       return;
     }
@@ -1634,21 +1667,22 @@ async function fetchBookings() {
     displayFilteredBookings();
   } catch (error) {
     console.error('Error loading bookings:', error);
-    bookingsTbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error loading bookings</td></tr>';
+    bookingsTbody.innerHTML =
+      '<tr><td colspan="8" class="text-center text-danger">Error loading bookings</td></tr>';
   }
 }
 
-// ===== DISPLAY FILTERED RESULTS =====
+// ===== FILTER DISPLAY =====
 function displayFilteredBookings() {
   const searchTerm = searchInput.value.toLowerCase();
   const selectedStatus = statusFilter.value;
-  const fromDate = fromDateInput.value ? new Date(fromDateInput.value) : null;
-  const toDate = toDateInput.value ? new Date(toDateInput.value) : null;
+  const fromDate = fromDateInput?.value ? new Date(fromDateInput.value) : null;
+  const toDate = toDateInput?.value ? new Date(toDateInput.value) : null;
 
-  const filtered = allBookings.filter(b => {
+  const filtered = allBookings.filter((b) => {
     const matchesSearch =
-      b.user.name.toLowerCase().includes(searchTerm) ||
-      b.user.email.toLowerCase().includes(searchTerm) ||
+      (b.user?.name || '').toLowerCase().includes(searchTerm) ||
+      (b.user?.email || '').toLowerCase().includes(searchTerm) ||
       b.game.toLowerCase().includes(searchTerm) ||
       b.console.toLowerCase().includes(searchTerm);
 
@@ -1664,54 +1698,110 @@ function displayFilteredBookings() {
 
   bookingsTbody.innerHTML = '';
 
-  if (!filtered.length) {
+  if (filtered.length === 0) {
     bookingsTbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No matching bookings</td></tr>';
     return;
   }
 
-  filtered.forEach(b => renderBookingRow(b));
+  filtered.forEach((b) => renderBookingRow(b));
 }
 
-// ===== EVENT LISTENERS =====
+// ===== STATUS & DELETE HANDLERS =====
+bookingsTbody.addEventListener('change', async (e) => {
+  if (e.target.classList.contains('status-select')) {
+    const id = e.target.dataset.id;
+    const status = e.target.value;
+
+    try {
+      const res = await fetch(`/admin/bookings/update/${id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        renderBookingRow(data.data);
+        const index = allBookings.findIndex((b) => b._id === id);
+        if (index !== -1) allBookings[index].status = status;
+      } else {
+        alert(data.message || 'Failed to update booking status');
+      }
+    } catch (error) {
+      console.error('Error updating booking:', error);
+      alert('Error updating booking status');
+    }
+  }
+});
+
+// ===== DELETE BOOKING HANDLER =====
+bookingsTbody.addEventListener('click', async (e) => {
+  if (!e.target.closest('.delete-booking')) return;
+
+  const btn = e.target.closest('.delete-booking');
+  const id = btn.dataset.id;
+
+  if (!confirm('Are you sure you want to delete this booking?')) return;
+
+  try {
+    const res = await fetch(`/admin/bookings/${id}/delete`, { method: 'DELETE' });
+    const data = await res.json();
+
+    if (data.success) {
+      const row = document.getElementById(`booking-${id}`);
+      if (row) {
+        row.classList.add('fade-out');
+        setTimeout(() => row.remove(), 500);
+      }
+      allBookings = allBookings.filter((b) => b._id !== id);
+    } else {
+      alert(data.message || 'Failed to delete booking');
+    }
+  } catch (error) {
+    console.error('Error deleting booking:', error);
+    alert('Error deleting booking');
+  }
+});
+
+// ===== FILTER EVENTS =====
 searchInput.addEventListener('input', displayFilteredBookings);
 statusFilter.addEventListener('change', displayFilteredBookings);
-fromDateInput.addEventListener('change', displayFilteredBookings);
-toDateInput.addEventListener('change', displayFilteredBookings);
+fromDateInput?.addEventListener('change', displayFilteredBookings);
+toDateInput?.addEventListener('change', displayFilteredBookings);
 
-clearFiltersBtn.addEventListener('click', () => {
+clearFiltersBtn?.addEventListener('click', () => {
   searchInput.value = '';
   statusFilter.value = '';
-  fromDateInput.value = '';
-  toDateInput.value = '';
+  if (fromDateInput) fromDateInput.value = '';
+  if (toDateInput) toDateInput.value = '';
   displayFilteredBookings();
 });
 
-// ===== UPDATE BOOKING STATUS =====
-bookingsTbody.addEventListener('change', async e => {
-  if (!e.target.classList.contains('status-select')) return;
-  const id = e.target.dataset.id,
-    status = e.target.value;
+// ===== SOCKET.IO REAL-TIME UPDATES =====
+if (typeof io !== 'undefined') {
+  const socket = io();
 
-  try {
-    const res = await fetch(`/admin/bookings/update/${id}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
-    });
+  socket.on('booking:new', (b) => {
+    allBookings.unshift(b);
+    renderBookingRow(b, true);
+  });
 
-    const data = await res.json();
-    if (data.success) {
-      renderBookingRow(data.booking);
-      const index = allBookings.findIndex(b => b._id === id);
-      if (index !== -1) allBookings[index].status = status;
-    } else {
-      alert('Failed to update booking status');
+  socket.on('booking:updated', (b) => {
+    const index = allBookings.findIndex((bk) => bk._id === b._id);
+    if (index !== -1) allBookings[index] = b;
+    renderBookingRow(b);
+  });
+
+  socket.on('booking:deleted', ({ id }) => {
+    const row = document.getElementById(`booking-${id}`);
+    if (row) {
+      row.classList.add('fade-out');
+      setTimeout(() => row.remove(), 500);
     }
-  } catch (error) {
-    console.error('Error updating booking:', error);
-    alert('Failed to update booking status');
-  }
-});
+    allBookings = allBookings.filter((b) => b._id !== id);
+  });
+}
 
 // ===== INITIAL LOAD =====
 fetchBookings();

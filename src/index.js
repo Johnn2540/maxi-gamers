@@ -1198,73 +1198,146 @@ app.post("/gaming/book", ensureAuthenticated, async (req, res) => {
     const { game, console, date, timeSlot } = req.body;
 
     if (!game || !console || !date || !timeSlot) {
-      return res.status(400).json({ success: false, message: "Missing required fields." });
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields (game, console, date, timeSlot).",
+      });
     }
 
+    // Prevent duplicate bookings for the same user and time slot
+    const existingBooking = await Booking.findOne({
+      user: req.session.user.id,
+      date,
+      timeSlot,
+    });
+
+    if (existingBooking) {
+      return res.status(400).json({
+        success: false,
+        message: "You already have a booking for this time slot.",
+      });
+    }
+
+    // Create new booking
     const booking = await Booking.create({
       user: req.session.user.id,
       game,
       console,
-      date,
-      timeSlot
+      date: new Date(date),
+      timeSlot,
     });
 
-    const populatedBooking = await Booking.findById(booking._id).populate("user", "name email");
-    io.emit("newBooking", { ...populatedBooking.toObject(), isNew: true });
+    const populatedBooking = await Booking.findById(booking._id).populate(
+      "user",
+      "name email"
+    );
 
-    res.json({ success: true, booking: populatedBooking });
+    // Real-time update for admins
+    io.emit("booking:new", { ...populatedBooking.toObject(), isNew: true });
+
+    res.json({
+      success: true,
+      message: "Booking created successfully.",
+      data: populatedBooking,
+    });
   } catch (err) {
     console.error("Error creating booking:", err);
-    res.status(500).json({ success: false, message: "Failed to create booking" });
-  }
-});
-
-app.post("/admin/bookings/update/:id", ensureAuthenticated, requireAdmin, async (req, res) => {
-  try {
-    const { status } = req.body;
-    if (!status) {
-      return res.status(400).json({ success: false, message: "Status is required." });
-    }
-
-    const booking = await Booking.findById(req.params.id);
-    if (!booking) {
-      return res.status(404).json({ success: false, message: "Booking not found" });
-    }
-
-    booking.status = status;
-    await booking.save();
-
-    const populatedBooking = await Booking.findById(booking._id).populate("user", "name email");
-    io.emit("updateBooking", populatedBooking);
-    res.json({ success: true, booking: populatedBooking });
-  } catch (err) {
-    console.error("Error updating booking:", err);
-    res.status(500).json({ success: false, message: "Failed to update booking" });
-  }
-});
-
-app.get("/admin/bookings/json", ensureAuthenticated, requireAdmin, async (req, res) => {
-  try {
-    const bookings = await Booking.find()
-      .populate("user", "name email")
-      .sort({ createdAt: -1 });
-
-    const now = new Date();
-    const bookingsWithFlag = bookings.map(b => {
-      const bookingObj = b.toObject();
-      bookingObj.user ||= { name: "Unknown User", email: "N/A" };
-      const createdAt = b.createdAt instanceof Date ? b.createdAt : null;
-      bookingObj.isNew = createdAt ? (now - createdAt) / 1000 < 10 : false;
-      bookingObj.createdAt = createdAt;
-      return bookingObj;
+    res.status(500).json({
+      success: false,
+      message: "Failed to create booking.",
+      error: err.message,
     });
-
-    res.json(bookingsWithFlag);
-  } catch (err) {
-    console.error("Error fetching admin bookings:", err);
-    res.status(500).json([]);
   }
 });
+
+// ================== ADMIN BOOKING UPDATE ==================
+
+app.post(
+  "/admin/bookings/update/:id",
+  ensureAuthenticated,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { status } = req.body;
+      if (!status) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Status is required." });
+      }
+
+      const booking = await Booking.findById(req.params.id);
+      if (!booking) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Booking not found." });
+      }
+
+      booking.status = status;
+      await booking.save();
+
+      const populatedBooking = await Booking.findById(booking._id).populate(
+        "user",
+        "name email"
+      );
+
+      io.emit("booking:updated", populatedBooking);
+
+      res.json({
+        success: true,
+        message: "Booking status updated successfully.",
+        data: populatedBooking,
+      });
+    } catch (err) {
+      console.error("Error updating booking:", err);
+      res.status(500).json({
+        success: false,
+        message: "Failed to update booking.",
+        error: err.message,
+      });
+    }
+  }
+);
+
+// ================== ADMIN GET ALL BOOKINGS ==================
+
+app.get(
+  "/admin/bookings/json",
+  ensureAuthenticated,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const bookings = await Booking.find()
+        .populate("user", "name email")
+        .sort({ createdAt: -1 });
+
+      const now = new Date();
+
+      const bookingsWithFlag = bookings.map((b) => {
+        const bookingObj = b.toObject();
+        bookingObj.user ||= { name: "Unknown User", email: "N/A" };
+        const createdAt = b.createdAt instanceof Date ? b.createdAt : null;
+        bookingObj.isNew = createdAt ? (now - createdAt) / 1000 < 10 : false;
+        bookingObj.createdAt = createdAt;
+        return bookingObj;
+      });
+
+      res.json({
+        success: true,
+        message: "Admin bookings fetched successfully.",
+        data: bookingsWithFlag,
+      });
+    } catch (err) {
+      console.error("Error fetching admin bookings:", err);
+      res.status(500).json({
+        success: false,
+        message: "Failed to fetch admin bookings.",
+        error: err.message,
+      });
+    }
+  }
+);
+
+// ================== USER GET BOOKINGS ==================
 
 app.get("/gaming/bookings/json", ensureAuthenticated, async (req, res) => {
   try {
@@ -1272,30 +1345,57 @@ app.get("/gaming/bookings/json", ensureAuthenticated, async (req, res) => {
       .populate("user", "name email")
       .sort({ createdAt: -1 });
 
-    const safeBookings = bookings.map(b => {
+    const safeBookings = bookings.map((b) => {
       const bookingObj = b.toObject();
       bookingObj.user ||= { name: "Unknown User", email: "N/A" };
       return bookingObj;
     });
 
-    res.json(safeBookings);
+    res.json({
+      success: true,
+      message: "User bookings fetched successfully.",
+      data: safeBookings,
+    });
   } catch (err) {
     console.error("Error fetching user bookings:", err);
-    res.status(500).json([]);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch user bookings.",
+      error: err.message,
+    });
   }
 });
 
-// DELETE /admin/bookings/:id/delete
-app.delete("/admin/bookings/:id/delete", ensureAuthenticated, requireAdmin, async (req, res) => {
-  try {
-    const booking = await Booking.findByIdAndDelete(req.params.id);
-    if (!booking) return res.status(404).json({ success: false, message: "Booking not found" });
-    res.json({ success: true, message: "Booking deleted" });
-  } catch (err) {
-    console.error("Error deleting booking:", err);
-    res.status(500).json({ success: false, message: err.message });
+// ================== ADMIN DELETE BOOKING ==================
+
+app.delete(
+  "/admin/bookings/:id/delete",
+  ensureAuthenticated,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const booking = await Booking.findByIdAndDelete(req.params.id);
+      if (!booking)
+        return res
+          .status(404)
+          .json({ success: false, message: "Booking not found." });
+
+      io.emit("booking:deleted", { id: req.params.id });
+
+      res.json({
+        success: true,
+        message: "Booking deleted successfully.",
+      });
+    } catch (err) {
+      console.error("Error deleting booking:", err);
+      res.status(500).json({
+        success: false,
+        message: "Failed to delete booking.",
+        error: err.message,
+      });
+    }
   }
-});
+);
 
 // ================== MESSAGES ==================
 
