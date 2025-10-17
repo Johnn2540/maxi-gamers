@@ -443,11 +443,13 @@ app.get("/auth/google/callback",
 );
 
 app.get("/logout", (req, res) => {
-  req.logout(() => {
-    req.session.destroy(() => {
-      res.clearCookie("rememberMeToken");
-      res.redirect("/");
-    });
+  req.session.destroy((err) => {
+    if (err) {
+      console.error("Error destroying session:", err);
+      return res.redirect("/user"); // fallback if error occurs
+    }
+    res.clearCookie("connect.sid"); // clear the session cookie
+    res.redirect("/home"); // redirect to home page
   });
 });
 
@@ -1167,6 +1169,26 @@ app.post("/admin/loans/:id/status", ensureAuthenticated, requireAdmin, async (re
     res.status(500).json({ success: false, message: err.message });
   }
 });
+
+// Delete a loan (admin only)
+app.delete("/admin/loans/:id", ensureAuthenticated, requireAdmin, async (req, res) => {
+  try {
+    const loan = await Loan.findByIdAndDelete(req.params.id);
+
+    if (!loan) {
+      return res.status(404).json({ success: false, message: "Loan not found" });
+    }
+
+    // Emit real-time deletion to all connected clients
+    io.emit("loanDeleted", req.params.id);
+
+    res.json({ success: true, message: "Loan deleted successfully" });
+  } catch (err) {
+    console.error("Loan deletion error:", err);
+    res.status(500).json({ success: false, message: "Failed to delete loan" });
+  }
+});
+
 
 
 // ================== GAMING BOOKINGS ==================
