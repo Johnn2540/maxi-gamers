@@ -13,7 +13,7 @@
     .sale-price { font-weight: bold; font-size: 1.05rem; }
     .add-to-cart { width: 100%; font-size: 0.9rem; padding: 0.4rem; }
 
-    /* === Cart Sidebar === */
+    /* Cart Sidebar */
     #cart-sidebar {
       position: fixed; right: 0; top: 0; height: 100%;
       width: 300px; background: #f8f9fa;
@@ -21,42 +21,22 @@
       overflow-y: auto; box-shadow: -2px 0 5px rgba(0,0,0,0.1);
       display: none; z-index: 1050;
     }
-    #cart-toggle {
-      position: fixed; right: 320px; top: 1rem; z-index: 1100;
-    }
+    #cart-toggle { position: fixed; right: 320px; top: 1rem; z-index: 1100; }
     .cart-item { border-bottom: 1px solid #ddd; padding: 0.5rem 0; }
     .cart-item:last-child { border-bottom: none; }
 
-    /* === Product Grid Layout === */
+    /* Product Grid */
     @media (max-width: 575.98px) {
-      #shop-products .col-product {
-        flex: 0 0 50%;
-        max-width: 50%;
-        padding: 0.5rem;
-      }
-      #shop-products .card-img-top {
-        height: 150px;
-      }
+      #shop-products .col-product { flex: 0 0 50%; max-width: 50%; padding: 0.5rem; }
+      #shop-products .card-img-top { height: 150px; }
     }
-
     @media (min-width: 576px) and (max-width: 991.98px) {
-      #shop-products .col-product {
-        flex: 0 0 33.3333%;
-        max-width: 33.3333%;
-      }
-      #shop-products .card-img-top {
-        height: 180px;
-      }
+      #shop-products .col-product { flex: 0 0 33.3333%; max-width: 33.3333%; }
+      #shop-products .card-img-top { height: 180px; }
     }
-
     @media (min-width: 992px) {
-      #shop-products .col-product {
-        flex: 0 0 25%;
-        max-width: 25%;
-      }
-      #shop-products .card-img-top {
-        height: 200px;
-      }
+      #shop-products .col-product { flex: 0 0 25%; max-width: 25%; }
+      #shop-products .card-img-top { height: 200px; }
     }
   </style>
 </head>
@@ -188,28 +168,24 @@
       const res = await fetch('/products/json');
       const products = await res.json();
       const container = document.getElementById('shop-products');
-      if (!products.length) {
+      if (!products || !products.length) {
         container.innerHTML = '<p class="text-center">No products available</p>';
         return;
       }
 
       container.innerHTML = products.map(p => {
-        // ✅ Handle Cloudinary and legacy images
         let images = [];
-        if (p.images && Array.isArray(p.images) && p.images.length > 0) {
-          images = p.images.map(img => {
-            if (typeof img === 'string') return img; // already a URL
-            if (img.url) return img.url; // Cloudinary object
-            return '/images/placeholder.png';
-          });
+        if (Array.isArray(p.images) && p.images.length) {
+          images = p.images.map(img => typeof img === 'string' ? { url: img, desc: p.description || '' } : { url: img.url || '/images/placeholder.png', desc: img.desc || p.description || '' });
         } else if (p.image) {
-          // old single-image field
-          images = [p.image];
+          images = [{ url: p.image, desc: p.description || '' }];
         } else {
-          images = ['/images/placeholder.png'];
+          images = [{ url: '/images/placeholder.png', desc: p.description || '' }];
         }
+        const mainImage = images[0].url;
 
-        const mainImage = images[0] || '/images/placeholder.png';
+        const salePrice = parseFloat(p.salePrice) || 0;
+        const marketPrice = parseFloat(p.marketPrice) || 0;
 
         return `
           <div class="col-product mb-4">
@@ -219,18 +195,18 @@
                 <h5 class="card-title">${p.title}</h5>
                 <p class="card-text text-truncate">${p.description || ''}</p>
                 <p class="card-text mb-2">
-                  <span class="market-price">Ksh ${p.marketPrice}</span>
-                  <span class="sale-price ms-2">Ksh ${p.salePrice}</span>
+                  <span class="market-price">Ksh ${marketPrice}</span>
+                  <span class="sale-price ms-2">Ksh ${salePrice}</span>
                 </p>
                 <button class="btn btn-primary mt-auto add-to-cart" 
                         data-id="${p._id}" 
                         data-title="${p.title}" 
-                        data-price="${p.salePrice}">
+                        data-price="${salePrice}">
                   <i class="bi bi-cart-plus"></i> Add
                 </button>
                 <button class="btn btn-outline-secondary mt-2 view-images-btn" 
                         data-images='${JSON.stringify(images)}'>
-                  <i class="bi bi-eye"></i>
+                  <i class="bi bi-eye"></i> View Images
                 </button>
               </div>
             </div>
@@ -247,12 +223,41 @@
           updateCartUI();
         });
       });
+
     } catch (err) {
       console.error('Error loading products:', err);
       document.getElementById('shop-products').innerHTML =
         '<p class="text-danger text-center">Failed to load products</p>';
     }
   }
+
+  const imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
+  document.addEventListener('click', e => {
+    if (e.target.closest('.view-images-btn')) {
+      const btn = e.target.closest('.view-images-btn');
+      const images = JSON.parse(btn.dataset.images);
+      if (!images.length) return alert("No images available.");
+
+      const carouselInner = document.getElementById('carouselInner');
+      const carouselThumbs = document.getElementById('carouselThumbs');
+
+      carouselInner.innerHTML = images.map((img, idx) => `
+        <div class="carousel-item ${idx === 0 ? 'active' : ''}">
+          <img src="${img.url}" class="d-block w-100" style="max-height:80vh; object-fit:contain;">
+          <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded p-1">
+            <p>${img.desc}</p>
+          </div>
+        </div>
+      `).join('');
+
+      carouselThumbs.innerHTML = images.map((img, idx) => `
+        <img src="${img.url}" class="img-thumbnail" style="width:80px; height:80px; object-fit:cover; cursor:pointer;" 
+             data-bs-target="#imageCarousel" data-bs-slide-to="${idx}">
+      `).join('');
+
+      imageModal.show();
+    }
+  });
 
   document.getElementById('cart-toggle').addEventListener('click', () => {
     const sidebar = document.getElementById('cart-sidebar');
@@ -283,29 +288,7 @@
     if (confirm("Clear your cart?")) { cart.length = 0; updateCartUI(); }
   });
 
-  const imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
-  document.addEventListener('click', e => {
-    if (e.target.closest('.view-images-btn')) {
-      const btn = e.target.closest('.view-images-btn');
-      const images = JSON.parse(btn.dataset.images);
-      if (!images.length) return alert("No images available.");
-      const carouselInner = document.getElementById('carouselInner');
-      const carouselThumbs = document.getElementById('carouselThumbs');
-      carouselInner.innerHTML = images.map((img, idx) => `
-        <div class="carousel-item ${idx === 0 ? 'active' : ''}">
-          <img src="${img}" class="d-block w-100" style="max-height:80vh; object-fit:contain;">
-        </div>
-      `).join('');
-      carouselThumbs.innerHTML = images.map((img, idx) => `
-        <img src="${img}" class="img-thumbnail" style="width:80px; height:80px; object-fit:cover; cursor:pointer;" 
-             data-bs-target="#imageCarousel" data-bs-slide-to="${idx}">
-      `).join('');
-      imageModal.show();
-    }
-  });
-
   window.addEventListener('DOMContentLoaded', loadProducts);
-</script>
-
+  </script>
 </body>
 </html>
