@@ -3,28 +3,61 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Shop | Maximum Gamers</title>
+  <title>Shop | Maximum Gamers - Gaming Products Marketplace</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
   <link rel="manifest" href="/manifest.json">
   <style>
+    :root {
+      --primary-color: #2c5aa0;
+      --secondary-color: #ff6b00;
+      --accent-color: #00a859;
+    }
+    
     .card-title { font-weight: bold; font-size: 1rem; }
     .market-price { text-decoration: line-through; color: red; font-size: 0.9rem; }
-    .sale-price { font-weight: bold; font-size: 1.05rem; }
-    .add-to-cart { width: 100%; font-size: 0.9rem; padding: 0.4rem; }
+    .sale-price { font-weight: bold; font-size: 1.05rem; color: var(--secondary-color); }
+    .add-to-cart { width: 100%; font-size: 0.9rem; padding: 0.4rem; background: var(--secondary-color); border: none; }
+    .add-to-cart:hover { background: #e55a00; }
+
+    /* === Professional Header Styles === */
+    .navbar-brand { font-size: 1.5rem; font-weight: 800; }
+    .nav-link.active { color: var(--secondary-color) !important; font-weight: 600; }
+    .search-container { max-width: 500px; }
+    .search-box { border-radius: 25px; border: 2px solid #e0e0e0; }
+    .search-box:focus { border-color: var(--secondary-color); box-shadow: none; }
+
+    /* === Filter Section === */
+    .filter-section { background: #f8f9fa; border-radius: 10px; padding: 1.5rem; }
+    .filter-title { font-weight: 600; color: var(--primary-color); margin-bottom: 1rem; }
+    .filter-group { margin-bottom: 1rem; }
+    .filter-btn { background: white; border: 1px solid #ddd; border-radius: 20px; padding: 0.3rem 1rem; margin: 0.2rem; font-size: 0.85rem; }
+    .filter-btn.active { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+    .price-range { width: 100%; margin: 0.5rem 0; }
+    .price-display { font-size: 0.9rem; color: #666; }
+
+    /* === Product Cards === */
+    .product-card { border: none; border-radius: 12px; transition: transform 0.3s ease, box-shadow 0.3s ease; overflow: hidden; }
+    .product-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
+    .card-img-top { object-fit: cover; transition: transform 0.3s ease; }
+    .product-card:hover .card-img-top { transform: scale(1.05); }
+    .discount-badge { position: absolute; top: 10px; left: 10px; background: var(--secondary-color); color: white; padding: 0.3rem 0.6rem; border-radius: 15px; font-size: 0.8rem; font-weight: 600; }
+    .verified-badge { color: var(--accent-color); font-size: 0.8rem; }
 
     /* === Cart Sidebar === */
     #cart-sidebar {
       position: fixed; right: 0; top: 0; height: 100%;
-      width: 300px; background: #f8f9fa;
-      border-left: 1px solid #ddd; padding: 1rem;
-      overflow-y: auto; box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+      width: 350px; background: #f8f9fa;
+      border-left: 1px solid #ddd; padding: 1.5rem;
+      overflow-y: auto; box-shadow: -2px 0 15px rgba(0,0,0,0.1);
       display: none; z-index: 1050;
     }
     #cart-toggle {
-      position: fixed; right: 320px; top: 1rem; z-index: 1100;
+      position: fixed; right: 370px; top: 1rem; z-index: 1100;
+      background: var(--secondary-color); border: none; border-radius: 25px;
+      padding: 0.6rem 1.2rem; font-weight: 600; box-shadow: 0 4px 12px rgba(255,107,0,0.3);
     }
-    .cart-item { border-bottom: 1px solid #ddd; padding: 0.5rem 0; }
+    .cart-item { border-bottom: 1px solid #ddd; padding: 0.8rem 0; }
     .cart-item:last-child { border-bottom: none; }
 
     /* === Product Grid Layout === */
@@ -37,6 +70,7 @@
       #shop-products .card-img-top {
         height: 150px;
       }
+      .filter-section { margin-bottom: 1rem; }
     }
 
     @media (min-width: 576px) and (max-width: 991.98px) {
@@ -58,15 +92,36 @@
         height: 200px;
       }
     }
+
+    /* === Professional Elements === */
+    .results-count { color: #666; font-size: 0.9rem; }
+    .sort-select { border-radius: 20px; border: 1px solid #ddd; padding: 0.4rem 1rem; }
+    .featured-banner { background: linear-gradient(135deg, var(--primary-color), #1e3a6d); color: white; border-radius: 10px; padding: 1rem; margin-bottom: 2rem; }
+    .quick-stats { background: white; border-radius: 8px; padding: 1rem; text-align: center; }
+    .stats-number { font-size: 1.5rem; font-weight: 700; color: var(--primary-color); }
+    .stats-label { font-size: 0.8rem; color: #666; }
   </style>
 </head>
 <body>
   <!-- NAVBAR -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-3">
     <div class="container-fluid">
-      <a class="navbar-brand fw-bold d-lg-none" href="#">Maximum Gamers</a>
+      <a class="navbar-brand fw-bold" href="#">
+        <i class="bi bi-joystick me-2"></i>Maximum Gamers
+      </a>
+      
+      <!-- Search Bar -->
+      <div class="search-container mx-3 flex-grow-1">
+        <div class="input-group">
+          <input type="text" id="search-input" class="form-control search-box" placeholder="Search for gaming products, consoles, accessories...">
+          <button class="btn btn-outline-light" type="button" id="search-btn">
+            <i class="bi bi-search"></i>
+          </button>
+        </div>
+      </div>
+
       <div class="d-flex align-items-center ms-auto">
-        <a href="javascript:void(0)" id="navbar-cart-btn" class="btn position-relative me-2">
+        <a href="javascript:void(0)" id="navbar-cart-btn" class="btn position-relative me-3">
           <i class="bi bi-cart3 fs-5 text-white"></i>
           <span id="cart-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">0</span>
         </a>
@@ -74,25 +129,143 @@
           <span class="navbar-toggler-icon"></span>
         </button>
       </div>
+      
       <div class="collapse navbar-collapse d-none d-lg-flex justify-content-center">
         <ul class="navbar-nav">
-          <li class="nav-item"><a class="nav-link" href="/user">Home</a></li>
-          <li class="nav-item"><a class="nav-link active" href="/shop">Shop</a></li>
-          <li class="nav-item"><a class="nav-link" href="/gaming">Booking</a></li>
-          <li class="nav-item"><a class="nav-link" href="/loans">Loans</a></li>
-          <li class="nav-item"><a class="nav-link" href="/contact">Contact</a></li>
-          <li class="nav-item"><a class="nav-link" href="/profile">Profile</a></li>
-          <li class="nav-item"><a class="nav-link" href="/about">About</a></li>
+          <li class="nav-item"><a class="nav-link" href="/user"><i class="bi bi-house me-1"></i>Home</a></li>
+          <li class="nav-item"><a class="nav-link active" href="/shop"><i class="bi bi-shop me-1"></i>Shop</a></li>
+          <li class="nav-item"><a class="nav-link" href="/gaming"><i class="bi bi-calendar-event me-1"></i>Booking</a></li>
+          <li class="nav-item"><a class="nav-link" href="/loans"><i class="bi bi-cash-coin me-1"></i>Loans</a></li>
+          <li class="nav-item"><a class="nav-link" href="/contact"><i class="bi bi-telephone me-1"></i>Contact</a></li>
+          <li class="nav-item"><a class="nav-link" href="/profile"><i class="bi bi-person me-1"></i>Profile</a></li>
         </ul>
       </div>
     </div>
   </nav>
 
+  <!-- FEATURED BANNER -->
+  <div class="container mt-4">
+    <div class="featured-banner">
+      <div class="row align-items-center">
+        <div class="col-md-8">
+          <h4 class="mb-2">🎮 Gaming Deals of the Week!</h4>
+          <p class="mb-0">Up to 50% off on consoles, accessories, and games. Limited time offer!</p>
+        </div>
+        <div class="col-md-4 text-end">
+          <button class="btn btn-warning btn-sm">Shop Now <i class="bi bi-arrow-right"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- SHOP CONTENT -->
-  <div class="container my-5">
-    <h1 class="text-center mb-4">🛒 Our Products</h1>
-    <div class="row d-flex flex-wrap" id="shop-products">
-      <p class="text-center">Loading products...</p>
+  <div class="container my-4">
+    <div class="row">
+      <!-- FILTER SIDEBAR -->
+      <div class="col-lg-3 mb-4">
+        <div class="filter-section sticky-top" style="top: 20px;">
+          <h5 class="filter-title"><i class="bi bi-funnel me-2"></i>Filters</h5>
+          
+          <!-- Search Within -->
+          <div class="filter-group">
+            <label class="form-label fw-semibold">Search</label>
+            <input type="text" id="filter-search" class="form-control form-control-sm" placeholder="Filter products...">
+          </div>
+
+          <!-- Category Filter -->
+          <div class="filter-group">
+            <label class="form-label fw-semibold">Category</label>
+            <div>
+              <button class="filter-btn category-filter" data-category="all">All</button>
+              <button class="filter-btn category-filter" data-category="console">Consoles</button>
+              <button class="filter-btn category-filter" data-category="game">Games</button>
+              <button class="filter-btn category-filter" data-category="accessory">Accessories</button>
+              <button class="filter-btn category-filter" data-category="pc">PC Parts</button>
+            </div>
+          </div>
+
+          <!-- Price Range -->
+          <div class="filter-group">
+            <label class="form-label fw-semibold">Price Range</label>
+            <input type="range" class="form-range price-range" id="price-range" min="0" max="100000" step="1000" value="100000">
+            <div class="d-flex justify-content-between price-display">
+              <span>Ksh 0</span>
+              <span id="price-max-display">Ksh 100,000</span>
+            </div>
+          </div>
+
+          <!-- Condition Filter -->
+          <div class="filter-group">
+            <label class="form-label fw-semibold">Condition</label>
+            <div>
+              <button class="filter-btn condition-filter" data-condition="all">All</button>
+              <button class="filter-btn condition-filter" data-condition="new">New</button>
+              <button class="filter-btn condition-filter" data-condition="used">Used</button>
+              <button class="filter-btn condition-filter" data-condition="refurbished">Refurbished</button>
+            </div>
+          </div>
+
+          <!-- Brand Filter -->
+          <div class="filter-group">
+            <label class="form-label fw-semibold">Brand</label>
+            <div>
+              <button class="filter-btn brand-filter" data-brand="all">All Brands</button>
+              <button class="filter-btn brand-filter" data-brand="sony">Sony</button>
+              <button class="filter-btn brand-filter" data-brand="microsoft">Microsoft</button>
+              <button class="filter-btn brand-filter" data-brand="nintendo">Nintendo</button>
+              <button class="filter-btn brand-filter" data-brand="razer">Razer</button>
+            </div>
+          </div>
+
+          <!-- Clear Filters -->
+          <button class="btn btn-outline-secondary w-100 mt-3" id="clear-filters">
+            <i class="bi bi-x-circle me-1"></i>Clear All Filters
+          </button>
+        </div>
+      </div>
+
+      <!-- PRODUCTS GRID -->
+      <div class="col-lg-9">
+        <!-- Results Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <div>
+            <h4 class="mb-1">Gaming Products</h4>
+            <p class="results-count mb-0" id="results-count">Loading products...</p>
+          </div>
+          <div class="d-flex align-items-center gap-3">
+            <select class="sort-select" id="sort-select">
+              <option value="featured">Featured</option>
+              <option value="price-low">Price: Low to High</option>
+              <option value="price-high">Price: High to Low</option>
+              <option value="name">Name: A to Z</option>
+              <option value="newest">Newest First</option>
+            </select>
+            
+            <!-- Quick Stats -->
+            <div class="quick-stats">
+              <div class="stats-number" id="products-count">0</div>
+              <div class="stats-label">Products</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Products Grid -->
+        <div class="row d-flex flex-wrap" id="shop-products">
+          <div class="col-12 text-center">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading products...</p>
+          </div>
+        </div>
+
+        <!-- Load More Button -->
+        <div class="text-center mt-5" id="load-more-container" style="display: none;">
+          <button class="btn btn-primary px-5" id="load-more-btn">
+            <i class="bi bi-arrow-down-circle me-2"></i>Load More Products
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -103,24 +276,32 @@
 
   <!-- Cart Sidebar -->
   <div id="cart-sidebar">
-    <h4>🛍 Your Cart</h4>
+    <h4><i class="bi bi-cart3 me-2"></i>Your Shopping Cart</h4>
     <div id="cart-items"></div>
     <hr>
-    <p class="fw-bold">Total: Ksh <span id="cart-total">0</span></p>
+    <p class="fw-bold fs-5">Total: Ksh <span id="cart-total">0</span></p>
+    
     <div class="mb-3">
-      <label class="form-label">Your Name</label>
-      <input type="text" id="customer-name" class="form-control" placeholder="Enter your name">
+      <label class="form-label fw-semibold"><i class="bi bi-person me-1"></i>Your Name</label>
+      <input type="text" id="customer-name" class="form-control" placeholder="Enter your full name">
     </div>
     <div class="mb-3">
-      <label class="form-label">Your Phone</label>
+      <label class="form-label fw-semibold"><i class="bi bi-telephone me-1"></i>Your Phone</label>
       <input type="text" id="customer-phone" class="form-control" placeholder="07XXXXXXXX">
     </div>
-    <button class="btn btn-success w-100" id="checkout-btn">Order via WhatsApp</button>
-    <button class="btn btn-warning w-100 mt-2" id="clear-cart">Clear Cart</button>
-    <button class="btn btn-secondary w-100 mt-2" id="close-cart">Close</button>
+    
+    <button class="btn btn-success w-100 py-2 fw-semibold" id="checkout-btn">
+      <i class="bi bi-whatsapp me-2"></i>Order via WhatsApp
+    </button>
+    <button class="btn btn-warning w-100 mt-2" id="clear-cart">
+      <i class="bi bi-trash me-2"></i>Clear Cart
+    </button>
+    <button class="btn btn-secondary w-100 mt-2" id="close-cart">
+      <i class="bi bi-x-lg me-2"></i>Close
+    </button>
   </div>
 
-  <!-- Product Image Modal code -->
+  <!-- Product Image Modal -->
   <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-xl">
       <div class="modal-content bg-dark border-0">
@@ -147,6 +328,18 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
   const cart = [];
+  let allProducts = [];
+  let filteredProducts = [];
+  let currentFilters = {
+    search: '',
+    category: 'all',
+    maxPrice: 100000,
+    condition: 'all',
+    brand: 'all',
+    sort: 'featured'
+  };
+  let currentPage = 1;
+  const productsPerPage = 12;
 
   function updateCartUI() {
     const itemsContainer = document.getElementById('cart-items');
@@ -154,7 +347,7 @@
     const countEl = document.getElementById('cart-count');
     const badgeEl = document.getElementById('cart-badge');
     if (!cart.length) {
-      itemsContainer.innerHTML = '<p>Your cart is empty</p>';
+      itemsContainer.innerHTML = '<p class="text-muted text-center py-4">Your cart is empty</p>';
       totalEl.textContent = '0';
       countEl.textContent = '0';
       badgeEl.textContent = '0';
@@ -165,13 +358,15 @@
       total += item.salePrice;
       return `
         <div class="cart-item d-flex justify-content-between align-items-center">
-          <span>${item.title}</span>
-          <span>Ksh ${item.salePrice}</span>
+          <div class="flex-grow-1">
+            <div class="fw-semibold">${item.title}</div>
+            <small class="text-muted">Ksh ${item.salePrice.toLocaleString()}</small>
+          </div>
           <button class="btn btn-sm btn-danger remove-item" data-index="${idx}"><i class="bi bi-x"></i></button>
         </div>
       `;
     }).join('');
-    totalEl.textContent = total;
+    totalEl.textContent = total.toLocaleString();
     countEl.textContent = cart.length;
     badgeEl.textContent = cart.length;
 
@@ -183,85 +378,321 @@
     });
   }
 
-  async function loadProducts() {
-    try {
-      const res = await fetch('/products/json');
-      const products = await res.json();
-      const container = document.getElementById('shop-products');
-      if (!products.length) {
-        container.innerHTML = '<p class="text-center">No products available</p>';
-        return;
+  function applyFilters() {
+    filteredProducts = allProducts.filter(product => {
+      // Search filter
+      if (currentFilters.search) {
+        const searchTerm = currentFilters.search.toLowerCase();
+        if (!product.title.toLowerCase().includes(searchTerm) && 
+            !(product.description || '').toLowerCase().includes(searchTerm)) {
+          return false;
+        }
       }
 
-      container.innerHTML = products.map(p => {
-        // ✅ Handle Cloudinary and legacy images
-        let images = [];
-        if (p.images && Array.isArray(p.images) && p.images.length > 0) {
-          images = p.images.map(img => {
-            if (typeof img === 'string') return img; // already a URL
-            if (img.url) return img.url; // Cloudinary object
-            return '/images/placeholder.png';
-          });
-        } else if (p.image) {
-          // old single-image field
-          images = [p.image];
-        } else {
-          images = ['/images/placeholder.png'];
+      // Category filter
+      if (currentFilters.category !== 'all') {
+        if (!product.category || product.category !== currentFilters.category) {
+          return false;
         }
+      }
 
-        const mainImage = images[0] || '/images/placeholder.png';
+      // Price filter
+      if (product.salePrice > currentFilters.maxPrice) {
+        return false;
+      }
 
-        return `
-          <div class="col-product mb-4">
-            <div class="card h-100 shadow-sm">
-              <img src="${mainImage}" class="card-img-top" alt="${p.title}" onerror="this.src='/images/placeholder.png'">
-              <div class="card-body d-flex flex-column p-2">
-                <h5 class="card-title">${p.title}</h5>
-                <p class="card-text text-truncate">${p.description || ''}</p>
-                <p class="card-text mb-2">
-                  <span class="market-price">Ksh ${p.marketPrice}</span>
-                  <span class="sale-price ms-2">Ksh ${p.salePrice}</span>
-                </p>
-                <button class="btn btn-primary mt-auto add-to-cart" 
-                        data-id="${p._id}" 
-                        data-title="${p.title}" 
-                        data-price="${p.salePrice}">
-                  <i class="bi bi-cart-plus"></i> Add
-                </button>
-                <button class="btn btn-outline-secondary mt-2 view-images-btn" 
-                        data-images='${JSON.stringify(images)}'>
-                  <i class="bi bi-eye"></i>
-                </button>
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
+      // Condition filter
+      if (currentFilters.condition !== 'all') {
+        if (!product.condition || product.condition !== currentFilters.condition) {
+          return false;
+        }
+      }
 
-      document.querySelectorAll('.add-to-cart').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const id = btn.dataset.id;
-          const title = btn.dataset.title;
-          const salePrice = parseFloat(btn.dataset.price);
-          cart.push({ id, title, salePrice });
-          updateCartUI();
-        });
-      });
-    } catch (err) {
-      console.error('Error loading products:', err);
-      document.getElementById('shop-products').innerHTML =
-        '<p class="text-danger text-center">Failed to load products</p>';
+      // Brand filter
+      if (currentFilters.brand !== 'all') {
+        if (!product.brand || product.brand !== currentFilters.brand) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    // Apply sorting
+    applySorting();
+
+    // Update UI
+    updateProductsDisplay();
+    updateResultsCount();
+  }
+
+  function applySorting() {
+    switch(currentFilters.sort) {
+      case 'price-low':
+        filteredProducts.sort((a, b) => a.salePrice - b.salePrice);
+        break;
+      case 'price-high':
+        filteredProducts.sort((a, b) => b.salePrice - a.salePrice);
+        break;
+      case 'name':
+        filteredProducts.sort((a, b) => a.title.localeCompare(b.title));
+        break;
+      case 'newest':
+        filteredProducts.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+        break;
+      default: // featured
+        // Keep original order or apply some featured logic
+        break;
     }
   }
 
+  function updateResultsCount() {
+    const resultsCount = document.getElementById('results-count');
+    const productsCount = document.getElementById('products-count');
+    const totalProducts = filteredProducts.length;
+    
+    productsCount.textContent = totalProducts.toLocaleString();
+    
+    if (totalProducts === 0) {
+      resultsCount.textContent = 'No products found';
+    } else if (totalProducts === 1) {
+      resultsCount.textContent = '1 product found';
+    } else {
+      resultsCount.textContent = `${totalProducts.toLocaleString()} products found`;
+    }
+
+    // Show/hide load more button
+    const loadMoreContainer = document.getElementById('load-more-container');
+    const displayedProducts = Math.min(currentPage * productsPerPage, totalProducts);
+    if (displayedProducts < totalProducts) {
+      loadMoreContainer.style.display = 'block';
+    } else {
+      loadMoreContainer.style.display = 'none';
+    }
+  }
+
+  function updateProductsDisplay() {
+    const container = document.getElementById('shop-products');
+    const startIndex = 0;
+    const endIndex = currentPage * productsPerPage;
+    const productsToShow = filteredProducts.slice(startIndex, endIndex);
+
+    if (!productsToShow.length) {
+      container.innerHTML = `
+        <div class="col-12 text-center py-5">
+          <i class="bi bi-search display-1 text-muted"></i>
+          <h4 class="mt-3 text-muted">No products found</h4>
+          <p class="text-muted">Try adjusting your filters or search terms</p>
+          <button class="btn btn-primary mt-2" id="reset-filters-view">Reset Filters</button>
+        </div>
+      `;
+      document.getElementById('reset-filters-view').addEventListener('click', resetFilters);
+      return;
+    }
+
+    container.innerHTML = productsToShow.map(p => {
+      // Calculate discount percentage
+      const discount = p.marketPrice > p.salePrice ? 
+        Math.round(((p.marketPrice - p.salePrice) / p.marketPrice) * 100) : 0;
+      
+      // Handle images
+      let images = [];
+      if (p.images && Array.isArray(p.images) && p.images.length > 0) {
+        images = p.images.map(img => {
+          if (typeof img === 'string') return img;
+          if (img.url) return img.url;
+          return '/images/placeholder.png';
+        });
+      } else if (p.image) {
+        images = [p.image];
+      } else {
+        images = ['/images/placeholder.png'];
+      }
+
+      const mainImage = images[0] || '/images/placeholder.png';
+
+      return `
+        <div class="col-product mb-4">
+          <div class="card h-100 product-card position-relative">
+            ${discount > 0 ? `<span class="discount-badge">-${discount}%</span>` : ''}
+            <img src="${mainImage}" class="card-img-top" alt="${p.title}" onerror="this.src='/images/placeholder.png'">
+            <div class="card-body d-flex flex-column p-3">
+              <h5 class="card-title">${p.title}</h5>
+              <p class="card-text text-muted small flex-grow-1">${p.description || 'Premium gaming product'}</p>
+              
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <div>
+                  ${p.marketPrice > p.salePrice ? 
+                    `<span class="market-price">Ksh ${p.marketPrice.toLocaleString()}</span>` : ''}
+                  <span class="sale-price d-block">Ksh ${p.salePrice.toLocaleString()}</span>
+                </div>
+                ${p.condition === 'new' ? '<span class="verified-badge"><i class="bi bi-patch-check-fill"></i> New</span>' : ''}
+              </div>
+              
+              <button class="btn btn-primary mt-auto add-to-cart" 
+                      data-id="${p._id}" 
+                      data-title="${p.title}" 
+                      data-price="${p.salePrice}">
+                <i class="bi bi-cart-plus"></i> Add to Cart
+              </button>
+              <button class="btn btn-outline-secondary mt-2 view-images-btn" 
+                      data-images='${JSON.stringify(images)}'>
+                <i class="bi bi-eye"></i> View Images
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Reattach event listeners
+    document.querySelectorAll('.add-to-cart').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        const title = btn.dataset.title;
+        const salePrice = parseFloat(btn.dataset.price);
+        cart.push({ id, title, salePrice });
+        updateCartUI();
+        
+        // Show success feedback
+        btn.innerHTML = '<i class="bi bi-check-lg"></i> Added!';
+        btn.classList.add('btn-success');
+        setTimeout(() => {
+          btn.innerHTML = '<i class="bi bi-cart-plus"></i> Add to Cart';
+          btn.classList.remove('btn-success');
+        }, 2000);
+      });
+    });
+
+    document.querySelectorAll('.view-images-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const images = JSON.parse(btn.dataset.images);
+        if (!images.length) return alert("No images available.");
+        showImageModal(images);
+      });
+    });
+  }
+
+  function showImageModal(images) {
+    const carouselInner = document.getElementById('carouselInner');
+    const carouselThumbs = document.getElementById('carouselThumbs');
+    carouselInner.innerHTML = images.map((img, idx) => `
+      <div class="carousel-item ${idx === 0 ? 'active' : ''}">
+        <img src="${img}" class="d-block w-100" style="max-height:80vh; object-fit:contain;">
+      </div>
+    `).join('');
+    carouselThumbs.innerHTML = images.map((img, idx) => `
+      <img src="${img}" class="img-thumbnail ${idx === 0 ? 'active' : ''}" 
+           style="width:80px; height:80px; object-fit:cover; cursor:pointer;" 
+           data-bs-target="#imageCarousel" data-bs-slide-to="${idx}">
+    `).join('');
+    
+    // Add click event to thumbnails
+    carouselThumbs.querySelectorAll('.img-thumbnail').forEach((thumb, idx) => {
+      thumb.addEventListener('click', () => {
+        document.querySelectorAll('.carousel-item').forEach(item => item.classList.remove('active'));
+        document.querySelectorAll('.img-thumbnail').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.carousel-item')[idx].classList.add('active');
+        thumb.classList.add('active');
+      });
+    });
+    
+    imageModal.show();
+  }
+
+  function resetFilters() {
+    currentFilters = {
+      search: '',
+      category: 'all',
+      maxPrice: 100000,
+      condition: 'all',
+      brand: 'all',
+      sort: 'featured'
+    };
+    
+    document.getElementById('search-input').value = '';
+    document.getElementById('filter-search').value = '';
+    document.getElementById('price-range').value = 100000;
+    document.getElementById('price-max-display').textContent = 'Ksh 100,000';
+    document.getElementById('sort-select').value = 'featured';
+    
+    // Reset active filter buttons
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.classList.remove('active');
+      if (btn.dataset.category === 'all' || 
+          btn.dataset.condition === 'all' || 
+          btn.dataset.brand === 'all') {
+        btn.classList.add('active');
+      }
+    });
+    
+    currentPage = 1;
+    applyFilters();
+  }
+
+  async function loadProducts() {
+    try {
+      const res = await fetch('/products/json');
+      allProducts = await res.json();
+      
+      // Add some mock data for demo if needed
+      if (allProducts.length === 0) {
+        allProducts = [
+          {
+            _id: '1',
+            title: 'PlayStation 5 Console',
+            description: 'Next-gen gaming console with 4K gaming',
+            marketPrice: 80000,
+            salePrice: 75000,
+            category: 'console',
+            condition: 'new',
+            brand: 'sony',
+            images: ['/images/ps5.jpg'],
+            createdAt: new Date()
+          },
+          {
+            _id: '2',
+            title: 'Xbox Series X',
+            description: 'Powerful gaming console with Game Pass',
+            marketPrice: 70000,
+            salePrice: 65000,
+            category: 'console',
+            condition: 'new',
+            brand: 'microsoft',
+            images: ['/images/xbox.jpg'],
+            createdAt: new Date()
+          }
+        ];
+      }
+      
+      filteredProducts = [...allProducts];
+      applyFilters();
+      
+    } catch (err) {
+      console.error('Error loading products:', err);
+      document.getElementById('shop-products').innerHTML = `
+        <div class="col-12 text-center py-5">
+          <i class="bi bi-exclamation-triangle display-1 text-danger"></i>
+          <h4 class="mt-3 text-danger">Failed to load products</h4>
+          <p class="text-muted">Please check your connection and try again</p>
+          <button class="btn btn-primary mt-2" onclick="loadProducts()">Retry</button>
+        </div>
+      `;
+    }
+  }
+
+  // Event Listeners
   document.getElementById('cart-toggle').addEventListener('click', () => {
     const sidebar = document.getElementById('cart-sidebar');
     sidebar.style.display = sidebar.style.display === 'block' ? 'none' : 'block';
   });
+  
   document.getElementById('navbar-cart-btn').addEventListener('click', () => {
     const sidebar = document.getElementById('cart-sidebar');
     sidebar.style.display = sidebar.style.display === 'block' ? 'none' : 'block';
   });
+  
   document.getElementById('close-cart').addEventListener('click', () => {
     document.getElementById('cart-sidebar').style.display = 'none';
   });
@@ -271,41 +702,98 @@
     const name = document.getElementById("customer-name").value.trim();
     const phone = document.getElementById("customer-phone").value.trim();
     if (!name || !phone) return alert("Please enter your name and phone number.");
-    let orderDetails = cart.map((item, idx) => `${idx + 1}. ${item.title} - Ksh ${item.salePrice}`).join("%0A");
+    
+    let orderDetails = cart.map((item, idx) => 
+      `${idx + 1}. ${item.title} - Ksh ${item.salePrice.toLocaleString()}`
+    ).join("%0A");
+    
     let total = cart.reduce((sum, item) => sum + item.salePrice, 0);
-    let message = `Hello, my name is ${name}, my phone is ${phone}.%0AI want to order:%0A%0A${orderDetails}%0A%0ATotal: Ksh ${total}`;
+    let message = `Hello Maximum Gamers!%0A%0AMy name is ${name}, phone: ${phone}.%0A%0AI want to order:%0A%0A${orderDetails}%0A%0ATotal: Ksh ${total.toLocaleString()}%0A%0APlease confirm my order.`;
+    
     window.open(`https://wa.me/254718804786?text=${message}`, "_blank");
-    cart.length = 0; updateCartUI();
+    cart.length = 0; 
+    updateCartUI();
+    document.getElementById('cart-sidebar').style.display = 'none';
   });
 
   document.getElementById('clear-cart').addEventListener('click', () => {
     if (!cart.length) return alert("Your cart is empty.");
-    if (confirm("Clear your cart?")) { cart.length = 0; updateCartUI(); }
-  });
-
-  const imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
-  document.addEventListener('click', e => {
-    if (e.target.closest('.view-images-btn')) {
-      const btn = e.target.closest('.view-images-btn');
-      const images = JSON.parse(btn.dataset.images);
-      if (!images.length) return alert("No images available.");
-      const carouselInner = document.getElementById('carouselInner');
-      const carouselThumbs = document.getElementById('carouselThumbs');
-      carouselInner.innerHTML = images.map((img, idx) => `
-        <div class="carousel-item ${idx === 0 ? 'active' : ''}">
-          <img src="${img}" class="d-block w-100" style="max-height:80vh; object-fit:contain;">
-        </div>
-      `).join('');
-      carouselThumbs.innerHTML = images.map((img, idx) => `
-        <img src="${img}" class="img-thumbnail" style="width:80px; height:80px; object-fit:cover; cursor:pointer;" 
-             data-bs-target="#imageCarousel" data-bs-slide-to="${idx}">
-      `).join('');
-      imageModal.show();
+    if (confirm("Are you sure you want to clear your cart?")) { 
+      cart.length = 0; 
+      updateCartUI(); 
     }
   });
 
+  // Filter event listeners
+  document.getElementById('search-input').addEventListener('input', (e) => {
+    currentFilters.search = e.target.value;
+    currentPage = 1;
+    applyFilters();
+  });
+
+  document.getElementById('filter-search').addEventListener('input', (e) => {
+    currentFilters.search = e.target.value;
+    currentPage = 1;
+    applyFilters();
+  });
+
+  document.getElementById('price-range').addEventListener('input', (e) => {
+    currentFilters.maxPrice = parseInt(e.target.value);
+    document.getElementById('price-max-display').textContent = 
+      `Ksh ${currentFilters.maxPrice.toLocaleString()}`;
+    currentPage = 1;
+    applyFilters();
+  });
+
+  document.getElementById('sort-select').addEventListener('change', (e) => {
+    currentFilters.sort = e.target.value;
+    applyFilters();
+  });
+
+  // Filter button event listeners
+  document.querySelectorAll('.category-filter').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.category-filter').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilters.category = btn.dataset.category;
+      currentPage = 1;
+      applyFilters();
+    });
+  });
+
+  document.querySelectorAll('.condition-filter').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.condition-filter').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilters.condition = btn.dataset.condition;
+      currentPage = 1;
+      applyFilters();
+    });
+  });
+
+  document.querySelectorAll('.brand-filter').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.brand-filter').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilters.brand = btn.dataset.brand;
+      currentPage = 1;
+      applyFilters();
+    });
+  });
+
+  document.getElementById('clear-filters').addEventListener('click', resetFilters);
+
+  document.getElementById('load-more-btn').addEventListener('click', () => {
+    currentPage++;
+    updateProductsDisplay();
+    updateResultsCount();
+  });
+
+  const imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
+
+  // Initialize
   window.addEventListener('DOMContentLoaded', loadProducts);
-</script>
+  </script>
 
 </body>
 </html>
