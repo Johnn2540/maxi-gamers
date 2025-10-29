@@ -3,19 +3,29 @@ const mongoose = require("mongoose");
 require("dotenv").config();
 
 // ------------------ CONNECT TO MONGODB ATLAS ------------------
-const connectDB = async () => {
+const connectDB = async (retries = 5) => {
   const MONGO_URI = process.env.MONGO_URI;
+
   if (!MONGO_URI) {
     console.error("❌ MONGO_URI is not defined in .env");
     process.exit(1);
   }
 
   try {
-    await mongoose.connect(MONGO_URI);
+    await mongoose.connect(MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
     console.log("✅ Connected to MongoDB Atlas");
   } catch (err) {
-    console.error("❌ MongoDB Atlas connection error:", err);
-    process.exit(1);
+    console.error(`❌ MongoDB connection error: ${err.message || err}`);
+    if (retries > 0) {
+      console.log(`⏳ Retrying connection... (${retries} attempts left)`);
+      setTimeout(() => connectDB(retries - 1), 3000); // retry after 3 seconds
+    } else {
+      console.error("❌ Could not connect to MongoDB after multiple attempts");
+      process.exit(1);
+    }
   }
 };
 

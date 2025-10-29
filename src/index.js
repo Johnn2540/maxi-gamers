@@ -237,13 +237,20 @@ io.on("connection", socket => {
 // ================== AUTH MIDDLEWARE ==================
 async function ensureAuthenticated(req, res, next) {
   try {
+    // 1️⃣ Check if session exists
     if (!req.session.user) {
       const token = req.cookies?.rememberMeToken;
+
       if (token) {
         const user = await User.findOne({ rememberToken: token });
         if (user) {
-          req.session.user = { id: user._id, name: user.name, role: (user.role || "user").toLowerCase() };
+          req.session.user = {
+            id: user._id,
+            name: user.name,
+            role: (user.role || "user").toLowerCase(),
+          };
           req.session.lastActivity = Date.now();
+          req.session.justLoggedIn = true; // One-time redirect flag
         } else {
           res.clearCookie("rememberMeToken");
           return res.redirect("/login");
@@ -253,51 +260,65 @@ async function ensureAuthenticated(req, res, next) {
       }
     }
 
+    // 2️⃣ Session timeout (30 min)
     const now = Date.now();
     const TIMEOUT_LIMIT = 30 * 60 * 1000;
+
     if (req.session.lastActivity && now - req.session.lastActivity > TIMEOUT_LIMIT) {
-      req.session.destroy(() => {
+      return req.session.destroy(() => {
         res.clearCookie("rememberMeToken");
-        res.redirect(`/login?flash=${encodeURIComponent("Session expired. Please log in again.")}&type=info`);
+        res.redirect(
+          `/login?flash=${encodeURIComponent("Session expired. Please log in again.")}&type=info`
+        );
       });
-      return;
     }
+
     req.session.lastActivity = now;
 
+    // 3️⃣ Verify user still exists
     const user = await User.findById(req.session.user.id);
     if (!user) {
-      req.session.destroy(() => res.redirect("/login"));
-      return;
+      return req.session.destroy(() => res.redirect("/login"));
     }
 
     const role = (user.role || "").toLowerCase();
+
+    // 4️⃣ Block inactive non-admin users with contact info
     if (role !== "admin" && !user.active) {
-      req.session.destroy(() =>
-        res.status(403).send("Your account is suspended or pending verification.")
-      );
-      return;
+      return req.session.destroy(() => {
+        res.redirect(
+          `/login?flash=${encodeURIComponent("Your account is suspended or pending verification. Please contact the admin at 0718804786.")}&type=error`
+        );
+      });
     }
 
+    // 5️⃣ Attach user info for global access and set template fallbacks
     req.user = user;
     res.locals.user = user;
+    res.locals.user.profilePic = user.profilePic || 'https://via.placeholder.com/40';
+    res.locals.user.username = user.name || 'Guest';
 
-    // ===================== ADD FALLBACKS FOR TEMPLATES =====================
-// Ensures templates (like mobile navbar) always have profilePic & username
-res.locals.user.profilePic = res.locals.user.profilePic || 'https://via.placeholder.com/40';
-res.locals.user.username = res.locals.user.name || 'Guest';
-// =======================================================================
+    // 6️⃣ Handle one-time redirect after login or remember-me restore
+    if (req.session.justLoggedIn) {
+      delete req.session.justLoggedIn;
+      if (role === "admin") return res.redirect("/admin");
+      if (role === "user" && user.active) return res.redirect("/user");
+    }
 
+    // 7️⃣ Redirect root/dashboard to appropriate dashboard
     if (["/", "/dashboard"].includes(req.path)) {
       return res.redirect(role === "admin" ? "/admin" : "/user");
     }
 
+    // 8️⃣ Proceed to next middleware
     next();
-  } catch (err) {
-    console.error("🔴 Auth check error:", err);
-    res.status(500).send("Internal server error");
+  } catch (error) {
+    console.error("Authentication error:", error);
+    res.status(500).send("Internal server error during authentication.");
   }
 }
 
+// ================== ROLE CHECK HELPERS ==================
 function requireRole(role) {
   return (req, res, next) => {
     const userRole = (req.user?.role || "").toLowerCase();
@@ -312,6 +333,7 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+// ================== REMEMBER ME HANDLER ==================
 async function handleRememberMe(user, res, remember) {
   if (remember) {
     const token = crypto.randomBytes(32).toString("hex");
@@ -330,7 +352,6 @@ async function handleRememberMe(user, res, remember) {
     res.clearCookie("rememberMeToken");
   }
 }
-
 
 // ================== HELPER FUNCTIONS ==================
 function handleSignupError(req, res, message, type = "error", redirectPath = "/signup") {
