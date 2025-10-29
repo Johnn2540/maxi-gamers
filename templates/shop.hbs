@@ -92,7 +92,52 @@
   <div class="container my-5">
     <h1 class="text-center mb-4">🛒 Our Products</h1>
     <div class="row d-flex flex-wrap" id="shop-products">
-      <p class="text-center">Loading products...</p>
+      {{#if products.length}}
+        {{#each products}}
+          {{!-- Handle images array or single image --}}
+          {{#if images}}
+            {{!-- Multiple images --}}
+            {{! pick first image for card --}}
+            {{#let firstImage=(lookup images 0)}}
+              {{#if firstImage.url}}
+                {{! cloudinary object }}
+                {{set ../mainImage firstImage.url}}
+              {{else}}
+                {{set ../mainImage firstImage}}
+              {{/if}}
+            {{/let}}
+          {{else if image}}
+            {{set mainImage image}}
+          {{else}}
+            {{set mainImage "/images/placeholder.png"}}
+          {{/if}}
+          <div class="col-product mb-4">
+            <div class="card h-100 shadow-sm">
+              <img src="{{mainImage}}" class="card-img-top" alt="{{title}}" onerror="this.src='/images/placeholder.png'">
+              <div class="card-body d-flex flex-column p-2">
+                <h5 class="card-title">{{title}}</h5>
+                <p class="card-text text-truncate">{{description}}</p>
+                <p class="card-text mb-2">
+                  <span class="market-price">Ksh {{marketPrice}}</span>
+                  <span class="sale-price ms-2">Ksh {{salePrice}}</span>
+                </p>
+                <button class="btn btn-primary mt-auto add-to-cart" 
+                        data-id="{{_id}}" 
+                        data-title="{{title}}" 
+                        data-price="{{salePrice}}">
+                  <i class="bi bi-cart-plus"></i> Add
+                </button>
+                <button class="btn btn-outline-secondary mt-2 view-images-btn" 
+                        data-images='{{json images}}'>
+                  <i class="bi bi-eye"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        {{/each}}
+      {{else}}
+        <p class="text-center">No products available</p>
+      {{/if}}
     </div>
   </div>
 
@@ -146,98 +191,95 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-  const cart = [];
+    const cart = [];
 
-  function updateCartUI() {
-    const itemsContainer = document.getElementById('cart-items');
-    const totalEl = document.getElementById('cart-total');
-    const countEl = document.getElementById('cart-count');
-    const badgeEl = document.getElementById('cart-badge');
-    if (!cart.length) {
-      itemsContainer.innerHTML = '<p>Your cart is empty</p>';
-      totalEl.textContent = '0';
-      countEl.textContent = '0';
-      badgeEl.textContent = '0';
-      return;
-    }
-    let total = 0;
-    itemsContainer.innerHTML = cart.map((item, idx) => {
-      total += item.salePrice;
-      return `
-        <div class="cart-item d-flex justify-content-between align-items-center">
-          <span>${item.title}</span>
-          <span>Ksh ${item.salePrice}</span>
-          <button class="btn btn-sm btn-danger remove-item" data-index="${idx}"><i class="bi bi-x"></i></button>
-        </div>
-      `;
-    }).join('');
-    totalEl.textContent = total;
-    countEl.textContent = cart.length;
-    badgeEl.textContent = cart.length;
-
-    document.querySelectorAll('.remove-item').forEach(btn => {
-      btn.addEventListener('click', () => {
-        cart.splice(btn.dataset.index, 1);
-        updateCartUI();
-      });
-    });
-  }
-
-  async function loadProducts() {
-    try {
-      const res = await fetch('/products/json');
-      const products = await res.json();
-      const container = document.getElementById('shop-products');
-      if (!products.length) {
-        container.innerHTML = '<p class="text-center">No products available</p>';
+    function updateCartUI() {
+      const itemsContainer = document.getElementById('cart-items');
+      const totalEl = document.getElementById('cart-total');
+      const countEl = document.getElementById('cart-count');
+      const badgeEl = document.getElementById('cart-badge');
+      if (!cart.length) {
+        itemsContainer.innerHTML = '<p>Your cart is empty</p>';
+        totalEl.textContent = '0';
+        countEl.textContent = '0';
+        badgeEl.textContent = '0';
         return;
       }
-
-      container.innerHTML = products.map(p => {
-        // ✅ Handle Cloudinary and legacy images
-        let images = [];
-        if (p.images && Array.isArray(p.images) && p.images.length > 0) {
-          images = p.images.map(img => {
-            if (typeof img === 'string') return img; // already a URL
-            if (img.url) return img.url; // Cloudinary object
-            return '/images/placeholder.png';
-          });
-        } else if (p.image) {
-          // old single-image field
-          images = [p.image];
-        } else {
-          images = ['/images/placeholder.png'];
-        }
-
-        const mainImage = images[0] || '/images/placeholder.png';
-
+      let total = 0;
+      itemsContainer.innerHTML = cart.map((item, idx) => {
+        total += item.salePrice;
         return `
-          <div class="col-product mb-4">
-            <div class="card h-100 shadow-sm">
-              <img src="${mainImage}" class="card-img-top" alt="${p.title}" onerror="this.src='/images/placeholder.png'">
-              <div class="card-body d-flex flex-column p-2">
-                <h5 class="card-title">${p.title}</h5>
-                <p class="card-text text-truncate">${p.description || ''}</p>
-                <p class="card-text mb-2">
-                  <span class="market-price">Ksh ${p.marketPrice}</span>
-                  <span class="sale-price ms-2">Ksh ${p.salePrice}</span>
-                </p>
-                <button class="btn btn-primary mt-auto add-to-cart" 
-                        data-id="${p._id}" 
-                        data-title="${p.title}" 
-                        data-price="${p.salePrice}">
-                  <i class="bi bi-cart-plus"></i> Add
-                </button>
-                <button class="btn btn-outline-secondary mt-2 view-images-btn" 
-                        data-images='${JSON.stringify(images)}'>
-                  <i class="bi bi-eye"></i>
-                </button>
-              </div>
-            </div>
+          <div class="cart-item d-flex justify-content-between align-items-center">
+            <span>${item.title}</span>
+            <span>Ksh ${item.salePrice}</span>
+            <button class="btn btn-sm btn-danger remove-item" data-index="${idx}"><i class="bi bi-x"></i></button>
           </div>
         `;
       }).join('');
+      totalEl.textContent = total;
+      countEl.textContent = cart.length;
+      badgeEl.textContent = cart.length;
 
+      document.querySelectorAll('.remove-item').forEach(btn => {
+        btn.addEventListener('click', () => {
+          cart.splice(btn.dataset.index, 1);
+          updateCartUI();
+        });
+      });
+    }
+
+    document.getElementById('cart-toggle').addEventListener('click', () => {
+      const sidebar = document.getElementById('cart-sidebar');
+      sidebar.style.display = sidebar.style.display === 'block' ? 'none' : 'block';
+    });
+    document.getElementById('navbar-cart-btn').addEventListener('click', () => {
+      const sidebar = document.getElementById('cart-sidebar');
+      sidebar.style.display = sidebar.style.display === 'block' ? 'none' : 'block';
+    });
+    document.getElementById('close-cart').addEventListener('click', () => {
+      document.getElementById('cart-sidebar').style.display = 'none';
+    });
+
+    document.getElementById('checkout-btn').addEventListener('click', () => {
+      if (!cart.length) return alert("Your cart is empty!");
+      const name = document.getElementById("customer-name").value.trim();
+      const phone = document.getElementById("customer-phone").value.trim();
+      if (!name || !phone) return alert("Please enter your name and phone number.");
+      let orderDetails = cart.map((item, idx) => `${idx + 1}. ${item.title} - Ksh ${item.salePrice}`).join("%0A");
+      let total = cart.reduce((sum, item) => sum + item.salePrice, 0);
+      let message = `Hello, my name is ${name}, my phone is ${phone}.%0AI want to order:%0A%0A${orderDetails}%0A%0ATotal: Ksh ${total}`;
+      window.open(`https://wa.me/254718804786?text=${message}`, "_blank");
+      cart.length = 0; updateCartUI();
+    });
+
+    document.getElementById('clear-cart').addEventListener('click', () => {
+      if (!cart.length) return alert("Your cart is empty.");
+      if (confirm("Clear your cart?")) { cart.length = 0; updateCartUI(); }
+    });
+
+    const imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
+    document.addEventListener('click', e => {
+      if (e.target.closest('.view-images-btn')) {
+        const btn = e.target.closest('.view-images-btn');
+        const images = JSON.parse(btn.dataset.images);
+        if (!images.length) return alert("No images available.");
+        const carouselInner = document.getElementById('carouselInner');
+        const carouselThumbs = document.getElementById('carouselThumbs');
+        carouselInner.innerHTML = images.map((img, idx) => `
+          <div class="carousel-item ${idx === 0 ? 'active' : ''}">
+            <img src="${img}" class="d-block w-100" style="max-height:80vh; object-fit:contain;">
+          </div>
+        `).join('');
+        carouselThumbs.innerHTML = images.map((img, idx) => `
+          <img src="${img}" class="img-thumbnail" style="width:80px; height:80px; object-fit:cover; cursor:pointer;" 
+               data-bs-target="#imageCarousel" data-bs-slide-to="${idx}">
+        `).join('');
+        imageModal.show();
+      }
+    });
+
+    // Add-to-cart buttons from handlebars
+    document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('.add-to-cart').forEach(btn => {
         btn.addEventListener('click', () => {
           const id = btn.dataset.id;
@@ -247,65 +289,8 @@
           updateCartUI();
         });
       });
-    } catch (err) {
-      console.error('Error loading products:', err);
-      document.getElementById('shop-products').innerHTML =
-        '<p class="text-danger text-center">Failed to load products</p>';
-    }
-  }
-
-  document.getElementById('cart-toggle').addEventListener('click', () => {
-    const sidebar = document.getElementById('cart-sidebar');
-    sidebar.style.display = sidebar.style.display === 'block' ? 'none' : 'block';
-  });
-  document.getElementById('navbar-cart-btn').addEventListener('click', () => {
-    const sidebar = document.getElementById('cart-sidebar');
-    sidebar.style.display = sidebar.style.display === 'block' ? 'none' : 'block';
-  });
-  document.getElementById('close-cart').addEventListener('click', () => {
-    document.getElementById('cart-sidebar').style.display = 'none';
-  });
-
-  document.getElementById('checkout-btn').addEventListener('click', () => {
-    if (!cart.length) return alert("Your cart is empty!");
-    const name = document.getElementById("customer-name").value.trim();
-    const phone = document.getElementById("customer-phone").value.trim();
-    if (!name || !phone) return alert("Please enter your name and phone number.");
-    let orderDetails = cart.map((item, idx) => `${idx + 1}. ${item.title} - Ksh ${item.salePrice}`).join("%0A");
-    let total = cart.reduce((sum, item) => sum + item.salePrice, 0);
-    let message = `Hello, my name is ${name}, my phone is ${phone}.%0AI want to order:%0A%0A${orderDetails}%0A%0ATotal: Ksh ${total}`;
-    window.open(`https://wa.me/254718804786?text=${message}`, "_blank");
-    cart.length = 0; updateCartUI();
-  });
-
-  document.getElementById('clear-cart').addEventListener('click', () => {
-    if (!cart.length) return alert("Your cart is empty.");
-    if (confirm("Clear your cart?")) { cart.length = 0; updateCartUI(); }
-  });
-
-  const imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
-  document.addEventListener('click', e => {
-    if (e.target.closest('.view-images-btn')) {
-      const btn = e.target.closest('.view-images-btn');
-      const images = JSON.parse(btn.dataset.images);
-      if (!images.length) return alert("No images available.");
-      const carouselInner = document.getElementById('carouselInner');
-      const carouselThumbs = document.getElementById('carouselThumbs');
-      carouselInner.innerHTML = images.map((img, idx) => `
-        <div class="carousel-item ${idx === 0 ? 'active' : ''}">
-          <img src="${img}" class="d-block w-100" style="max-height:80vh; object-fit:contain;">
-        </div>
-      `).join('');
-      carouselThumbs.innerHTML = images.map((img, idx) => `
-        <img src="${img}" class="img-thumbnail" style="width:80px; height:80px; object-fit:cover; cursor:pointer;" 
-             data-bs-target="#imageCarousel" data-bs-slide-to="${idx}">
-      `).join('');
-      imageModal.show();
-    }
-  });
-
-  window.addEventListener('DOMContentLoaded', loadProducts);
-</script>
-
+    });
+  </script>
 </body>
 </html>
+
