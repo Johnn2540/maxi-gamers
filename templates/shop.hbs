@@ -13,7 +13,6 @@
     .sale-price { font-weight: bold; font-size: 1.05rem; }
     .add-to-cart { width: 100%; font-size: 0.9rem; padding: 0.4rem; }
 
-    /* === Cart Sidebar === */
     #cart-sidebar {
       position: fixed; right: 0; top: 0; height: 100%;
       width: 300px; background: #f8f9fa;
@@ -27,36 +26,17 @@
     .cart-item { border-bottom: 1px solid #ddd; padding: 0.5rem 0; }
     .cart-item:last-child { border-bottom: none; }
 
-    /* === Product Grid Layout === */
     @media (max-width: 575.98px) {
-      #shop-products .col-product {
-        flex: 0 0 50%;
-        max-width: 50%;
-        padding: 0.5rem;
-      }
-      #shop-products .card-img-top {
-        height: 150px;
-      }
+      #shop-products .col-product { flex: 0 0 50%; max-width: 50%; padding: 0.5rem; }
+      #shop-products .card-img-top { height: 150px; object-fit: cover; }
     }
-
     @media (min-width: 576px) and (max-width: 991.98px) {
-      #shop-products .col-product {
-        flex: 0 0 33.3333%;
-        max-width: 33.3333%;
-      }
-      #shop-products .card-img-top {
-        height: 180px;
-      }
+      #shop-products .col-product { flex: 0 0 33.3333%; max-width: 33.3333%; }
+      #shop-products .card-img-top { height: 180px; object-fit: cover; }
     }
-
     @media (min-width: 992px) {
-      #shop-products .col-product {
-        flex: 0 0 25%;
-        max-width: 25%;
-      }
-      #shop-products .card-img-top {
-        height: 200px;
-      }
+      #shop-products .col-product { flex: 0 0 25%; max-width: 25%; }
+      #shop-products .card-img-top { height: 200px; object-fit: cover; }
     }
   </style>
 </head>
@@ -92,52 +72,7 @@
   <div class="container my-5">
     <h1 class="text-center mb-4">🛒 Our Products</h1>
     <div class="row d-flex flex-wrap" id="shop-products">
-      {{#if products.length}}
-        {{#each products}}
-          {{!-- Handle images array or single image --}}
-          {{#if images}}
-            {{!-- Multiple images --}}
-            {{! pick first image for card --}}
-            {{#let firstImage=(lookup images 0)}}
-              {{#if firstImage.url}}
-                {{! cloudinary object }}
-                {{set ../mainImage firstImage.url}}
-              {{else}}
-                {{set ../mainImage firstImage}}
-              {{/if}}
-            {{/let}}
-          {{else if image}}
-            {{set mainImage image}}
-          {{else}}
-            {{set mainImage "/images/placeholder.png"}}
-          {{/if}}
-          <div class="col-product mb-4">
-            <div class="card h-100 shadow-sm">
-              <img src="{{mainImage}}" class="card-img-top" alt="{{title}}" onerror="this.src='/images/placeholder.png'">
-              <div class="card-body d-flex flex-column p-2">
-                <h5 class="card-title">{{title}}</h5>
-                <p class="card-text text-truncate">{{description}}</p>
-                <p class="card-text mb-2">
-                  <span class="market-price">Ksh {{marketPrice}}</span>
-                  <span class="sale-price ms-2">Ksh {{salePrice}}</span>
-                </p>
-                <button class="btn btn-primary mt-auto add-to-cart" 
-                        data-id="{{_id}}" 
-                        data-title="{{title}}" 
-                        data-price="{{salePrice}}">
-                  <i class="bi bi-cart-plus"></i> Add
-                </button>
-                <button class="btn btn-outline-secondary mt-2 view-images-btn" 
-                        data-images='{{json images}}'>
-                  <i class="bi bi-eye"></i>
-                </button>
-              </div>
-            </div>
-          </div>
-        {{/each}}
-      {{else}}
-        <p class="text-center">No products available</p>
-      {{/if}}
+      <p class="text-center">Loading products...</p>
     </div>
   </div>
 
@@ -198,6 +133,7 @@
       const totalEl = document.getElementById('cart-total');
       const countEl = document.getElementById('cart-count');
       const badgeEl = document.getElementById('cart-badge');
+
       if (!cart.length) {
         itemsContainer.innerHTML = '<p>Your cart is empty</p>';
         totalEl.textContent = '0';
@@ -205,6 +141,7 @@
         badgeEl.textContent = '0';
         return;
       }
+
       let total = 0;
       itemsContainer.innerHTML = cart.map((item, idx) => {
         total += item.salePrice;
@@ -228,6 +165,90 @@
       });
     }
 
+    async function loadProducts() {
+      try {
+        const res = await fetch('/products/json');
+        const products = await res.json();
+        const container = document.getElementById('shop-products');
+
+        if (!products || !products.length) {
+          container.innerHTML = '<p class="text-center">No products available</p>';
+          return;
+        }
+
+        container.innerHTML = products.map(p => {
+          // Use mainImage first, then fallback to first image, then placeholder
+          const images = Array.isArray(p.images) && p.images.length ? p.images : [];
+          const mainImage = p.mainImage || images[0] || '/images/placeholder.png';
+
+          return `
+            <div class="col-product mb-4">
+              <div class="card h-100 shadow-sm">
+                <img src="${mainImage}" class="card-img-top" alt="${p.title}" onerror="this.src='/images/placeholder.png'">
+                <div class="card-body d-flex flex-column p-2">
+                  <h5 class="card-title">${p.title}</h5>
+                  <p class="card-text text-truncate">${p.description || ''}</p>
+                  <p class="card-text mb-2">
+                    <span class="market-price">Ksh ${p.marketPrice}</span>
+                    <span class="sale-price ms-2">Ksh ${p.salePrice}</span>
+                  </p>
+                  <button class="btn btn-primary mt-auto add-to-cart" 
+                          data-id="${p._id}" 
+                          data-title="${p.title}" 
+                          data-price="${p.salePrice}">
+                    <i class="bi bi-cart-plus"></i> Add
+                  </button>
+                  <button class="btn btn-outline-secondary mt-2 view-images-btn" 
+                          data-images='${JSON.stringify(images.length ? images : [mainImage])}'>
+                    <i class="bi bi-eye"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        document.querySelectorAll('.add-to-cart').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = btn.dataset.id;
+            const title = btn.dataset.title;
+            const salePrice = parseFloat(btn.dataset.price);
+            cart.push({ id, title, salePrice });
+            updateCartUI();
+          });
+        });
+
+      } catch (err) {
+        console.error('Error loading products:', err);
+        document.getElementById('shop-products').innerHTML =
+          '<p class="text-danger text-center">Failed to load products</p>';
+      }
+    }
+
+    const imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
+    document.addEventListener('click', e => {
+      const btn = e.target.closest('.view-images-btn');
+      if (!btn) return;
+      const images = JSON.parse(btn.dataset.images);
+      if (!images.length) return alert("No images available.");
+
+      const carouselInner = document.getElementById('carouselInner');
+      const carouselThumbs = document.getElementById('carouselThumbs');
+
+      carouselInner.innerHTML = images.map((img, idx) => `
+        <div class="carousel-item ${idx === 0 ? 'active' : ''}">
+          <img src="${img}" class="d-block w-100" style="max-height:80vh; object-fit:contain;">
+        </div>
+      `).join('');
+
+      carouselThumbs.innerHTML = images.map((img, idx) => `
+        <img src="${img}" class="img-thumbnail" style="width:80px; height:80px; object-fit:cover; cursor:pointer;" 
+             data-bs-target="#imageCarousel" data-bs-slide-to="${idx}">
+      `).join('');
+
+      imageModal.show();
+    });
+
     document.getElementById('cart-toggle').addEventListener('click', () => {
       const sidebar = document.getElementById('cart-sidebar');
       sidebar.style.display = sidebar.style.display === 'block' ? 'none' : 'block';
@@ -239,58 +260,24 @@
     document.getElementById('close-cart').addEventListener('click', () => {
       document.getElementById('cart-sidebar').style.display = 'none';
     });
-
     document.getElementById('checkout-btn').addEventListener('click', () => {
       if (!cart.length) return alert("Your cart is empty!");
       const name = document.getElementById("customer-name").value.trim();
       const phone = document.getElementById("customer-phone").value.trim();
       if (!name || !phone) return alert("Please enter your name and phone number.");
-      let orderDetails = cart.map((item, idx) => `${idx + 1}. ${item.title} - Ksh ${item.salePrice}`).join("%0A");
-      let total = cart.reduce((sum, item) => sum + item.salePrice, 0);
-      let message = `Hello, my name is ${name}, my phone is ${phone}.%0AI want to order:%0A%0A${orderDetails}%0A%0ATotal: Ksh ${total}`;
+
+      const orderDetails = cart.map((item, idx) => `${idx + 1}. ${item.title} - Ksh ${item.salePrice}`).join("%0A");
+      const total = cart.reduce((sum, item) => sum + item.salePrice, 0);
+      const message = `Hello, my name is ${name}, my phone is ${phone}.%0AI want to order:%0A%0A${orderDetails}%0A%0ATotal: Ksh ${total}`;
       window.open(`https://wa.me/254718804786?text=${message}`, "_blank");
       cart.length = 0; updateCartUI();
     });
-
     document.getElementById('clear-cart').addEventListener('click', () => {
       if (!cart.length) return alert("Your cart is empty.");
       if (confirm("Clear your cart?")) { cart.length = 0; updateCartUI(); }
     });
 
-    const imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
-    document.addEventListener('click', e => {
-      if (e.target.closest('.view-images-btn')) {
-        const btn = e.target.closest('.view-images-btn');
-        const images = JSON.parse(btn.dataset.images);
-        if (!images.length) return alert("No images available.");
-        const carouselInner = document.getElementById('carouselInner');
-        const carouselThumbs = document.getElementById('carouselThumbs');
-        carouselInner.innerHTML = images.map((img, idx) => `
-          <div class="carousel-item ${idx === 0 ? 'active' : ''}">
-            <img src="${img}" class="d-block w-100" style="max-height:80vh; object-fit:contain;">
-          </div>
-        `).join('');
-        carouselThumbs.innerHTML = images.map((img, idx) => `
-          <img src="${img}" class="img-thumbnail" style="width:80px; height:80px; object-fit:cover; cursor:pointer;" 
-               data-bs-target="#imageCarousel" data-bs-slide-to="${idx}">
-        `).join('');
-        imageModal.show();
-      }
-    });
-
-    // Add-to-cart buttons from handlebars
-    document.addEventListener('DOMContentLoaded', () => {
-      document.querySelectorAll('.add-to-cart').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const id = btn.dataset.id;
-          const title = btn.dataset.title;
-          const salePrice = parseFloat(btn.dataset.price);
-          cart.push({ id, title, salePrice });
-          updateCartUI();
-        });
-      });
-    });
+    window.addEventListener('DOMContentLoaded', loadProducts);
   </script>
 </body>
 </html>
-
