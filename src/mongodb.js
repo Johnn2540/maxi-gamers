@@ -34,7 +34,13 @@ const connectDB = async (retries = 5) => {
 const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
-    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
     phone: { type: String, trim: true, sparse: true, unique: true }, // no default: null
     password: { type: String },
     role: { type: String, enum: ["user", "admin"], default: "user" },
@@ -61,15 +67,19 @@ userSchema.pre("save", function (next) {
   next();
 });
 
-
 // Method to update profile image and delete old Cloudinary image
-userSchema.methods.updateProfileImage = async function (newImagePath, cloudinary) {
+userSchema.methods.updateProfileImage = async function (
+  newImagePath,
+  cloudinary
+) {
   try {
     if (this.imageId) {
       await cloudinary.uploader.destroy(this.imageId);
     }
 
-    const result = await cloudinary.uploader.upload(newImagePath, { folder: "profiles" });
+    const result = await cloudinary.uploader.upload(newImagePath, {
+      folder: "profiles",
+    });
     this.image = result.secure_url;
     this.imageId = result.public_id;
     await this.save();
@@ -90,60 +100,112 @@ const productSchema = new mongoose.Schema(
     description: { type: String },
     onSale: { type: Boolean, default: false },
 
-    //  New Fields for Admin Dropdowns
+    // Category
     category: {
       type: String,
       enum: [
-        'Consoles',
-        'Games',
-        'Accessories',
-        'PC Parts',
-        'Controllers',
-        'Headsets',
-        'Monitors',
-        'Cables',
-        'Storage',
-        'Keyboards',
-        'Mice',
-        'Speakers',
-        'Unspecified'
+        "Consoles",
+        "Games",
+        "Accessories",
+        "PC Parts",
+        "Controllers",
+        "Headsets",
+        "Monitors",
+        "Cables",
+        "Storage",
+        "Keyboards",
+        "Mice",
+        "Speakers",
+        "Phones",
+        "Laptops",
+        "Unspecified",
       ],
-      default: 'Unspecified'
+      default: "Unspecified",
     },
+
+    // Condition
     condition: {
       type: String,
-      enum: ['New', 'Used', 'Refurbished', 'Like New', 'Open Box', 'Unspecified'],
-      default: 'Unspecified'
+      enum: [
+        "New",
+        "Used",
+        "Refurbished",
+        "Like New",
+        "Open Box",
+        "Unspecified",
+      ],
+      default: "Unspecified",
     },
+
+    // Brand
     brand: {
       type: String,
       enum: [
-        'Sony',
-        'Microsoft',
-        'Nintendo',
-        'Razer',
-        'Logitech',
-        'Corsair',
-        'HP',
-        'Dell',
-        'Asus',
-        'Acer',
-        'Lenovo',
-        'MSI',
-        'Samsung',
-        'LG',
-        'Unspecified'
+        // 🎮 Gaming & Consoles
+        "Sony",
+        "Microsoft",
+        "Nintendo",
+        "Razer",
+        "Logitech",
+        "Corsair",
+        "SteelSeries",
+        "Astro",
+
+        // 💻 Laptops & Computers
+        "HP",
+        "Dell",
+        "Asus",
+        "Acer",
+        "Lenovo",
+        "MSI",
+        "Alienware",
+        "Apple",
+        "Huawei",
+        "Samsung",
+
+        // 📱 Phones & Mobile
+        "Xiaomi",
+        "Oppo",
+        "Vivo",
+        "OnePlus",
+        "Tecno",
+        "Infinix",
+        "Realme",
+        "Nokia",
+        "Google",
+        "Nothing",
+        "Honor",
+        "Sony Xperia",
+        "iQOO",
+        "Micromax",
+        "Black Shark",
+
+        // ⚙️ PC Components & Storage
+        "Gigabyte",
+        "EVGA",
+        "Seagate",
+        "Western Digital",
+        "Kingston",
+        "HyperX",
+        "Cooler Master",
+
+        // 🧠 Extra Laptop/Tech Brands
+        "Toshiba",
+        "Panasonic",
+        "Asus ROG",
+        "LG",
+        "Unspecified",
       ],
-      default: 'Unspecified'
+      default: "Unspecified",
     },
 
-    //  Images (max 4)
+    // Images (max 4)
     images: {
       type: [String],
       validate: [
         {
           validator: (arr) => arr.length <= 4,
-          message: 'You can upload at most 4 images per product.',
+          message: "You can upload at most 4 images per product.",
         },
       ],
       default: [],
@@ -183,16 +245,22 @@ const topBarMessageSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-const loanSchema = new mongoose.Schema({
-  itemImage: String,
-  description: { type: String, required: true },
-  itemValue: { type: Number, required: true },
-  loanAmount: { type: Number, required: true },
-  loanPeriod: { type: Number, required: true },
-  status: { type: String, enum: ["Pending", "Approved", "Visit shop", "Rejected"], default: "Pending" },
-  user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-}, { timestamps: true });
-
+const loanSchema = new mongoose.Schema(
+  {
+    itemImage: String,
+    description: { type: String, required: true },
+    itemValue: { type: Number, required: true },
+    loanAmount: { type: Number, required: true },
+    loanPeriod: { type: Number, required: true },
+    status: {
+      type: String,
+      enum: ["Pending", "Approved", "Visit shop", "Rejected"],
+      default: "Pending",
+    },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  },
+  { timestamps: true }
+);
 
 // MESSAGE SCHEMA
 const messageSchema = new mongoose.Schema({
@@ -205,12 +273,19 @@ const messageSchema = new mongoose.Schema({
 
 // ------------------ MODELS ------------------
 const User = mongoose.models.User || mongoose.model("User", userSchema);
-const Product = mongoose.models.Product || mongoose.model("Product", productSchema);
-const Leaderboard = mongoose.models.Leaderboard || mongoose.model("Leaderboard", leaderboardSchema);
-const Booking = mongoose.models.Booking || mongoose.model("Booking", bookingSchema);
-const TopBarMessage = mongoose.models.TopBarMessage || mongoose.model("TopBarMessage", topBarMessageSchema);
+const Product =
+  mongoose.models.Product || mongoose.model("Product", productSchema);
+const Leaderboard =
+  mongoose.models.Leaderboard ||
+  mongoose.model("Leaderboard", leaderboardSchema);
+const Booking =
+  mongoose.models.Booking || mongoose.model("Booking", bookingSchema);
+const TopBarMessage =
+  mongoose.models.TopBarMessage ||
+  mongoose.model("TopBarMessage", topBarMessageSchema);
 const Loan = mongoose.models.Loan || mongoose.model("Loan", loanSchema);
-const Message = mongoose.models.Message || mongoose.model("Message", messageSchema);
+const Message =
+  mongoose.models.Message || mongoose.model("Message", messageSchema);
 
 // ------------------ EXPORT ------------------
 module.exports = {
@@ -223,4 +298,3 @@ module.exports = {
   Loan,
   Message,
 };
-
