@@ -528,47 +528,39 @@ app.post("/signup", async (req, res) => {
   }
 });
 
-// ====== LOGIN ROUTE (Fixed) ======
+// ====== LOGIN ROUTE (Fixed Redirection) ======
 app.post("/login", async (req, res) => {
   try {
     const { email, password, remember } = req.body;
     const sanitizedEmail = email?.toLowerCase().trim();
 
-    // Validate input
     if (!sanitizedEmail || !password) {
       return handleLoginError(req, res, "Email and password are required.");
     }
 
-    // Find user
     const user = await User.findOne({ email: sanitizedEmail });
     if (!user) return handleLoginError(req, res, "Invalid email or password.");
 
-    // Check password
     const isMatch = await bcrypt.compare(password, user.password || "");
     if (!isMatch) return handleLoginError(req, res, "Invalid email or password.");
 
     const role = (user.role || "").toLowerCase();
 
-    // Block inactive non-admins
     if (role !== "admin" && !user.active) {
       return handleLoginError(req, res, "Your account is inactive or suspended. Contact support.");
     }
 
-    // Ensure phone field is safe for Mongoose
     if (user.phone === undefined || user.phone === null) user.phone = undefined;
 
-    // Regenerate session
     req.session.regenerate(async (err) => {
       if (err) return handleLoginError(req, res, "Login session failed. Try again.");
 
-      // Save user in session
       req.session.user = {
         id: user._id.toString(),
         name: user.name,
         role,
       };
       req.session.lastActivity = Date.now();
-      req.session.justLoggedIn = true; // One-time redirect handled in middleware
 
       // Handle Remember Me
       try {
@@ -577,23 +569,14 @@ app.post("/login", async (req, res) => {
         console.warn("⚠️ Remember Me failed:", rememberErr.message);
       }
 
-      // Save session and redirect
       req.session.save((saveErr) => {
         if (saveErr) return handleLoginError(req, res, "Session save failed. Try again.");
-        console.log(" User logged in:", user.email, "| Role:", role);
 
-        // JSON response (API)
-        if (req.headers.accept?.includes("application/json")) {
-          return res.json({
-            success: true,
-            message: "Login successful",
-            role,
-            redirect: role === "admin" ? "/admin" : "/user",
-          });
-        }
+        console.log("✅ User logged in:", user.email, "| Role:", role);
 
-        // Redirect handled by middleware using justLoggedIn flag
-        res.redirect("/"); // middleware will redirect to /admin or /user automatically
+        // Redirect based on role
+        if (role === "admin") return res.redirect("/admin");
+        return res.redirect("/user");
       });
     });
   } catch (err) {
@@ -601,6 +584,7 @@ app.post("/login", async (req, res) => {
     return handleLoginError(req, res, "Login failed. Please try again.");
   }
 });
+
 
 // ====== RESET PASSWORD ROUTE ======
 app.post("/reset-password", async (req, res) => {
