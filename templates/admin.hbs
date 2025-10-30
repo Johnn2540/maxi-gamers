@@ -7,7 +7,6 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
 
-
   <style>
     body { min-height: 100vh; display: flex; background-color: #f8f9fa; }
     .sidebar { width: 250px; background: #212529; color: #fff; transition: all 0.3s; }
@@ -26,77 +25,70 @@
       .content { margin-left: 0; }
     }
     
-@media (max-width: 768px) {
-  /* Sidebar hidden by default */
-  .sidebar { 
-    width: 250px; 
-    position: fixed; 
-    left: 0; 
-    top: 0; 
-    height: 100%; 
-    z-index: 1000; 
-    transform: translateX(-100%); 
-    transition: transform 0.3s ease-in-out; 
-    background: #212529;
-  }
+    @media (max-width: 768px) {
+      .sidebar { 
+        width: 250px; 
+        position: fixed; 
+        left: 0; 
+        top: 0; 
+        height: 100%; 
+        z-index: 1000; 
+        transform: translateX(-100%); 
+        transition: transform 0.3s ease-in-out; 
+        background: #212529;
+      }
 
-  /* Sidebar shown when toggled */
-  .sidebar.show { 
-    transform: translateX(0); 
-  }
+      .sidebar.show { 
+        transform: translateX(0); 
+      }
 
-  /* Show nav link text when sidebar is open */
-  .sidebar .nav-link span {
-    display: none; /* hide text by default */
-  }
-  .sidebar.show .nav-link span {
-    display: inline; /* show text when sidebar slides in */
-    margin-left: 10px; /* spacing from icon */
-    color: #ddd; /* ensure text color is visible */
-  }
+      .sidebar .nav-link span {
+        display: none;
+      }
+      .sidebar.show .nav-link span {
+        display: inline;
+        margin-left: 10px;
+        color: #ddd;
+      }
 
-  /* Content adjustments */
-  .content { 
-    width: 100%; 
-    margin-left: 0 !important; 
-    transition: margin-left 0.3s ease;
-  }
+      .content { 
+        width: 100%; 
+        margin-left: 0 !important; 
+        transition: margin-left 0.3s ease;
+      }
 
-  /* Hamburger menu button */
-  .menu-toggle { 
-    display: block !important; 
-    position: fixed;
-    top: 15px;
-    left: 15px;
-    z-index: 1100;
-    background: #0d6efd;
-    color: #fff;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-  }
-}
+      .menu-toggle { 
+        display: block !important; 
+        position: fixed;
+        top: 15px;
+        left: 15px;
+        z-index: 1100;
+        background: #0d6efd;
+        color: #fff;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+    }
 
-/* Overlay for mobile menu */
-.overlay {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.5);
-  z-index: 900;
-  transition: opacity 0.3s ease;
-}
+    /* Overlay for mobile menu */
+    .overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 900;
+      transition: opacity 0.3s ease;
+    }
 
-.overlay.show {
-  display: block;
-  opacity: 1;
-}
-
-
+    .overlay.show {
+      display: block;
+      opacity: 1;
+    }
     
     /* Leaderboard glow styles */
     .leaderboard-table tbody tr { transition: all 0.3s ease; }
@@ -140,17 +132,17 @@
       .table td, .table th { padding: 0.5rem; }
     }
     .new-booking {
-  background-color: #d4edda !important;
-  transition: background-color 1s ease-out;
-}
-.updated {
-  background-color: #fff3cd !important;
-  transition: background-color 1s ease-out;
-}
-.fade-out {
-  opacity: 0;
-  transition: opacity 0.5s ease-out;
-}
+      background-color: #d4edda !important;
+      transition: background-color 1s ease-out;
+    }
+    .updated {
+      background-color: #fff3cd !important;
+      transition: background-color 1s ease-out;
+    }
+    .fade-out {
+      opacity: 0;
+      transition: opacity 0.5s ease-out;
+    }
 
   </style>
 </head>
@@ -161,401 +153,325 @@
     <i class="bi bi-list"></i>
   </button>
 
-<!-- Sidebar -->
-<div class="sidebar d-flex flex-column p-3" id="sidebar">
-  <h4 class="text-white mb-4">⚙️ Admin Panel</h4>
-  <ul class="nav nav-pills flex-column mb-auto">
-    <li><a href="#users" class="nav-link active" data-bs-toggle="tab"><i class="bi bi-people"></i> <span>Users</span></a></li>
-    <li><a href="#products" class="nav-link" data-bs-toggle="tab"><i class="bi bi-box-seam"></i> <span>Products</span></a></li>
-    <li><a href="#loans" class="nav-link" data-bs-toggle="tab"><i class="bi bi-cash-stack"></i> <span>Loans</span></a></li>
-    <li><a href="#content" class="nav-link" data-bs-toggle="tab"><i class="bi bi-layout-text-sidebar"></i> <span>Banner-Content</span></a></li>
-    <li><a href="#leaderboard" class="nav-link" data-bs-toggle="tab"><i class="bi bi-trophy"></i> <span>Leaderboard</span></a></li>
-    <li><a href="#bookings" class="nav-link" data-bs-toggle="tab"><i class="bi bi-calendar-check"></i> <span>Bookings</span></a></li>
-    <li><a href="#messages-tab" class="nav-link" data-bs-toggle="tab"><i class="bi bi-chat-dots"></i> <span>Messages</span></a></li>
-  </ul>
-  <hr />
-  <!-- Logout -->
-  <a href="/logout" class="btn btn-sm btn-danger w-100">
-    <i class="bi bi-box-arrow-right"></i> <span>Logout</span>
-  </a>
-</div>
+  <!-- Overlay for Mobile -->
+  <div class="overlay" id="overlay"></div>
 
+  <!-- Sidebar -->
+  <div class="sidebar d-flex flex-column p-3" id="sidebar">
+    <h4 class="text-white mb-4">⚙️ Admin Panel</h4>
+    <ul class="nav nav-pills flex-column mb-auto">
+      <li><a href="#users" class="nav-link active" data-bs-toggle="tab"><i class="bi bi-people"></i> <span>Users</span></a></li>
+      <li><a href="#products" class="nav-link" data-bs-toggle="tab"><i class="bi bi-box-seam"></i> <span>Products</span></a></li>
+      <li><a href="#loans" class="nav-link" data-bs-toggle="tab"><i class="bi bi-cash-stack"></i> <span>Loans</span></a></li>
+      <li><a href="#content" class="nav-link" data-bs-toggle="tab"><i class="bi bi-layout-text-sidebar"></i> <span>Banner-Content</span></a></li>
+      <li><a href="#leaderboard" class="nav-link" data-bs-toggle="tab"><i class="bi bi-trophy"></i> <span>Leaderboard</span></a></li>
+      <li><a href="#bookings" class="nav-link" data-bs-toggle="tab"><i class="bi bi-calendar-check"></i> <span>Bookings</span></a></li>
+      <li><a href="#messages-tab" class="nav-link" data-bs-toggle="tab"><i class="bi bi-chat-dots"></i> <span>Messages</span></a></li>
+    </ul>
+    <hr />
+    <!-- Logout -->
+    <a href="/logout" class="btn btn-sm btn-danger w-100">
+      <i class="bi bi-box-arrow-right"></i> <span>Logout</span>
+    </a>
+  </div>
 
   <!-- Main Content -->
   <div class="content" id="mainContent">
     <div class="tab-content">
 
-<!-- USERS TAB -->
-<div class="tab-pane fade show active" id="users">
-  <h2 class="mb-4">👥 Manage Users</h2>
+      <!-- USERS TAB -->
+      <div class="tab-pane fade show active" id="users">
+        <h2 class="mb-4">👥 Manage Users</h2>
 
-  <!-- FILTERS & SEARCH BAR -->
-  <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
-    <div class="d-flex flex-wrap align-items-center gap-2">
-      <input
-        type="text"
-        id="userSearch"
-        class="form-control"
-        placeholder="🔍 Search by name or email"
-        style="max-width: 250px;"
-      />
+        <!-- FILTERS & SEARCH BAR -->
+        <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+          <div class="d-flex flex-wrap align-items-center gap-2">
+            <input
+              type="text"
+              id="userSearch"
+              class="form-control"
+              placeholder="🔍 Search by name or email"
+              style="max-width: 250px;"
+            />
 
-      <select id="roleFilter" class="form-select" style="max-width: 180px;">
-        <option value="">All Roles</option>
-        <option value="admin">Admin</option>
-        <option value="user">User</option>
-      </select>
-
-      <select id="statusFilter" class="form-select" style="max-width: 180px;">
-        <option value="">All Status</option>
-        <option value="active">Active</option>
-        <option value="suspended">Suspended</option>
-      </select>
-
-      <button id="clearFilters" class="btn btn-outline-secondary">
-        <i class="bi bi-x-circle"></i> Clear Filters
-      </button>
-    </div>
-
-    <!-- USER COUNT DISPLAY -->
-    <div>
-      <span id="userCount" class="badge bg-primary fs-6">Showing 0 users</span>
-    </div>
-  </div>
-
-  <!-- USERS TABLE -->
-  <div class="table-responsive">
-    <table class="table table-striped table-hover align-middle">
-      <thead class="table-dark">
-        <tr>
-          <th>ID</th>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Role</th>
-          <th>Status</th>
-          <th>Created</th>
-          <th class="text-end">Actions</th>
-        </tr>
-      </thead>
-      <tbody id="users-table-body">
-        <tr>
-          <td colspan="7" class="text-center">Loading users...</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-
-<!-- PRODUCTS TAB -->
-<div class="tab-pane fade" id="products">
-  <h2 class="mb-4">📦 Manage Products</h2>
-
-  <!-- Add New Product -->
-  <div class="card mb-4 shadow-sm border-0">
-    <div class="card-header bg-primary text-white">
-      <h5 class="mb-0">Add New Product</h5>
-    </div>
-    <div class="card-body">
-      <form id="addProductForm" action="/admin/products" method="POST" enctype="multipart/form-data">
-        <div class="row g-3">
-          
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Product Title</label>
-            <input type="text" name="title" class="form-control" placeholder="Product Title" required>
-          </div>
-
-          <div class="col-md-2">
-            <label class="form-label fw-semibold">Market Price</label>
-            <input type="number" name="marketPrice" class="form-control" placeholder="Market Price" required>
-          </div>
-
-          <div class="col-md-2">
-            <label class="form-label fw-semibold">Sale Price</label>
-            <input type="number" name="salePrice" class="form-control" placeholder="Sale Price" required>
-          </div>
-
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Description</label>
-            <input type="text" name="description" class="form-control" placeholder="Short Description" required>
-          </div>
-
-          <!-- Category, Condition, Brand Selection -->
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Category</label>
-            <select name="category" class="form-select" required>
-              <option value="">Select Category</option>
-              <option>Consoles</option>
-              <option>Games</option>
-              <option>Accessories</option>
-              <option>PC Parts</option>
-              <option>Controllers</option>
-              <option>Headsets</option>
-              <option>Monitors</option>
-              <option>Cables</option>
-              <option>Storage</option>
-              <option>Keyboards</option>
-              <option>Mice</option>
-              <option>Speakers</option>
+            <select id="roleFilter" class="form-select" style="max-width: 180px;">
+              <option value="">All Roles</option>
+              <option value="admin">Admin</option>
+              <option value="user">User</option>
             </select>
-          </div>
 
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Condition</label>
-            <select name="condition" class="form-select" required>
-              <option value="">Select Condition</option>
-              <option>New</option>
-              <option>Used</option>
-              <option>Refurbished</option>
-              <option>Like New</option>
-              <option>Open Box</option>
+            <select id="statusFilter" class="form-select" style="max-width: 180px;">
+              <option value="">All Status</option>
+              <option value="active">Active</option>
+              <option value="suspended">Suspended</option>
             </select>
-          </div>
 
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Brand</label>
-            <select name="brand" class="form-select" required>
-              <option value="">Select Brand</option>
-              <option>Sony</option>
-              <option>Microsoft</option>
-              <option>Nintendo</option>
-              <option>Razer</option>
-              <option>Logitech</option>
-              <option>Corsair</option>
-              <option>HP</option>
-              <option>Dell</option>
-              <option>Asus</option>
-              <option>Acer</option>
-              <option>Lenovo</option>
-              <option>MSI</option>
-              <option>Samsung</option>
-              <option>LG</option>
-              <option>SteelSeries</option>
-              <option>Astro</option>
-              <option>Alienware</option>
-              <option>Apple</option>
-              <option>Huawei</option>
-              <option>Xiaomi</option>
-              <option>Oppo</option>
-              <option>Vivo</option>
-              <option>OnePlus</option>
-              <option>Tecno</option>
-              <option>Infinix</option>
-              <option>Realme</option>
-              <option>Nokia</option>
-              <option>Gigabyte</option>
-              <option>EVGA</option>
-              <option>Seagate</option>
-              <option>Western Digital</option>
-              <option>Kingston</option>
-              <option>HyperX</option>
-              <option>Cooler Master</option>
-              <option>Google</option>
-              <option>Nothing</option>
-              <option>Honor</option>
-              <option>Toshiba</option>
-              <option>Panasonic</option>
-              <option>iQOO</option>
-              <option>Sony Xperia</option>
-              <option>Micromax</option>
-              <option>Asus ROG</option>
-              <option>Black Shark</option>
-            </select>
-          </div>
-
-          <!-- Multiple Image Upload -->
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Product Images (Up to 4)</label>
-            <input 
-              type="file" 
-              name="images" 
-              id="productImages" 
-              class="form-control" 
-              accept="image/*" 
-              multiple 
-              required
-            >
-            <small class="text-muted d-block mt-1">⭐ The first image will be used as the main display image.</small>
-
-            <!-- Image preview -->
-            <div id="imagePreviewContainer" class="d-flex flex-wrap gap-2 mt-3"></div>
-          </div>
-
-          <div class="col-md-2 d-flex align-items-center justify-content-center">
-            <div class="form-check mt-3">
-              <input class="form-check-input" type="checkbox" name="onSale" id="onSaleCheck" />
-              <label class="form-check-label fw-semibold" for="onSaleCheck">On Sale</label>
-            </div>
-          </div>
-
-          <div class="col-md-2">
-            <button type="submit" class="btn btn-success mt-3 w-100">
-              <i class="bi bi-check2-circle"></i> Add Product
+            <button id="clearFilters" class="btn btn-outline-secondary">
+              <i class="bi bi-x-circle"></i> Clear Filters
             </button>
           </div>
+
+          <!-- USER COUNT DISPLAY -->
+          <div>
+            <span id="userCount" class="badge bg-primary fs-6">Showing 0 users</span>
+          </div>
         </div>
-      </form>
-    </div>
-  </div>
 
- <!-- Products Table -->
-<div class="table-responsive shadow-sm">
-  <table class="table table-striped table-hover align-middle" id="productsTable">
-    <thead class="table-dark">
-      <tr>
-        <th>ID</th>
-        <th>Title</th>
-        <th>Market Price</th>
-        <th>Sale Price</th>
-        <th>Description</th>
-        <th>Category</th>
-        <th>Condition</th>
-        <th>Brand</th>
-        <th>On Sale</th>
-        <th>Images</th>
-        <th class="text-end">Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td colspan="11" class="text-center py-4">Loading products...</td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-
-<!-- LOANS TAB -->
-<div class="tab-pane fade" id="loans">
-  <h2 class="mb-4">💰 Manage Loans</h2>
-
-  <!-- FILTERS & SEARCH BAR -->
-  <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
-    <div class="d-flex flex-wrap align-items-center gap-2">
-      <input
-        type="text"
-        id="loanSearch"
-        class="form-control"
-        placeholder="🔍 Search by description or user email"
-        style="max-width: 280px;"
-      />
-
-      <select id="statusFilterLoans" class="form-select" style="max-width: 180px;">
-        <option value="">All Status</option>
-        <option value="pending">Pending</option>
-        <option value="approved">Approved</option>
-        <option value="rejected">Rejected</option>
-      </select>
-
-      <button id="clearLoanFilters" class="btn btn-outline-secondary">
-        <i class="bi bi-x-circle"></i> Clear Filters
-      </button>
-    </div>
-
-    <!-- LOAN COUNT DISPLAY -->
-    <div>
-      <span id="loanCount" class="badge bg-primary fs-6">Showing 0 loans</span>
-    </div>
-  </div>
-
-  <!-- LOANS TABLE -->
-  <div class="table-responsive">
-    <table class="table table-striped table-hover align-middle">
-      <thead class="table-dark">
-        <tr>
-          <th>#</th>
-          <th>Image</th>
-          <th>Description</th>
-          <th>Item Value</th>
-          <th>Loan Requested</th>
-          <th>Period (Months)</th>
-          <th>Status</th>
-          <th class="text-end">Actions</th>
-        </tr>
-      </thead>
-      <tbody id="adminLoanTable">
-        <tr><td colspan="8" class="text-center">Loading loans...</td></tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<!-- Loan Image Modal -->
-<div class="modal fade" id="loanImageModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content bg-dark text-center">
-      <div class="modal-body">
-        <img id="loanModalImg" src="" class="img-fluid rounded shadow" alt="Loan Item">
+        <!-- USERS TABLE -->
+        <div class="table-responsive">
+          <table class="table table-striped table-hover align-middle">
+            <thead class="table-dark">
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="users-table-body">
+              <tr>
+                <td colspan="7" class="text-center">Loading users...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
-  </div>
-</div>
 
-<!-- LOANS TAB -->
-<div class="tab-pane fade" id="loans">
-  <h2 class="mb-4">💰 Manage Loans</h2>
+      <!-- PRODUCTS TAB -->
+      <div class="tab-pane fade" id="products">
+        <h2 class="mb-4">📦 Manage Products</h2>
 
-  <!-- FILTERS & SEARCH BAR -->
-  <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
-    <div class="d-flex flex-wrap align-items-center gap-2">
-      <input
-        type="text"
-        id="loanSearch"
-        class="form-control"
-        placeholder="🔍 Search by description or user email"
-        style="max-width: 280px;"
-      />
+        <!-- Add New Product -->
+        <div class="card mb-4 shadow-sm border-0">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Add New Product</h5>
+          </div>
+          <div class="card-body">
+            <form id="addProductForm" action="/admin/products" method="POST" enctype="multipart/form-data">
+              <div class="row g-3">
+                
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold">Product Title</label>
+                  <input type="text" name="title" class="form-control" placeholder="Product Title" required>
+                </div>
 
-      <select id="statusFilterLoans" class="form-select" style="max-width: 180px;">
-        <option value="">All Status</option>
-        <option value="pending">Pending</option>
-        <option value="approved">Approved</option>
-        <option value="rejected">Rejected</option>
-      </select>
+                <div class="col-md-2">
+                  <label class="form-label fw-semibold">Market Price</label>
+                  <input type="number" name="marketPrice" class="form-control" placeholder="Market Price" required>
+                </div>
 
-      <button id="clearLoanFilters" class="btn btn-outline-secondary">
-        <i class="bi bi-x-circle"></i> Clear Filters
-      </button>
-    </div>
+                <div class="col-md-2">
+                  <label class="form-label fw-semibold">Sale Price</label>
+                  <input type="number" name="salePrice" class="form-control" placeholder="Sale Price" required>
+                </div>
 
-    <!-- LOAN COUNT DISPLAY -->
-    <div>
-      <span id="loanCount" class="badge bg-primary fs-6">Showing 0 loans</span>
-    </div>
-  </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold">Description</label>
+                  <input type="text" name="description" class="form-control" placeholder="Short Description" required>
+                </div>
 
-  <!-- LOANS TABLE -->
-  <div class="table-responsive">
-    <table class="table table-striped table-hover align-middle">
-      <thead class="table-dark">
-        <tr>
-          <th>#</th>
-          <th>Image</th>
-          <th>Description</th>
-          <th>Item Value</th>
-          <th>Loan Requested</th>
-          <th>Period (Months)</th>
-          <th>Status</th>
-          <th class="text-end">Actions</th>
-        </tr>
-      </thead>
-      <tbody id="adminLoanTable">
-        <tr><td colspan="8" class="text-center">Loading loans...</td></tr>
-      </tbody>
-    </table>
-  </div>
-</div>
+                <!-- Category, Condition, Brand Selection -->
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold">Category</label>
+                  <select name="category" class="form-select" required>
+                    <option value="">Select Category</option>
+                    <option>Consoles</option>
+                    <option>Games</option>
+                    <option>Accessories</option>
+                    <option>PC Parts</option>
+                    <option>Controllers</option>
+                    <option>Headsets</option>
+                    <option>Monitors</option>
+                    <option>Cables</option>
+                    <option>Storage</option>
+                    <option>Keyboards</option>
+                    <option>Mice</option>
+                    <option>Speakers</option>
+                  </select>
+                </div>
 
-<!-- Loan Image Modal -->
-<div class="modal fade" id="loanImageModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content bg-dark text-center">
-      <div class="modal-body">
-        <img id="loanModalImg" src="" class="img-fluid rounded shadow" alt="Loan Item">
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold">Condition</label>
+                  <select name="condition" class="form-select" required>
+                    <option value="">Select Condition</option>
+                    <option>New</option>
+                    <option>Used</option>
+                    <option>Refurbished</option>
+                    <option>Like New</option>
+                    <option>Open Box</option>
+                  </select>
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold">Brand</label>
+                  <select name="brand" class="form-select" required>
+                    <option value="">Select Brand</option>
+                    <option>Sony</option>
+                    <option>Microsoft</option>
+                    <option>Nintendo</option>
+                    <option>Razer</option>
+                    <option>Logitech</option>
+                    <option>Corsair</option>
+                    <option>HP</option>
+                    <option>Dell</option>
+                    <option>Asus</option>
+                    <option>Acer</option>
+                    <option>Lenovo</option>
+                    <option>MSI</option>
+                    <option>Samsung</option>
+                    <option>LG</option>
+                    <option>SteelSeries</option>
+                    <option>Astro</option>
+                    <option>Alienware</option>
+                    <option>Apple</option>
+                    <option>Huawei</option>
+                    <option>Xiaomi</option>
+                    <option>Oppo</option>
+                    <option>Vivo</option>
+                    <option>OnePlus</option>
+                    <option>Tecno</option>
+                    <option>Infinix</option>
+                    <option>Realme</option>
+                    <option>Nokia</option>
+                    <option>Gigabyte</option>
+                    <option>EVGA</option>
+                    <option>Seagate</option>
+                    <option>Western Digital</option>
+                    <option>Kingston</option>
+                    <option>HyperX</option>
+                    <option>Cooler Master</option>
+                    <option>Google</option>
+                    <option>Nothing</option>
+                    <option>Honor</option>
+                    <option>Toshiba</option>
+                    <option>Panasonic</option>
+                    <option>iQOO</option>
+                    <option>Sony Xperia</option>
+                    <option>Micromax</option>
+                    <option>Asus ROG</option>
+                    <option>Black Shark</option>
+                  </select>
+                </div>
+
+                <!-- Multiple Image Upload -->
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">Product Images (Up to 4)</label>
+                  <input 
+                    type="file" 
+                    name="images" 
+                    id="productImages" 
+                    class="form-control" 
+                    accept="image/*" 
+                    multiple 
+                    required
+                  >
+                  <small class="text-muted d-block mt-1">⭐ The first image will be used as the main display image.</small>
+
+                  <!-- Image preview -->
+                  <div id="imagePreviewContainer" class="d-flex flex-wrap gap-2 mt-3"></div>
+                </div>
+
+                <div class="col-md-2 d-flex align-items-center justify-content-center">
+                  <div class="form-check mt-3">
+                    <input class="form-check-input" type="checkbox" name="onSale" id="onSaleCheck" />
+                    <label class="form-check-label fw-semibold" for="onSaleCheck">On Sale</label>
+                  </div>
+                </div>
+
+                <div class="col-md-2">
+                  <button type="submit" class="btn btn-success mt-3 w-100">
+                    <i class="bi bi-check2-circle"></i> Add Product
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Products Table -->
+        <div class="table-responsive shadow-sm">
+          <table class="table table-striped table-hover align-middle" id="productsTable">
+            <thead class="table-dark">
+              <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Market Price</th>
+                <th>Sale Price</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th>Condition</th>
+                <th>Brand</th>
+                <th>On Sale</th>
+                <th>Images</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="11" class="text-center py-4">Loading products...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
-  </div>
-</div>
 
+      <!-- LOANS TAB -->
+      <div class="tab-pane fade" id="loans">
+        <h2 class="mb-4">💰 Manage Loans</h2>
+
+        <!-- FILTERS & SEARCH BAR -->
+        <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+          <div class="d-flex flex-wrap align-items-center gap-2">
+            <input
+              type="text"
+              id="loanSearch"
+              class="form-control"
+              placeholder="🔍 Search by description or user email"
+              style="max-width: 280px;"
+            />
+
+            <select id="statusFilterLoans" class="form-select" style="max-width: 180px;">
+              <option value="">All Status</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+
+            <button id="clearLoanFilters" class="btn btn-outline-secondary">
+              <i class="bi bi-x-circle"></i> Clear Filters
+            </button>
+          </div>
+
+          <!-- LOAN COUNT DISPLAY -->
+          <div>
+            <span id="loanCount" class="badge bg-primary fs-6">Showing 0 loans</span>
+          </div>
+        </div>
+
+        <!-- LOANS TABLE -->
+        <div class="table-responsive">
+          <table class="table table-striped table-hover align-middle">
+            <thead class="table-dark">
+              <tr>
+                <th>#</th>
+                <th>Image</th>
+                <th>Description</th>
+                <th>Item Value</th>
+                <th>Loan Requested</th>
+                <th>Period (Months)</th>
+                <th>Status</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="adminLoanTable">
+              <tr><td colspan="8" class="text-center">Loading loans...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       <!-- BANNER-CONTENT TAB -->
       <div class="tab-pane fade" id="content">
@@ -642,56 +558,56 @@
         </div>
       </div>
 
-<!-- BOOKINGS TAB -->
-<div class="tab-pane fade" id="bookings">
-  <h2 class="mb-4">🎮 Manage Game Bookings</h2>
+      <!-- BOOKINGS TAB -->
+      <div class="tab-pane fade" id="bookings">
+        <h2 class="mb-4">🎮 Manage Game Bookings</h2>
 
-  <!-- Search & Filter Controls -->
-  <div class="d-flex flex-wrap gap-2 mb-3">
-    <input 
-      type="text" 
-      id="bookingSearch" 
-      class="form-control w-auto" 
-      placeholder="Search by user, game, or console..."
-    >
-    <select id="statusFilter" class="form-select w-auto">
-      <option value="">All Statuses</option>
-      <option value="Pending">Pending</option>
-      <option value="Confirmed">Confirmed</option>
-      <option value="Completed">Completed</option>
-      <option value="Cancelled">Cancelled</option>
-    </select>
-  </div>
+        <!-- Search & Filter Controls -->
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          <input 
+            type="text" 
+            id="bookingSearch" 
+            class="form-control w-auto" 
+            placeholder="Search by user, game, or console..."
+          >
+          <select id="bookingStatusFilter" class="form-select w-auto">
+            <option value="">All Statuses</option>
+            <option value="Pending">Pending</option>
+            <option value="Confirmed">Confirmed</option>
+            <option value="Completed">Completed</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+        </div>
 
-  <!-- Notification for Real-Time Updates -->
-  <div id="bookingNotification" class="alert alert-info d-none" role="alert">
-    🔔 New booking received! 
-    <button id="refreshBookings" class="btn btn-sm btn-primary ms-2">Refresh</button>
-  </div>
+        <!-- Notification for Real-Time Updates -->
+        <div id="bookingNotification" class="alert alert-info d-none" role="alert">
+          🔔 New booking received! 
+          <button id="refreshBookings" class="btn btn-sm btn-primary ms-2">Refresh</button>
+        </div>
 
-  <!-- Bookings Table -->
-  <div class="table-responsive">
-    <table class="table table-striped table-hover align-middle" id="bookingsTable">
-      <thead class="table-success">
-        <tr>
-          <th>ID</th>
-          <th>User</th>
-          <th>Game</th>
-          <th>Console</th>
-          <th>Date</th>
-          <th>Time Slot</th>
-          <th>Status</th>
-          <th class="text-end">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td colspan="8" class="text-center">Loading bookings...</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
+        <!-- Bookings Table -->
+        <div class="table-responsive">
+          <table class="table table-striped table-hover align-middle" id="bookingsTable">
+            <thead class="table-success">
+              <tr>
+                <th>ID</th>
+                <th>User</th>
+                <th>Game</th>
+                <th>Console</th>
+                <th>Date</th>
+                <th>Time Slot</th>
+                <th>Status</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="8" class="text-center">Loading bookings...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       <!-- MESSAGES TAB -->
       <div class="tab-pane fade" id="messages-tab">
@@ -720,342 +636,347 @@
     </div>
   </div>
 
-  
-<!-- ==================== -->
-<!-- ADD PRODUCT MODAL -->
-<!-- ==================== -->
-<div class="modal fade" id="addProductModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <form id="addProductForm" class="modal-content" enctype="multipart/form-data">
-      <div class="modal-header">
-        <h5 class="modal-title">Add New Product</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-
-      <div class="modal-body">
-        <!-- Title -->
-        <div class="mb-3">
-          <label class="form-label fw-bold">Title</label>
-          <input type="text" name="title" id="addTitle" class="form-control" placeholder="Enter product title" required />
-        </div>
-
-        <!-- Market Price -->
-        <div class="mb-3">
-          <label class="form-label fw-bold">Market Price</label>
-          <input
-            type="number"
-            name="marketPrice"
-            id="addMarket"
-            class="form-control"
-            placeholder="Enter market price"
-            min="0"
-            step="0.01"
-            required
-          />
-        </div>
-
-        <!-- Sale Price -->
-        <div class="mb-3">
-          <label class="form-label fw-bold">Sale Price</label>
-          <input
-            type="number"
-            name="salePrice"
-            id="addSale"
-            class="form-control"
-            placeholder="Enter sale price"
-            min="0"
-            step="0.01"
-            required
-          />
-        </div>
-
-        <!-- Description -->
-        <div class="mb-3">
-          <label class="form-label fw-bold">Description</label>
-          <textarea
-            name="description"
-            id="addDescription"
-            class="form-control"
-            rows="2"
-            placeholder="Enter product description"
-            required
-          ></textarea>
-        </div>
-
-        <!-- Category -->
-        <div class="mb-3">
-          <label class="form-label fw-bold">Category</label>
-          <select name="category" id="addCategory" class="form-select" required>
-            <option value="">Select Category</option>
-            <option>Consoles</option>
-            <option>Games</option>
-            <option>Accessories</option>
-            <option>PC Parts</option>
-            <option>Controllers</option>
-            <option>Headsets</option>
-            <option>Monitors</option>
-            <option>Cables</option>
-            <option>Storage</option>
-            <option>Keyboards</option>
-            <option>Mice</option>
-            <option>Speakers</option>
-          </select>
-        </div>
-
-        <!-- Condition -->
-        <div class="mb-3">
-          <label class="form-label fw-bold">Condition</label>
-          <select name="condition" id="addCondition" class="form-select" required>
-            <option value="">Select Condition</option>
-            <option>New</option>
-            <option>Used</option>
-            <option>Refurbished</option>
-            <option>Like New</option>
-            <option>Open Box</option>
-          </select>
-        </div>
-
-        <!-- Brand -->
-        <div class="mb-3">
-          <label class="form-label fw-bold">Brand</label>
-          <select name="brand" id="addBrand" class="form-select" required>
-            <option value="">Select Brand</option>
-            <option>Sony</option>
-            <option>Microsoft</option>
-            <option>Nintendo</option>
-            <option>Razer</option>
-            <option>Logitech</option>
-            <option>Corsair</option>
-            <option>HP</option>
-            <option>Dell</option>
-            <option>Asus</option>
-            <option>Acer</option>
-            <option>Lenovo</option>
-            <option>MSI</option>
-            <option>Samsung</option>
-            <option>LG</option>
-            <option>SteelSeries</option>
-            <option>Astro</option>
-            <option>Alienware</option>
-            <option>Apple</option>
-            <option>Huawei</option>
-            <option>Xiaomi</option>
-            <option>Oppo</option>
-            <option>Vivo</option>
-            <option>OnePlus</option>
-            <option>Tecno</option>
-            <option>Infinix</option>
-            <option>Realme</option>
-            <option>Nokia</option>
-            <option>Gigabyte</option>
-            <option>EVGA</option>
-            <option>Seagate</option>
-            <option>Western Digital</option>
-            <option>Kingston</option>
-            <option>HyperX</option>
-            <option>Cooler Master</option>
-            <option>Google</option>
-            <option>Nothing</option>
-            <option>Honor</option>
-            <option>Toshiba</option>
-            <option>Panasonic</option>
-            <option>iQOO</option>
-            <option>Sony Xperia</option>
-            <option>Micromax</option>
-            <option>Asus ROG</option>
-            <option>Black Shark</option>
-          </select>
-        </div>
-
-        <!-- Upload Images -->
-        <div class="mb-3">
-          <label class="form-label fw-bold">Upload Images (Max 4)</label>
-          <input
-            type="file"
-            name="images"
-            id="addImages"
-            class="form-control"
-            accept="image/*"
-            multiple
-            required
-          />
-          <div id="addImagePreviewContainer" class="d-flex flex-wrap gap-2 mt-2"></div>
-        </div>
-
-        <!-- On Sale -->
-        <div class="form-check">
-          <input type="checkbox" name="onSale" id="addOnSale" class="form-check-input" />
-          <label class="form-check-label" for="addOnSale">On Sale</label>
+  <!-- Loan Image Modal -->
+  <div class="modal fade" id="loanImageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content bg-dark text-center">
+        <div class="modal-body">
+          <img id="loanModalImg" src="" class="img-fluid rounded shadow" alt="Loan Item">
         </div>
       </div>
-
-      <div class="modal-footer">
-        <button type="submit" class="btn btn-primary">➕ Add Product</button>
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-      </div>
-    </form>
+    </div>
   </div>
-</div>
 
-<!-- ==================== -->
-<!-- EDIT PRODUCT MODAL -->
-<!-- ==================== -->
-<div class="modal fade" id="editProductModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <form id="editProductForm" class="modal-content" enctype="multipart/form-data">
-      <div class="modal-header">
-        <h5 class="modal-title">Edit Product</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-
-      <div class="modal-body">
-        <input type="hidden" name="id" id="editProductId" />
-
-        <!-- Title -->
-        <div class="mb-3">
-          <label class="form-label fw-bold">Title</label>
-          <input type="text" name="title" id="editTitle" class="form-control" required />
+  <!-- ADD PRODUCT MODAL -->
+  <div class="modal fade" id="addProductModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <form id="addProductForm" class="modal-content" enctype="multipart/form-data">
+        <div class="modal-header">
+          <h5 class="modal-title">Add New Product</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
 
-        <!-- Market Price -->
-        <div class="mb-3">
-          <label class="form-label fw-bold">Market Price</label>
-          <input type="number" name="marketPrice" id="editMarket" class="form-control" min="0" step="0.01" required />
+        <div class="modal-body">
+          <!-- Title -->
+          <div class="mb-3">
+            <label class="form-label fw-bold">Title</label>
+            <input type="text" name="title" id="addTitle" class="form-control" placeholder="Enter product title" required />
+          </div>
+
+          <!-- Market Price -->
+          <div class="mb-3">
+            <label class="form-label fw-bold">Market Price</label>
+            <input
+              type="number"
+              name="marketPrice"
+              id="addMarket"
+              class="form-control"
+              placeholder="Enter market price"
+              min="0"
+              step="0.01"
+              required
+            />
+          </div>
+
+          <!-- Sale Price -->
+          <div class="mb-3">
+            <label class="form-label fw-bold">Sale Price</label>
+            <input
+              type="number"
+              name="salePrice"
+              id="addSale"
+              class="form-control"
+              placeholder="Enter sale price"
+              min="0"
+              step="0.01"
+              required
+            />
+          </div>
+
+          <!-- Description -->
+          <div class="mb-3">
+            <label class="form-label fw-bold">Description</label>
+            <textarea
+              name="description"
+              id="addDescription"
+              class="form-control"
+              rows="2"
+              placeholder="Enter product description"
+              required
+            ></textarea>
+          </div>
+
+          <!-- Category -->
+          <div class="mb-3">
+            <label class="form-label fw-bold">Category</label>
+            <select name="category" id="addCategory" class="form-select" required>
+              <option value="">Select Category</option>
+              <option>Consoles</option>
+              <option>Games</option>
+              <option>Accessories</option>
+              <option>PC Parts</option>
+              <option>Controllers</option>
+              <option>Headsets</option>
+              <option>Monitors</option>
+              <option>Cables</option>
+              <option>Storage</option>
+              <option>Keyboards</option>
+              <option>Mice</option>
+              <option>Speakers</option>
+            </select>
+          </div>
+
+          <!-- Condition -->
+          <div class="mb-3">
+            <label class="form-label fw-bold">Condition</label>
+            <select name="condition" id="addCondition" class="form-select" required>
+              <option value="">Select Condition</option>
+              <option>New</option>
+              <option>Used</option>
+              <option>Refurbished</option>
+              <option>Like New</option>
+              <option>Open Box</option>
+            </select>
+          </div>
+
+          <!-- Brand -->
+          <div class="mb-3">
+            <label class="form-label fw-bold">Brand</label>
+            <select name="brand" id="addBrand" class="form-select" required>
+              <option value="">Select Brand</option>
+              <option>Sony</option>
+              <option>Microsoft</option>
+              <option>Nintendo</option>
+              <option>Razer</option>
+              <option>Logitech</option>
+              <option>Corsair</option>
+              <option>HP</option>
+              <option>Dell</option>
+              <option>Asus</option>
+              <option>Acer</option>
+              <option>Lenovo</option>
+              <option>MSI</option>
+              <option>Samsung</option>
+              <option>LG</option>
+              <option>SteelSeries</option>
+              <option>Astro</option>
+              <option>Alienware</option>
+              <option>Apple</option>
+              <option>Huawei</option>
+              <option>Xiaomi</option>
+              <option>Oppo</option>
+              <option>Vivo</option>
+              <option>OnePlus</option>
+              <option>Tecno</option>
+              <option>Infinix</option>
+              <option>Realme</option>
+              <option>Nokia</option>
+              <option>Gigabyte</option>
+              <option>EVGA</option>
+              <option>Seagate</option>
+              <option>Western Digital</option>
+              <option>Kingston</option>
+              <option>HyperX</option>
+              <option>Cooler Master</option>
+              <option>Google</option>
+              <option>Nothing</option>
+              <option>Honor</option>
+              <option>Toshiba</option>
+              <option>Panasonic</option>
+              <option>iQOO</option>
+              <option>Sony Xperia</option>
+              <option>Micromax</option>
+              <option>Asus ROG</option>
+              <option>Black Shark</option>
+            </select>
+          </div>
+
+          <!-- Upload Images -->
+          <div class="mb-3">
+            <label class="form-label fw-bold">Upload Images (Max 4)</label>
+            <input
+              type="file"
+              name="images"
+              id="addImages"
+              class="form-control"
+              accept="image/*"
+              multiple
+              required
+            />
+            <div id="addImagePreviewContainer" class="d-flex flex-wrap gap-2 mt-2"></div>
+          </div>
+
+          <!-- On Sale -->
+          <div class="form-check">
+            <input type="checkbox" name="onSale" id="addOnSale" class="form-check-input" />
+            <label class="form-check-label" for="addOnSale">On Sale</label>
+          </div>
         </div>
 
-        <!-- Sale Price -->
-        <div class="mb-3">
-          <label class="form-label fw-bold">Sale Price</label>
-          <input type="number" name="salePrice" id="editSale" class="form-control" min="0" step="0.01" required />
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">➕ Add Product</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
         </div>
-
-        <!-- Description -->
-        <div class="mb-3">
-          <label class="form-label fw-bold">Description</label>
-          <textarea name="description" id="editDescription" class="form-control" rows="2" required></textarea>
-        </div>
-
-        <!-- Category -->
-        <div class="mb-3">
-          <label class="form-label fw-bold">Category</label>
-          <select name="category" id="editCategory" class="form-select" required>
-            <option value="">Select Category</option>
-            <option>Consoles</option>
-            <option>Games</option>
-            <option>Accessories</option>
-            <option>PC Parts</option>
-            <option>Controllers</option>
-            <option>Headsets</option>
-            <option>Monitors</option>
-            <option>Cables</option>
-            <option>Storage</option>
-            <option>Keyboards</option>
-            <option>Mice</option>
-            <option>Speakers</option>
-          </select>
-        </div>
-
-        <!-- Condition -->
-        <div class="mb-3">
-          <label class="form-label fw-bold">Condition</label>
-          <select name="condition" id="editCondition" class="form-select" required>
-            <option value="">Select Condition</option>
-            <option>New</option>
-            <option>Used</option>
-            <option>Refurbished</option>
-            <option>Like New</option>
-            <option>Open Box</option>
-          </select>
-        </div>
-
-        <!-- Brand -->
-        <div class="mb-3">
-          <label class="form-label fw-bold">Brand</label>
-          <select name="brand" id="editBrand" class="form-select" required>
-            <option value="">Select Brand</option>
-            <option>Sony</option>
-            <option>Microsoft</option>
-            <option>Nintendo</option>
-            <option>Razer</option>
-            <option>Logitech</option>
-            <option>Corsair</option>
-            <option>HP</option>
-            <option>Dell</option>
-            <option>Asus</option>
-            <option>Acer</option>
-            <option>Lenovo</option>
-            <option>MSI</option>
-            <option>Samsung</option>
-            <option>LG</option>
-            <option>SteelSeries</option>
-            <option>Astro</option>
-            <option>Alienware</option>
-            <option>Apple</option>
-            <option>Huawei</option>
-            <option>Xiaomi</option>
-            <option>Oppo</option>
-            <option>Vivo</option>
-            <option>OnePlus</option>
-            <option>Tecno</option>
-            <option>Infinix</option>
-            <option>Realme</option>
-            <option>Nokia</option>
-            <option>Gigabyte</option>
-            <option>EVGA</option>
-            <option>Seagate</option>
-            <option>Western Digital</option>
-            <option>Kingston</option>
-            <option>HyperX</option>
-            <option>Cooler Master</option>
-            <option>Google</option>
-            <option>Nothing</option>
-            <option>Honor</option>
-            <option>Toshiba</option>
-            <option>Panasonic</option>
-            <option>iQOO</option>
-            <option>Sony Xperia</option>
-            <option>Micromax</option>
-            <option>Asus ROG</option>
-            <option>Black Shark</option>
-          </select>
-        </div>
-
-        <!-- Current Images -->
-        <div class="mb-3">
-          <label class="form-label fw-bold">Current Images</label>
-          <div id="currentImagesContainer" class="d-flex flex-wrap gap-2 mb-2 border p-2 rounded bg-light"></div>
-          <small class="text-muted">Keep or replace these images below.</small>
-        </div>
-
-        <!-- Replace Images -->
-        <div class="mb-3">
-          <label class="form-label fw-bold">Replace Images (Max 4)</label>
-          <input
-            type="file"
-            name="images"
-            id="editImages"
-            class="form-control"
-            accept="image/*"
-            multiple
-          />
-          <div id="editImagePreviewContainer" class="d-flex flex-wrap gap-2 mt-2"></div>
-        </div>
-
-        <!-- On Sale -->
-        <div class="form-check">
-          <input type="checkbox" name="onSale" id="editOnSale" class="form-check-input" />
-          <label class="form-check-label" for="editOnSale">On Sale</label>
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button type="submit" class="btn btn-success">💾 Save Changes</button>
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-      </div>
-    </form>
+      </form>
+    </div>
   </div>
-</div>
 
+  <!-- EDIT PRODUCT MODAL -->
+  <div class="modal fade" id="editProductModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <form id="editProductForm" class="modal-content" enctype="multipart/form-data">
+        <div class="modal-header">
+          <h5 class="modal-title">Edit Product</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <input type="hidden" name="id" id="editProductId" />
+
+          <!-- Title -->
+          <div class="mb-3">
+            <label class="form-label fw-bold">Title</label>
+            <input type="text" name="title" id="editTitle" class="form-control" required />
+          </div>
+
+          <!-- Market Price -->
+          <div class="mb-3">
+            <label class="form-label fw-bold">Market Price</label>
+            <input type="number" name="marketPrice" id="editMarket" class="form-control" min="0" step="0.01" required />
+          </div>
+
+          <!-- Sale Price -->
+          <div class="mb-3">
+            <label class="form-label fw-bold">Sale Price</label>
+            <input type="number" name="salePrice" id="editSale" class="form-control" min="0" step="0.01" required />
+          </div>
+
+          <!-- Description -->
+          <div class="mb-3">
+            <label class="form-label fw-bold">Description</label>
+            <textarea name="description" id="editDescription" class="form-control" rows="2" required></textarea>
+          </div>
+
+          <!-- Category -->
+          <div class="mb-3">
+            <label class="form-label fw-bold">Category</label>
+            <select name="category" id="editCategory" class="form-select" required>
+              <option value="">Select Category</option>
+              <option>Consoles</option>
+              <option>Games</option>
+              <option>Accessories</option>
+              <option>PC Parts</option>
+              <option>Controllers</option>
+              <option>Headsets</option>
+              <option>Monitors</option>
+              <option>Cables</option>
+              <option>Storage</option>
+              <option>Keyboards</option>
+              <option>Mice</option>
+              <option>Speakers</option>
+            </select>
+          </div>
+
+          <!-- Condition -->
+          <div class="mb-3">
+            <label class="form-label fw-bold">Condition</label>
+            <select name="condition" id="editCondition" class="form-select" required>
+              <option value="">Select Condition</option>
+              <option>New</option>
+              <option>Used</option>
+              <option>Refurbished</option>
+              <option>Like New</option>
+              <option>Open Box</option>
+            </select>
+          </div>
+
+          <!-- Brand -->
+          <div class="mb-3">
+            <label class="form-label fw-bold">Brand</label>
+            <select name="brand" id="editBrand" class="form-select" required>
+              <option value="">Select Brand</option>
+              <option>Sony</option>
+              <option>Microsoft</option>
+              <option>Nintendo</option>
+              <option>Razer</option>
+              <option>Logitech</option>
+              <option>Corsair</option>
+              <option>HP</option>
+              <option>Dell</option>
+              <option>Asus</option>
+              <option>Acer</option>
+              <option>Lenovo</option>
+              <option>MSI</option>
+              <option>Samsung</option>
+              <option>LG</option>
+              <option>SteelSeries</option>
+              <option>Astro</option>
+              <option>Alienware</option>
+              <option>Apple</option>
+              <option>Huawei</option>
+              <option>Xiaomi</option>
+              <option>Oppo</option>
+              <option>Vivo</option>
+              <option>OnePlus</option>
+              <option>Tecno</option>
+              <option>Infinix</option>
+              <option>Realme</option>
+              <option>Nokia</option>
+              <option>Gigabyte</option>
+              <option>EVGA</option>
+              <option>Seagate</option>
+              <option>Western Digital</option>
+              <option>Kingston</option>
+              <option>HyperX</option>
+              <option>Cooler Master</option>
+              <option>Google</option>
+              <option>Nothing</option>
+              <option>Honor</option>
+              <option>Toshiba</option>
+              <option>Panasonic</option>
+              <option>iQOO</option>
+              <option>Sony Xperia</option>
+              <option>Micromax</option>
+              <option>Asus ROG</option>
+              <option>Black Shark</option>
+            </select>
+          </div>
+
+          <!-- Current Images -->
+          <div class="mb-3">
+            <label class="form-label fw-bold">Current Images</label>
+            <div id="currentImagesContainer" class="d-flex flex-wrap gap-2 mb-2 border p-2 rounded bg-light"></div>
+            <small class="text-muted">Keep or replace these images below.</small>
+          </div>
+
+          <!-- Replace Images -->
+          <div class="mb-3">
+            <label class="form-label fw-bold">Replace Images (Max 4)</label>
+            <input
+              type="file"
+              name="images"
+              id="editImages"
+              class="form-control"
+              accept="image/*"
+              multiple
+            />
+            <div id="editImagePreviewContainer" class="d-flex flex-wrap gap-2 mt-2"></div>
+          </div>
+
+          <!-- On Sale -->
+          <div class="form-check">
+            <input type="checkbox" name="onSale" id="editOnSale" class="form-check-input" />
+            <label class="form-check-label" for="editOnSale">On Sale</label>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success">💾 Save Changes</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- Edit Leaderboard Modal -->
   <div class="modal fade" id="editLeaderboardModal" tabindex="-1" aria-hidden="true">
@@ -1130,670 +1051,654 @@
     const menuToggle = document.getElementById('menuToggle');
     const sidebar = document.getElementById('sidebar');
     const mainContent = document.getElementById('mainContent');
+    const overlay = document.getElementById('overlay');
     
     // Toggle sidebar on mobile
     menuToggle.addEventListener('click', () => {
       sidebar.classList.toggle('show');
+      overlay.classList.toggle('show');
     });
     
     // Close sidebar when clicking outside on mobile
-    document.addEventListener('click', (e) => {
-      if (window.innerWidth < 768 && 
-          !sidebar.contains(e.target) && 
-          !menuToggle.contains(e.target) &&
-          sidebar.classList.contains('show')) {
-        sidebar.classList.remove('show');
-      }
+    overlay.addEventListener('click', () => {
+      sidebar.classList.remove('show');
+      overlay.classList.remove('show');
     });
 
-// ===== USERS TAB =====
-const UsersManager = (() => {
-  const ADMIN_ID = 'current-admin-id';
-  const usersTableBody = document.getElementById('users-table-body');
-  const userCount = document.getElementById('userCount');
+    // ===== USERS TAB =====
+    const UsersManager = (() => {
+      const ADMIN_ID = 'current-admin-id';
+      const usersTableBody = document.getElementById('users-table-body');
+      const userCount = document.getElementById('userCount');
 
-  // Filter elements
-  const searchInput = document.getElementById('userSearch');
-  const roleFilter = document.getElementById('roleFilter');
-  const statusFilter = document.getElementById('statusFilter');
-  const clearFilters = document.getElementById('clearFilters');
+      // Filter elements
+      const searchInput = document.getElementById('userSearch');
+      const roleFilter = document.getElementById('roleFilter');
+      const statusFilter = document.getElementById('statusFilter');
+      const clearFilters = document.getElementById('clearFilters');
 
-  // Toast elements
-  const toastEl = document.getElementById('liveToast');
-  const toastTitle = document.getElementById('toast-title');
-  const toastMessage = document.getElementById('toast-message');
-  const toast = toastEl ? new bootstrap.Toast(toastEl) : null;
+      // Toast elements
+      const toastEl = document.getElementById('liveToast');
+      const toastTitle = document.getElementById('toast-title');
+      const toastMessage = document.getElementById('toast-message');
+      const toast = toastEl ? new bootstrap.Toast(toastEl) : null;
 
-  let allUsers = []; // all fetched users
+      let allUsers = []; // all fetched users
 
-  // === Notifications ===
-  function showNotification(title, message, type = 'success') {
-    if (!toastEl) return alert(`${title}: ${message}`);
-    toastTitle.textContent = title;
-    toastMessage.textContent = message;
-    toastEl.className = `toast align-items-center border-0 text-white ${
-      type === 'error' ? 'bg-danger' : 'bg-success'
-    }`;
-    toast.show();
-  }
+      // === Notifications ===
+      function showNotification(title, message, type = 'success') {
+        if (!toastEl) return alert(`${title}: ${message}`);
+        toastTitle.textContent = title;
+        toastMessage.textContent = message;
+        toastEl.className = `toast align-items-center border-0 text-white ${
+          type === 'error' ? 'bg-danger' : 'bg-success'
+        }`;
+        toast.show();
+      }
 
-  // === Date formatting ===
-  function formatDate(dateString) {
-    const options = { year: 'numeric', month: 'short', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
-  }
+      // === Date formatting ===
+      function formatDate(dateString) {
+        const options = { year: 'numeric', month: 'short', day: 'numeric' };
+        return new Date(dateString).toLocaleDateString(undefined, options);
+      }
 
-  // === Load users ===
-  async function loadUsers() {
-    try {
-      const res = await fetch('/admin/users/json');
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const users = await res.json();
+      // === Load users ===
+      async function loadUsers() {
+        try {
+          const res = await fetch('/admin/users/json');
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const users = await res.json();
 
-      allUsers = users;
-      if (!users.length) {
-        usersTableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4">No users found</td></tr>`;
-        updateUserCount(0, 0);
+          allUsers = users;
+          if (!users.length) {
+            usersTableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4">No users found</td></tr>`;
+            updateUserCount(0, 0);
+            return;
+          }
+
+          renderUsers(users);
+        } catch (err) {
+          console.error('Error loading users:', err);
+          usersTableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger">Error loading users</td></tr>`;
+          updateUserCount(0, 0);
+        }
+      }
+
+      // === Update count badge ===
+      function updateUserCount(visible, total) {
+        if (userCount)
+          userCount.textContent =
+            total && visible !== total
+              ? `Showing ${visible} of ${total} users`
+              : `Showing ${visible} user${visible !== 1 ? 's' : ''}`;
+      }
+
+      // === Render users ===
+      function renderUsers(users) {
+        updateUserCount(users.length, allUsers.length);
+
+        usersTableBody.innerHTML = users.length
+          ? users
+              .map(user => {
+                const role = user.role || 'user';
+                const active = user.active ?? true;
+                const createdAt = user.createdAt ? formatDate(user.createdAt) : 'N/A';
+
+                return `
+                <tr id="user-${user._id}">
+                  <td>${user._id.substring(user._id.length - 6)}</td>
+                  <td>${user.name}</td>
+                  <td>${user.email}</td>
+                  <td><span class="badge ${role === 'admin' ? 'bg-danger' : 'bg-primary'}">${role}</span></td>
+                  <td><span class="badge ${active ? 'bg-success' : 'bg-secondary'}">${active ? 'Active' : 'Suspended'}</span></td>
+                  <td>${createdAt}</td>
+                  <td class="text-end">
+                    <div class="dropdown">
+                      <button class="btn btn-sm btn-outline-dark dropdown-toggle" data-bs-toggle="dropdown">Actions</button>
+                      <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="/admin/users/edit/${user._id}">
+                          <i class="bi bi-pencil"></i> Edit</a></li>
+                        <li><button class="dropdown-item toggle-status-btn" data-id="${user._id}">
+                          <i class="bi ${active ? 'bi-pause' : 'bi-play'}"></i> ${active ? 'Suspend' : 'Activate'}
+                        </button></li>
+                        <li><button class="dropdown-item toggle-role-btn" data-id="${user._id}">
+                          <i class="bi ${role === 'admin' ? 'bi-person-dash' : 'bi-person-plus'}"></i> ${role === 'admin' ? 'Remove Admin' : 'Make Admin'}
+                        </button></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><button class="dropdown-item text-danger delete-user-btn" data-id="${user._id}">
+                          <i class="bi bi-trash"></i> Delete
+                        </button></li>
+                      </ul>
+                    </div>
+                  </td>
+                </tr>`;
+              })
+              .join('')
+          : `<tr><td colspan="7" class="text-center py-4 text-muted">No users found</td></tr>`;
+
+        attachEventListeners();
+      }
+
+      // === Event Listeners for buttons ===
+      function attachEventListeners() {
+        document.querySelectorAll('.toggle-status-btn').forEach(btn =>
+          btn.addEventListener('click', () => handleToggleStatus(btn.dataset.id))
+        );
+        document.querySelectorAll('.toggle-role-btn').forEach(btn =>
+          btn.addEventListener('click', () => handleToggleRole(btn.dataset.id))
+        );
+        document.querySelectorAll('.delete-user-btn').forEach(btn =>
+          btn.addEventListener('click', () => handleDeleteUser(btn.dataset.id))
+        );
+      }
+
+      // === Handle status toggle ===
+      async function handleToggleStatus(userId) {
+        if (userId === ADMIN_ID)
+          return showNotification('Error', 'Cannot change your own status', 'error');
+
+        try {
+          const res = await fetch(`/admin/users/toggle/${userId}`, { method: 'POST' });
+          const data = await res.json();
+          if (!data.success) throw new Error(data.message);
+
+          const row = document.querySelector(`#user-${userId}`);
+          const badge = row.querySelector('td:nth-child(5) .badge');
+          const btn = row.querySelector('.toggle-status-btn');
+
+          badge.className = `badge ${data.active ? 'bg-success' : 'bg-secondary'}`;
+          badge.textContent = data.active ? 'Active' : 'Suspended';
+          btn.innerHTML = `<i class="bi ${data.active ? 'bi-pause' : 'bi-play'}"></i> ${data.active ? 'Suspend' : 'Activate'}`;
+
+          showNotification('Success', `User ${data.active ? 'activated' : 'suspended'} successfully`);
+        } catch (err) {
+          console.error(err);
+          showNotification('Error', 'Failed to update user status', 'error');
+        }
+      }
+
+      // === Handle role toggle ===
+      async function handleToggleRole(userId) {
+        if (userId === ADMIN_ID)
+          return showNotification('Error', 'Cannot change your own role', 'error');
+
+        try {
+          const res = await fetch(`/admin/users/role/${userId}`, { method: 'POST' });
+          const data = await res.json();
+          if (!data.success) throw new Error(data.message);
+
+          const row = document.querySelector(`#user-${userId}`);
+          const badge = row.querySelector('td:nth-child(4) .badge');
+          const btn = row.querySelector('.toggle-role-btn');
+
+          badge.className = `badge ${data.role === 'admin' ? 'bg-danger' : 'bg-primary'}`;
+          badge.textContent = data.role;
+          btn.innerHTML = `<i class="bi ${data.role === 'admin' ? 'bi-person-dash' : 'bi-person-plus'}"></i> ${
+            data.role === 'admin' ? 'Remove Admin' : 'Make Admin'
+          }`;
+
+          showNotification('Success', `User role updated to ${data.role}`);
+        } catch (err) {
+          console.error(err);
+          showNotification('Error', 'Failed to update user role', 'error');
+        }
+      }
+
+      // === Handle delete user ===
+      async function handleDeleteUser(userId) {
+        if (userId === ADMIN_ID)
+          return showNotification('Error', 'Cannot delete your own account', 'error');
+        if (!confirm('Are you sure you want to delete this user?')) return;
+
+        try {
+          const res = await fetch(`/admin/users/delete/${userId}`, { method: 'POST' });
+          const data = await res.json();
+          if (!data.success) throw new Error(data.message);
+
+          document.querySelector(`#user-${userId}`)?.remove();
+          allUsers = allUsers.filter(u => u._id !== userId);
+          applyFilters(); // Refresh filtered list
+          showNotification('Success', 'User deleted successfully');
+        } catch (err) {
+          console.error(err);
+          showNotification('Error', 'Failed to delete user', 'error');
+        }
+      }
+
+      // === Search & Filter ===
+      function applyFilters() {
+        const search = searchInput?.value.toLowerCase() || '';
+        const role = roleFilter?.value || '';
+        const status = statusFilter?.value || '';
+
+        const filtered = allUsers.filter(u => {
+          const matchSearch =
+            u.name.toLowerCase().includes(search) || u.email.toLowerCase().includes(search);
+          const matchRole = role ? u.role === role : true;
+          const matchStatus = status
+            ? status === 'active'
+              ? u.active
+              : !u.active
+            : true;
+          return matchSearch && matchRole && matchStatus;
+        });
+
+        renderUsers(filtered);
+      }
+
+      // === Initialize filters ===
+      function initFilters() {
+        searchInput?.addEventListener('input', applyFilters);
+        roleFilter?.addEventListener('change', applyFilters);
+        statusFilter?.addEventListener('change', applyFilters);
+        clearFilters?.addEventListener('click', () => {
+          searchInput.value = '';
+          roleFilter.value = '';
+          statusFilter.value = '';
+          renderUsers(allUsers);
+        });
+      }
+
+      // === Public init ===
+      return {
+        init() {
+          loadUsers();
+          initFilters();
+        },
+      };
+    })();
+
+    // ================== PRODUCTS TAB ==================
+    const editProductModal = new bootstrap.Modal(document.getElementById('editProductModal'));
+    const productsTableBody = document.querySelector('#productsTable tbody');
+
+    // Toast container
+    const toastContainer = document.createElement('div');
+    toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+    document.body.appendChild(toastContainer);
+
+    // ----------------- Toast Helper -----------------
+    function showToast(message, type = 'success') {
+      const toast = document.createElement('div');
+      toast.className = `toast align-items-center text-bg-${type} border-0`;
+      toast.setAttribute('role', 'alert');
+      toast.setAttribute('aria-live', 'assertive');
+      toast.setAttribute('aria-atomic', 'true');
+      toast.innerHTML = `
+        <div class="d-flex">
+          <div class="toast-body">${message}</div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+      `;
+      toastContainer.appendChild(toast);
+      const bsToast = new bootstrap.Toast(toast, { delay: 2500 });
+      bsToast.show();
+      toast.addEventListener('hidden.bs.toast', () => toast.remove());
+    }
+
+    // ----------------- Load Products -----------------
+    async function loadProducts() {
+      try {
+        productsTableBody.innerHTML = `
+          <tr>
+            <td colspan="11" class="text-center">
+              <div class="spinner-border text-primary" role="status"></div>
+              <p class="mt-2 text-muted">Loading products...</p>
+            </td>
+          </tr>
+        `;
+
+        const res = await fetch('/admin/products/json');
+        const products = await res.json();
+
+        if (!products.length) {
+          productsTableBody.innerHTML = '<tr><td colspan="11" class="text-center">No products found</td></tr>';
+          return;
+        }
+
+        productsTableBody.innerHTML = products.map(p => {
+          const imagesHtml = p.images && p.images.length
+            ? p.images.map(img => `<img src="${img}" width="50" height="50" class="rounded me-1 border" alt="${p.title}">`).join('')
+            : '<img src="/images/placeholder.png" width="50" height="50" class="rounded border" alt="No Image">';
+
+          return `
+            <tr id="product-${p._id}">
+              <td>${p._id}</td>
+              <td>${p.title}</td>
+              <td><span class="text-decoration-line-through text-danger">${p.marketPrice}</span></td>
+              <td>${p.salePrice}</td>
+              <td>${p.description || '—'}</td>
+              <td>${p.category || 'Unspecified'}</td>
+              <td>${p.condition || 'Unspecified'}</td>
+              <td>${p.brand || 'Unspecified'}</td>
+              <td>${p.onSale ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-secondary">No</span>'}</td>
+              <td>${imagesHtml}</td>
+              <td class="text-end">
+                <button class="btn btn-sm btn-primary edit-product-btn me-1" data-id="${p._id}">
+                  <i class="bi bi-pencil"></i> Edit
+                </button>
+                <button class="btn btn-sm btn-danger delete-product-btn" data-id="${p._id}">
+                  <i class="bi bi-trash"></i> Delete
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        attachProductEventListeners(products);
+      } catch (err) {
+        console.error('Error loading products:', err);
+        productsTableBody.innerHTML = '<tr><td colspan="11" class="text-center text-danger">Error loading products</td></tr>';
+      }
+    }
+
+    // ----------------- Attach Edit/Delete Buttons -----------------
+    function attachProductEventListeners(products) {
+      // Edit buttons
+      document.querySelectorAll('.edit-product-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const product = products.find(p => p._id === btn.dataset.id);
+          if (!product) return;
+
+          // Basic info
+          document.getElementById('editProductId').value = product._id;
+          document.getElementById('editTitle').value = product.title;
+          document.getElementById('editMarket').value = product.marketPrice;
+          document.getElementById('editSale').value = product.salePrice;
+          document.getElementById('editDescription').value = product.description || '';
+          document.getElementById('editOnSale').checked = product.onSale;
+
+          // Category, Condition, Brand (safe defaults)
+          document.getElementById('editCategory').value = product.category || 'Unspecified';
+          document.getElementById('editCondition').value = product.condition || 'Unspecified';
+          document.getElementById('editBrand').value = product.brand || 'Unspecified';
+
+          // Current images
+          const currentImagesContainer = document.getElementById('currentImagesContainer');
+          currentImagesContainer.innerHTML = '';
+          if (product.images?.length) {
+            product.images.forEach(imgUrl => {
+              const imgEl = document.createElement('img');
+              imgEl.src = imgUrl;
+              imgEl.alt = product.title;
+              imgEl.className = 'img-thumbnail me-2 mb-2';
+              imgEl.style.width = '80px';
+              imgEl.style.height = '80px';
+              currentImagesContainer.appendChild(imgEl);
+            });
+          } else {
+            currentImagesContainer.innerHTML = '<small>No images available</small>';
+          }
+
+          // Reset image input
+          document.getElementById('editImagePreviewContainer').innerHTML = '';
+          document.getElementById('editImages').value = '';
+
+          editProductModal.show();
+        });
+      });
+
+      // Delete buttons
+      document.querySelectorAll('.delete-product-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Are you sure you want to delete this product?')) return;
+          try {
+            const res = await fetch(`/admin/products/delete/${btn.dataset.id}`, { method: 'POST' });
+            if (res.ok) {
+              showToast('🗑️ Product deleted successfully', 'danger');
+              loadProducts();
+            } else {
+              showToast('Failed to delete product', 'warning');
+            }
+          } catch (err) {
+            console.error('Error deleting product:', err);
+            showToast('Error deleting product', 'danger');
+          }
+        });
+      });
+    }
+
+    // ----------------- Add Product -----------------
+    document.getElementById('addProductForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+
+      if (formData.getAll('images').length > 4) {
+        showToast('You can upload up to 4 images only', 'warning');
         return;
       }
 
-      renderUsers(users);
-    } catch (err) {
-      console.error('Error loading users:', err);
-      usersTableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger">Error loading users</td></tr>`;
-      updateUserCount(0, 0);
-    }
-  }
-
-  // === Update count badge ===
-  function updateUserCount(visible, total) {
-    if (userCount)
-      userCount.textContent =
-        total && visible !== total
-          ? `Showing ${visible} of ${total} users`
-          : `Showing ${visible} user${visible !== 1 ? 's' : ''}`;
-  }
-
-  // === Render users ===
-  function renderUsers(users) {
-    updateUserCount(users.length, allUsers.length);
-
-    usersTableBody.innerHTML = users.length
-      ? users
-          .map(user => {
-            const role = user.role || 'user';
-            const active = user.active ?? true;
-            const createdAt = user.createdAt ? formatDate(user.createdAt) : 'N/A';
-
-            return `
-            <tr id="user-${user._id}">
-              <td>${user._id.substring(user._id.length - 6)}</td>
-              <td>${user.name}</td>
-              <td>${user.email}</td>
-              <td><span class="badge ${role === 'admin' ? 'bg-danger' : 'bg-primary'}">${role}</span></td>
-              <td><span class="badge ${active ? 'bg-success' : 'bg-secondary'}">${active ? 'Active' : 'Suspended'}</span></td>
-              <td>${createdAt}</td>
-              <td class="text-end">
-                <div class="dropdown">
-                  <button class="btn btn-sm btn-outline-dark dropdown-toggle" data-bs-toggle="dropdown">Actions</button>
-                  <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="/admin/users/edit/${user._id}">
-                      <i class="bi bi-pencil"></i> Edit</a></li>
-                    <li><button class="dropdown-item toggle-status-btn" data-id="${user._id}">
-                      <i class="bi ${active ? 'bi-pause' : 'bi-play'}"></i> ${active ? 'Suspend' : 'Activate'}
-                    </button></li>
-                    <li><button class="dropdown-item toggle-role-btn" data-id="${user._id}">
-                      <i class="bi ${role === 'admin' ? 'bi-person-dash' : 'bi-person-plus'}"></i> ${role === 'admin' ? 'Remove Admin' : 'Make Admin'}
-                    </button></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><button class="dropdown-item text-danger delete-user-btn" data-id="${user._id}">
-                      <i class="bi bi-trash"></i> Delete
-                    </button></li>
-                  </ul>
-                </div>
-              </td>
-            </tr>`;
-          })
-          .join('')
-      : `<tr><td colspan="7" class="text-center py-4 text-muted">No users found</td></tr>`;
-
-    attachEventListeners();
-  }
-
-  // === Event Listeners for buttons ===
-  function attachEventListeners() {
-    document.querySelectorAll('.toggle-status-btn').forEach(btn =>
-      btn.addEventListener('click', () => handleToggleStatus(btn.dataset.id))
-    );
-    document.querySelectorAll('.toggle-role-btn').forEach(btn =>
-      btn.addEventListener('click', () => handleToggleRole(btn.dataset.id))
-    );
-    document.querySelectorAll('.delete-user-btn').forEach(btn =>
-      btn.addEventListener('click', () => handleDeleteUser(btn.dataset.id))
-    );
-  }
-
-  // === Handle status toggle ===
-  async function handleToggleStatus(userId) {
-    if (userId === ADMIN_ID)
-      return showNotification('Error', 'Cannot change your own status', 'error');
-
-    try {
-      const res = await fetch(`/admin/users/toggle/${userId}`, { method: 'POST' });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.message);
-
-      const row = document.querySelector(`#user-${userId}`);
-      const badge = row.querySelector('td:nth-child(5) .badge');
-      const btn = row.querySelector('.toggle-status-btn');
-
-      badge.className = `badge ${data.active ? 'bg-success' : 'bg-secondary'}`;
-      badge.textContent = data.active ? 'Active' : 'Suspended';
-      btn.innerHTML = `<i class="bi ${data.active ? 'bi-pause' : 'bi-play'}"></i> ${data.active ? 'Suspend' : 'Activate'}`;
-
-      showNotification('Success', `User ${data.active ? 'activated' : 'suspended'} successfully`);
-    } catch (err) {
-      console.error(err);
-      showNotification('Error', 'Failed to update user status', 'error');
-    }
-  }
-
-  // === Handle role toggle ===
-  async function handleToggleRole(userId) {
-    if (userId === ADMIN_ID)
-      return showNotification('Error', 'Cannot change your own role', 'error');
-
-    try {
-      const res = await fetch(`/admin/users/role/${userId}`, { method: 'POST' });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.message);
-
-      const row = document.querySelector(`#user-${userId}`);
-      const badge = row.querySelector('td:nth-child(4) .badge');
-      const btn = row.querySelector('.toggle-role-btn');
-
-      badge.className = `badge ${data.role === 'admin' ? 'bg-danger' : 'bg-primary'}`;
-      badge.textContent = data.role;
-      btn.innerHTML = `<i class="bi ${data.role === 'admin' ? 'bi-person-dash' : 'bi-person-plus'}"></i> ${
-        data.role === 'admin' ? 'Remove Admin' : 'Make Admin'
-      }`;
-
-      showNotification('Success', `User role updated to ${data.role}`);
-    } catch (err) {
-      console.error(err);
-      showNotification('Error', 'Failed to update user role', 'error');
-    }
-  }
-
-  // === Handle delete user ===
-  async function handleDeleteUser(userId) {
-    if (userId === ADMIN_ID)
-      return showNotification('Error', 'Cannot delete your own account', 'error');
-    if (!confirm('Are you sure you want to delete this user?')) return;
-
-    try {
-      const res = await fetch(`/admin/users/delete/${userId}`, { method: 'POST' });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.message);
-
-      document.querySelector(`#user-${userId}`)?.remove();
-      allUsers = allUsers.filter(u => u._id !== userId);
-      applyFilters(); // Refresh filtered list
-      showNotification('Success', 'User deleted successfully');
-    } catch (err) {
-      console.error(err);
-      showNotification('Error', 'Failed to delete user', 'error');
-    }
-  }
-
-  // === Search & Filter ===
-  function applyFilters() {
-    const search = searchInput?.value.toLowerCase() || '';
-    const role = roleFilter?.value || '';
-    const status = statusFilter?.value || '';
-
-    const filtered = allUsers.filter(u => {
-      const matchSearch =
-        u.name.toLowerCase().includes(search) || u.email.toLowerCase().includes(search);
-      const matchRole = role ? u.role === role : true;
-      const matchStatus = status
-        ? status === 'active'
-          ? u.active
-          : !u.active
-        : true;
-      return matchSearch && matchRole && matchStatus;
+      try {
+        const res = await fetch('/admin/products', { method: 'POST', body: formData });
+        if (res.ok) {
+          e.target.reset();
+          document.getElementById('imagePreviewContainer').innerHTML = '';
+          loadProducts();
+          showToast('✅ Product added successfully');
+        } else {
+          const err = await res.json();
+          showToast('Failed to add product: ' + (err.message || res.statusText), 'warning');
+        }
+      } catch (err) {
+        console.error('Error adding product:', err);
+        showToast('Error adding product', 'danger');
+      }
     });
 
-    renderUsers(filtered);
-  }
+    // ----------------- Edit Product -----------------
+    document.getElementById('editProductForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const productId = document.getElementById('editProductId').value;
 
-  // === Initialize filters ===
-  function initFilters() {
-    searchInput?.addEventListener('input', applyFilters);
-    roleFilter?.addEventListener('change', applyFilters);
-    statusFilter?.addEventListener('change', applyFilters);
-    clearFilters?.addEventListener('click', () => {
-      searchInput.value = '';
-      roleFilter.value = '';
-      statusFilter.value = '';
-      renderUsers(allUsers);
+      if (formData.getAll('images').length > 4) {
+        showToast('You can upload up to 4 images only', 'warning');
+        return;
+      }
+
+      try {
+        const res = await fetch(`/admin/products/edit/${productId}`, { method: 'POST', body: formData });
+        if (res.ok) {
+          editProductModal.hide();
+          loadProducts();
+          showToast('✏️ Product updated successfully');
+        } else {
+          const err = await res.json();
+          showToast('Failed to update product: ' + (err.message || res.statusText), 'warning');
+        }
+      } catch (err) {
+        console.error('Error updating product:', err);
+        showToast('Error updating product', 'danger');
+      }
     });
-  }
 
-  // === Public init ===
-  return {
-    init() {
-      loadUsers();
-      initFilters();
-    },
-  };
-})();
+    // ----------------- Preview New Images -----------------
+    function previewImages(event, containerId) {
+      const files = event.target.files;
+      const previewContainer = document.getElementById(containerId);
+      previewContainer.innerHTML = '';
 
-// === Initialize when page loads ===
-document.addEventListener('DOMContentLoaded', () => {
-  UsersManager.init();
-});
+      if (files.length > 4) {
+        alert('You can upload up to 4 images only.');
+        event.target.value = '';
+        return;
+      }
 
-
-
-// ================== PRODUCTS TAB ==================
-const editProductModal = new bootstrap.Modal(document.getElementById('editProductModal'));
-const productsTableBody = document.querySelector('#productsTable tbody');
-
-// Toast container
-const toastContainer = document.createElement('div');
-toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
-document.body.appendChild(toastContainer);
-
-// ----------------- Toast Helper -----------------
-function showToast(message, type = 'success') {
-  const toast = document.createElement('div');
-  toast.className = `toast align-items-center text-bg-${type} border-0`;
-  toast.setAttribute('role', 'alert');
-  toast.setAttribute('aria-live', 'assertive');
-  toast.setAttribute('aria-atomic', 'true');
-  toast.innerHTML = `
-    <div class="d-flex">
-      <div class="toast-body">${message}</div>
-      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-    </div>
-  `;
-  toastContainer.appendChild(toast);
-  const bsToast = new bootstrap.Toast(toast, { delay: 2500 });
-  bsToast.show();
-  toast.addEventListener('hidden.bs.toast', () => toast.remove());
-}
-
-// ----------------- Load Products -----------------
-async function loadProducts() {
-  try {
-    productsTableBody.innerHTML = `
-      <tr>
-        <td colspan="11" class="text-center">
-          <div class="spinner-border text-primary" role="status"></div>
-          <p class="mt-2 text-muted">Loading products...</p>
-        </td>
-      </tr>
-    `;
-
-    const res = await fetch('/admin/products/json');
-    const products = await res.json();
-
-    if (!products.length) {
-      productsTableBody.innerHTML = '<tr><td colspan="11" class="text-center">No products found</td></tr>';
-      return;
+      Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const img = document.createElement('img');
+          img.src = e.target.result;
+          img.className = 'img-thumbnail me-2 mb-2';
+          img.style.width = '80px';
+          img.style.height = '80px';
+          previewContainer.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      });
     }
 
-    productsTableBody.innerHTML = products.map(p => {
-      const imagesHtml = p.images && p.images.length
-        ? p.images.map(img => `<img src="${img}" width="50" height="50" class="rounded me-1 border" alt="${p.title}">`).join('')
-        : '<img src="/images/placeholder.png" width="50" height="50" class="rounded border" alt="No Image">';
+    // Attach image preview listeners
+    document.getElementById('productImages')?.addEventListener('change', e => previewImages(e, 'imagePreviewContainer'));
+    document.getElementById('editImages')?.addEventListener('change', e => previewImages(e, 'editImagePreviewContainer'));
 
+    // ===== LOANS TAB ====
+    const adminLoanTable = document.getElementById("adminLoanTable");
+
+    // Render one loan row
+    function renderAdminLoanRow(loan) {
       return `
-        <tr id="product-${p._id}">
-          <td>${p._id}</td>
-          <td>${p.title}</td>
-          <td><span class="text-decoration-line-through text-danger">${p.marketPrice}</span></td>
-          <td>${p.salePrice}</td>
-          <td>${p.description || '—'}</td>
-          <td>${p.category || 'Unspecified'}</td>
-          <td>${p.condition || 'Unspecified'}</td>
-          <td>${p.brand || 'Unspecified'}</td>
-          <td>${p.onSale ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-secondary">No</span>'}</td>
-          <td>${imagesHtml}</td>
+        <tr id="loan-${loan._id}">
+          <td>${loan._id.slice(-4)}</td>
+          <td>
+            ${
+              loan.itemImage
+                ? `<img src="${loan.itemImage}" width="60" class="rounded shadow-sm loan-img"
+                     alt="Loan Item"
+                     data-bs-toggle="modal" data-bs-target="#loanImageModal"
+                     onclick="showLoanImage('${loan.itemImage}')">`
+                : "—"
+            }
+          </td>
+          <td>${loan.description || "N/A"}</td>
+          <td>Ksh ${loan.itemValue?.toLocaleString() || 0}</td>
+          <td>Ksh ${loan.loanAmount?.toLocaleString() || 0}</td>
+          <td>${loan.loanPeriod || 0} months</td>
+          <td class="loan-status">
+            <span class="badge ${
+              loan.status === "Approved"
+                ? "bg-success"
+                : loan.status === "Rejected"
+                ? "bg-danger"
+                : loan.status === "Visit Shop"
+                ? "bg-info"
+                : "bg-warning text-dark"
+            }">
+              ${loan.status}
+            </span>
+          </td>
           <td class="text-end">
-            <button class="btn btn-sm btn-primary edit-product-btn me-1" data-id="${p._id}">
-              <i class="bi bi-pencil"></i> Edit
+            <button class="btn btn-success btn-sm me-1"
+              onclick="updateLoan('${loan._id}','Approved')"
+              ${loan.status !== "Pending" && loan.status !== "Visit Shop" ? "disabled" : ""}>
+              Approve
             </button>
-            <button class="btn btn-sm btn-danger delete-product-btn" data-id="${p._id}">
-              <i class="bi bi-trash"></i> Delete
+            <button class="btn btn-info btn-sm me-1"
+              onclick="updateLoan('${loan._id}','Visit Shop')"
+              ${loan.status !== "Pending" ? "disabled" : ""}>
+              Visit Shop
+            </button>
+            <button class="btn btn-danger btn-sm me-1"
+              onclick="updateLoan('${loan._id}','Rejected')"
+              ${loan.status !== "Pending" && loan.status !== "Visit Shop" ? "disabled" : ""}>
+              Reject
+            </button>
+            <button class="btn btn-outline-danger btn-sm"
+              onclick="deleteLoan('${loan._id}')">
+              <i class="bi bi-trash"></i>
             </button>
           </td>
         </tr>
       `;
-    }).join('');
+    }
 
-    attachProductEventListeners(products);
-  } catch (err) {
-    console.error('Error loading products:', err);
-    productsTableBody.innerHTML = '<tr><td colspan="11" class="text-center text-danger">Error loading products</td></tr>';
-  }
-}
+    // Helper for modal
+    function showLoanImage(url) {
+      document.getElementById("loanModalImg").src = url;
+    }
 
-// ----------------- Attach Edit/Delete Buttons -----------------
-function attachProductEventListeners(products) {
-  // Edit buttons
-  document.querySelectorAll('.edit-product-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const product = products.find(p => p._id === btn.dataset.id);
-      if (!product) return;
-
-      // Basic info
-      document.getElementById('editProductId').value = product._id;
-      document.getElementById('editTitle').value = product.title;
-      document.getElementById('editMarket').value = product.marketPrice;
-      document.getElementById('editSale').value = product.salePrice;
-      document.getElementById('editDescription').value = product.description || '';
-      document.getElementById('editOnSale').checked = product.onSale;
-
-      // Category, Condition, Brand (safe defaults)
-      document.getElementById('editCategory').value = product.category || 'Unspecified';
-      document.getElementById('editCondition').value = product.condition || 'Unspecified';
-      document.getElementById('editBrand').value = product.brand || 'Unspecified';
-
-      // Current images
-      const currentImagesContainer = document.getElementById('currentImagesContainer');
-      currentImagesContainer.innerHTML = '';
-      if (product.images?.length) {
-        product.images.forEach(imgUrl => {
-          const imgEl = document.createElement('img');
-          imgEl.src = imgUrl;
-          imgEl.alt = product.title;
-          imgEl.className = 'img-thumbnail me-2 mb-2';
-          imgEl.style.width = '80px';
-          imgEl.style.height = '80px';
-          currentImagesContainer.appendChild(imgEl);
-        });
-      } else {
-        currentImagesContainer.innerHTML = '<small>No images available</small>';
-      }
-
-      // Reset image input
-      document.getElementById('editImagePreviewContainer').innerHTML = '';
-      document.getElementById('editImages').value = '';
-
-      editProductModal.show();
-    });
-  });
-
-  // Delete buttons
-  document.querySelectorAll('.delete-product-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      if (!confirm('Are you sure you want to delete this product?')) return;
+    // Load loans initially
+    async function loadAdminLoans() {
       try {
-        const res = await fetch(`/admin/products/delete/${btn.dataset.id}`, { method: 'POST' });
-        if (res.ok) {
-          showToast('🗑️ Product deleted successfully', 'danger');
-          loadProducts();
-        } else {
-          showToast('Failed to delete product', 'warning');
+        const res = await fetch("/admin/loans/json");
+        const loans = await res.json();
+
+        if (!loans.length) {
+          adminLoanTable.innerHTML =
+            '<tr><td colspan="8" class="text-center">No loans yet</td></tr>';
+          return;
         }
-      } catch (err) {
-        console.error('Error deleting product:', err);
-        showToast('Error deleting product', 'danger');
+
+        adminLoanTable.innerHTML = loans.map(renderAdminLoanRow).join("");
+      } catch (error) {
+        console.error("Error loading loans:", error);
+        adminLoanTable.innerHTML =
+          '<tr><td colspan="8" class="text-center text-danger">⚠️ Error loading loans</td></tr>';
+      }
+    }
+
+    // Admin updates loan status
+    async function updateLoan(id, status) {
+      try {
+        const res = await fetch(`/admin/loans/${id}/status`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status }),
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById(`loan-${id}`).outerHTML = renderAdminLoanRow(data.loan);
+        } else {
+          alert("❌ Failed to update loan status: " + (data.message || ""));
+        }
+      } catch (error) {
+        console.error("Error updating loan:", error);
+        alert("⚠️ Failed to update loan status");
+      }
+    }
+
+    // ===== NEW FEATURE: Delete Loan Request =====
+    async function deleteLoan(id) {
+      if (!confirm("⚠️ Are you sure you want to delete this loan request? This action cannot be undone.")) return;
+
+      try {
+        const res = await fetch(`/admin/loans/${id}`, {
+          method: "DELETE",
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          document.getElementById(`loan-${id}`)?.remove();
+          if (!adminLoanTable.querySelector("tr")) {
+            adminLoanTable.innerHTML =
+              '<tr><td colspan="8" class="text-center">No loans available</td></tr>';
+          }
+        } else {
+          alert("❌ Failed to delete loan: " + (data.message || ""));
+        }
+      } catch (error) {
+        console.error("Error deleting loan:", error);
+        alert("⚠️ Could not delete loan");
+      }
+    }
+
+    // Real-time: new loan added
+    socket.on("loanCreated", (loan) => {
+      if (!document.getElementById(`loan-${loan._id}`)) {
+        adminLoanTable.insertAdjacentHTML("afterbegin", renderAdminLoanRow(loan));
       }
     });
-  });
-}
 
-// ----------------- Add Product -----------------
-document.getElementById('addProductForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  const formData = new FormData(e.target);
-
-  if (formData.getAll('images').length > 4) {
-    showToast('You can upload up to 4 images only', 'warning');
-    return;
-  }
-
-  try {
-    const res = await fetch('/admin/products', { method: 'POST', body: formData });
-    if (res.ok) {
-      e.target.reset();
-      document.getElementById('imagePreviewContainer').innerHTML = '';
-      loadProducts();
-      showToast('✅ Product added successfully');
-    } else {
-      const err = await res.json();
-      showToast('Failed to add product: ' + (err.message || res.statusText), 'warning');
-    }
-  } catch (err) {
-    console.error('Error adding product:', err);
-    showToast('Error adding product', 'danger');
-  }
-});
-
-// ----------------- Edit Product -----------------
-document.getElementById('editProductForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  const formData = new FormData(e.target);
-  const productId = document.getElementById('editProductId').value;
-
-  if (formData.getAll('images').length > 4) {
-    showToast('You can upload up to 4 images only', 'warning');
-    return;
-  }
-
-  try {
-    const res = await fetch(`/admin/products/edit/${productId}`, { method: 'POST', body: formData });
-    if (res.ok) {
-      editProductModal.hide();
-      loadProducts();
-      showToast('✏️ Product updated successfully');
-    } else {
-      const err = await res.json();
-      showToast('Failed to update product: ' + (err.message || res.statusText), 'warning');
-    }
-  } catch (err) {
-    console.error('Error updating product:', err);
-    showToast('Error updating product', 'danger');
-  }
-});
-
-// ----------------- Preview New Images -----------------
-function previewImages(event, containerId) {
-  const files = event.target.files;
-  const previewContainer = document.getElementById(containerId);
-  previewContainer.innerHTML = '';
-
-  if (files.length > 4) {
-    alert('You can upload up to 4 images only.');
-    event.target.value = '';
-    return;
-  }
-
-  Array.from(files).forEach(file => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      const img = document.createElement('img');
-      img.src = e.target.result;
-      img.className = 'img-thumbnail me-2 mb-2';
-      img.style.width = '80px';
-      img.style.height = '80px';
-      previewContainer.appendChild(img);
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
-// Attach image preview listeners
-document.getElementById('productImages')?.addEventListener('change', e => previewImages(e, 'imagePreviewContainer'));
-document.getElementById('editImages')?.addEventListener('change', e => previewImages(e, 'editImagePreviewContainer'));
-
-// ----------------- Initial Load -----------------
-document.addEventListener('DOMContentLoaded', loadProducts);
-
-
-// ===== LOANS TAB ====
-const adminLoanTable = document.getElementById("adminLoanTable");
-
-// Render one loan row
-function renderAdminLoanRow(loan) {
-  return `
-    <tr id="loan-${loan._id}">
-      <td>${loan._id.slice(-4)}</td>
-      <td>
-        ${
-          loan.itemImage
-            ? `<img src="${loan.itemImage}" width="60" class="rounded shadow-sm loan-img"
-                 alt="Loan Item"
-                 data-bs-toggle="modal" data-bs-target="#loanImageModal"
-                 onclick="showLoanImage('${loan.itemImage}')">`
-            : "—"
-        }
-      </td>
-      <td>${loan.description || "N/A"}</td>
-      <td>Ksh ${loan.itemValue?.toLocaleString() || 0}</td>
-      <td>Ksh ${loan.loanAmount?.toLocaleString() || 0}</td>
-      <td>${loan.loanPeriod || 0} months</td>
-      <td class="loan-status">
-        <span class="badge ${
-          loan.status === "Approved"
-            ? "bg-success"
-            : loan.status === "Rejected"
-            ? "bg-danger"
-            : loan.status === "Visit Shop"
-            ? "bg-info"
-            : "bg-warning text-dark"
-        }">
-          ${loan.status}
-        </span>
-      </td>
-      <td class="text-end">
-        <button class="btn btn-success btn-sm me-1"
-          onclick="updateLoan('${loan._id}','Approved')"
-          ${loan.status !== "Pending" && loan.status !== "Visit Shop" ? "disabled" : ""}>
-          Approve
-        </button>
-        <button class="btn btn-info btn-sm me-1"
-          onclick="updateLoan('${loan._id}','Visit Shop')"
-          ${loan.status !== "Pending" ? "disabled" : ""}>
-          Visit Shop
-        </button>
-        <button class="btn btn-danger btn-sm me-1"
-          onclick="updateLoan('${loan._id}','Rejected')"
-          ${loan.status !== "Pending" && loan.status !== "Visit Shop" ? "disabled" : ""}>
-          Reject
-        </button>
-        <button class="btn btn-outline-danger btn-sm"
-          onclick="deleteLoan('${loan._id}')">
-          <i class="bi bi-trash"></i>
-        </button>
-      </td>
-    </tr>
-  `;
-}
-
-// Helper for modal
-function showLoanImage(url) {
-  document.getElementById("loanModalImg").src = url;
-}
-
-// Load loans initially
-async function loadAdminLoans() {
-  try {
-    const res = await fetch("/admin/loans/json");
-    const loans = await res.json();
-
-    if (!loans.length) {
-      adminLoanTable.innerHTML =
-        '<tr><td colspan="8" class="text-center">No loans yet</td></tr>';
-      return;
-    }
-
-    adminLoanTable.innerHTML = loans.map(renderAdminLoanRow).join("");
-  } catch (error) {
-    console.error("Error loading loans:", error);
-    adminLoanTable.innerHTML =
-      '<tr><td colspan="8" class="text-center text-danger">⚠️ Error loading loans</td></tr>';
-  }
-}
-
-// Admin updates loan status
-async function updateLoan(id, status) {
-  try {
-    const res = await fetch(`/admin/loans/${id}/status`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
+    // Real-time: loan updated
+    socket.on("loanUpdated", (loan) => {
+      const row = document.getElementById(`loan-${loan._id}`);
+      if (row) {
+        row.outerHTML = renderAdminLoanRow(loan);
+      } else {
+        loadAdminLoans();
+      }
     });
 
-    const data = await res.json();
-    if (data.success) {
-      document.getElementById(`loan-${id}`).outerHTML = renderAdminLoanRow(data.loan);
-    } else {
-      alert("❌ Failed to update loan status: " + (data.message || ""));
-    }
-  } catch (error) {
-    console.error("Error updating loan:", error);
-    alert("⚠️ Failed to update loan status");
-  }
-}
-
-// ===== NEW FEATURE: Delete Loan Request =====
-async function deleteLoan(id) {
-  if (!confirm("⚠️ Are you sure you want to delete this loan request? This action cannot be undone.")) return;
-
-  try {
-    const res = await fetch(`/admin/loans/${id}`, {
-      method: "DELETE",
-    });
-
-    const data = await res.json();
-
-    if (data.success) {
+    // Real-time: loan deleted
+    socket.on("loanDeleted", (id) => {
       document.getElementById(`loan-${id}`)?.remove();
       if (!adminLoanTable.querySelector("tr")) {
         adminLoanTable.innerHTML =
           '<tr><td colspan="8" class="text-center">No loans available</td></tr>';
       }
-    } else {
-      alert("❌ Failed to delete loan: " + (data.message || ""));
-    }
-  } catch (error) {
-    console.error("Error deleting loan:", error);
-    alert("⚠️ Could not delete loan");
-  }
-}
-
-// Real-time: new loan added
-socket.on("loanCreated", (loan) => {
-  if (!document.getElementById(`loan-${loan._id}`)) {
-    adminLoanTable.insertAdjacentHTML("afterbegin", renderAdminLoanRow(loan));
-  }
-});
-
-// Real-time: loan updated
-socket.on("loanUpdated", (loan) => {
-  const row = document.getElementById(`loan-${loan._id}`);
-  if (row) {
-    row.outerHTML = renderAdminLoanRow(loan);
-  } else {
-    loadAdminLoans();
-  }
-});
-
-// Real-time: loan deleted
-socket.on("loanDeleted", (id) => {
-  document.getElementById(`loan-${id}`)?.remove();
-  if (!adminLoanTable.querySelector("tr")) {
-    adminLoanTable.innerHTML =
-      '<tr><td colspan="8" class="text-center">No loans available</td></tr>';
-  }
-});
-
-// Initial load
-loadAdminLoans();
+    });
 
     // ===== TOP BAR =====
     async function loadTopBar() {
@@ -2018,233 +1923,212 @@ loadAdminLoans();
       }
     });
     
-// ===== BOOKINGS MANAGEMENT =====
-const bookingsTbody = document.querySelector('#bookingsTable tbody');
-const searchInput = document.getElementById('bookingSearch');
-const statusFilter = document.getElementById('statusFilter');
-const fromDateInput = document.getElementById('fromDate');
-const toDateInput = document.getElementById('toDate');
-const clearFiltersBtn = document.getElementById('clearFilters');
-let allBookings = [];
+    // ===== BOOKINGS MANAGEMENT =====
+    const bookingsTbody = document.querySelector('#bookingsTable tbody');
+    const searchInput = document.getElementById('bookingSearch');
+    const statusFilter = document.getElementById('bookingStatusFilter');
+    const bookingNotification = document.getElementById('bookingNotification');
+    const refreshBookings = document.getElementById('refreshBookings');
+    let allBookings = [];
 
-// ===== RENDER SINGLE ROW =====
-function renderBookingRow(b, isNew = false) {
-  const badgeClass =
-    b.status === 'Pending'
-      ? 'warning'
-      : b.status === 'Confirmed'
-      ? 'success'
-      : b.status === 'Completed'
-      ? 'primary'
-      : 'secondary';
+    // ===== RENDER SINGLE ROW =====
+    function renderBookingRow(b, isNew = false) {
+      const badgeClass =
+        b.status === 'Pending'
+          ? 'warning'
+          : b.status === 'Confirmed'
+          ? 'success'
+          : b.status === 'Completed'
+          ? 'primary'
+          : 'secondary';
 
-  let row = document.getElementById(`booking-${b._id}`);
+      let row = document.getElementById(`booking-${b._id}`);
 
-  if (row) {
-    // Update existing row
-    row.querySelector('td:nth-child(3)').textContent = b.game;
-    row.querySelector('td:nth-child(4)').textContent = b.console;
-    row.querySelector('td:nth-child(5)').textContent = new Date(b.date).toLocaleDateString();
-    row.querySelector('td:nth-child(6)').textContent = b.timeSlot;
+      if (row) {
+        // Update existing row
+        row.querySelector('td:nth-child(3)').textContent = b.game;
+        row.querySelector('td:nth-child(4)').textContent = b.console;
+        row.querySelector('td:nth-child(5)').textContent = new Date(b.date).toLocaleDateString();
+        row.querySelector('td:nth-child(6)').textContent = b.timeSlot;
 
-    const statusSpan = row.querySelector('td:nth-child(7) span');
-    statusSpan.textContent = b.status;
-    statusSpan.className = `badge bg-${badgeClass}`;
+        const statusSpan = row.querySelector('td:nth-child(7) span');
+        statusSpan.textContent = b.status;
+        statusSpan.className = `badge bg-${badgeClass}`;
 
-    row.classList.add('updated');
-    setTimeout(() => row.classList.remove('updated'), 2000);
-  } else {
-    // Create new row
-    row = document.createElement('tr');
-    row.id = `booking-${b._id}`;
-    if (isNew) row.classList.add('new-booking');
+        row.classList.add('updated');
+        setTimeout(() => row.classList.remove('updated'), 2000);
+      } else {
+        // Create new row
+        row = document.createElement('tr');
+        row.id = `booking-${b._id}`;
+        if (isNew) row.classList.add('new-booking');
 
-    row.innerHTML = `
-      <td>${b._id}</td>
-      <td>${b.user?.name || 'Unknown'} (${b.user?.email || 'N/A'})</td>
-      <td>${b.game}</td>
-      <td>${b.console}</td>
-      <td>${new Date(b.date).toLocaleDateString()}</td>
-      <td>${b.timeSlot}</td>
-      <td><span class="badge bg-${badgeClass}">${b.status}</span></td>
-      <td class="text-end">
-        <div class="d-flex justify-content-end gap-1">
-          <select class="form-select form-select-sm status-select" data-id="${b._id}">
-            <option value="Pending"   ${b.status === 'Pending' ? 'selected' : ''}>Pending</option>
-            <option value="Confirmed" ${b.status === 'Confirmed' ? 'selected' : ''}>Confirmed</option>
-            <option value="Completed" ${b.status === 'Completed' ? 'selected' : ''}>Completed</option>
-            <option value="Cancelled" ${b.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
-          </select>
-          <button class="btn btn-sm btn-outline-danger delete-booking" data-id="${b._id}">
-            <i class="bi bi-trash"></i>
-          </button>
-        </div>
-      </td>
-    `;
-    bookingsTbody.appendChild(row);
+        row.innerHTML = `
+          <td>${b._id}</td>
+          <td>${b.user?.name || 'Unknown'} (${b.user?.email || 'N/A'})</td>
+          <td>${b.game}</td>
+          <td>${b.console}</td>
+          <td>${new Date(b.date).toLocaleDateString()}</td>
+          <td>${b.timeSlot}</td>
+          <td><span class="badge bg-${badgeClass}">${b.status}</span></td>
+          <td class="text-end">
+            <div class="d-flex justify-content-end gap-1">
+              <select class="form-select form-select-sm status-select" data-id="${b._id}">
+                <option value="Pending"   ${b.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                <option value="Confirmed" ${b.status === 'Confirmed' ? 'selected' : ''}>Confirmed</option>
+                <option value="Completed" ${b.status === 'Completed' ? 'selected' : ''}>Completed</option>
+                <option value="Cancelled" ${b.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
+              </select>
+              <button class="btn btn-sm btn-outline-danger delete-booking" data-id="${b._id}">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </td>
+        `;
+        bookingsTbody.appendChild(row);
 
-    setTimeout(() => row.classList.remove('new-booking'), 2500);
-  }
-}
-
-// ===== FETCH BOOKINGS =====
-async function fetchBookings() {
-  try {
-    const res = await fetch('/admin/bookings/json');
-    const data = await res.json();
-
-    if (!data.success || !Array.isArray(data.data)) throw new Error('Invalid response format');
-
-    allBookings = data.data;
-
-    if (allBookings.length === 0) {
-      bookingsTbody.innerHTML = '<tr><td colspan="8" class="text-center">No bookings found</td></tr>';
-      return;
+        setTimeout(() => row.classList.remove('new-booking'), 2500);
+      }
     }
 
-    displayFilteredBookings();
-  } catch (error) {
-    console.error('Error loading bookings:', error);
-    bookingsTbody.innerHTML =
-      '<tr><td colspan="8" class="text-center text-danger">Error loading bookings</td></tr>';
-  }
-}
+    // ===== FETCH BOOKINGS =====
+    async function fetchBookings() {
+      try {
+        const res = await fetch('/admin/bookings/json');
+        const data = await res.json();
 
-// ===== FILTER DISPLAY =====
-function displayFilteredBookings() {
-  const searchTerm = searchInput.value.toLowerCase();
-  const selectedStatus = statusFilter.value;
-  const fromDate = fromDateInput?.value ? new Date(fromDateInput.value) : null;
-  const toDate = toDateInput?.value ? new Date(toDateInput.value) : null;
+        if (!data.success || !Array.isArray(data.data)) throw new Error('Invalid response format');
 
-  const filtered = allBookings.filter((b) => {
-    const matchesSearch =
-      (b.user?.name || '').toLowerCase().includes(searchTerm) ||
-      (b.user?.email || '').toLowerCase().includes(searchTerm) ||
-      b.game.toLowerCase().includes(searchTerm) ||
-      b.console.toLowerCase().includes(searchTerm);
+        allBookings = data.data;
 
-    const matchesStatus = !selectedStatus || b.status === selectedStatus;
+        if (allBookings.length === 0) {
+          bookingsTbody.innerHTML = '<tr><td colspan="8" class="text-center">No bookings found</td></tr>';
+          return;
+        }
 
-    const bookingDate = new Date(b.date);
-    const matchesDate =
-      (!fromDate || bookingDate >= fromDate) &&
-      (!toDate || bookingDate <= toDate);
+        displayFilteredBookings();
+      } catch (error) {
+        console.error('Error loading bookings:', error);
+        bookingsTbody.innerHTML =
+          '<tr><td colspan="8" class="text-center text-danger">Error loading bookings</td></tr>';
+      }
+    }
 
-    return matchesSearch && matchesStatus && matchesDate;
-  });
+    // ===== FILTER DISPLAY =====
+    function displayFilteredBookings() {
+      const searchTerm = searchInput.value.toLowerCase();
+      const selectedStatus = statusFilter.value;
 
-  bookingsTbody.innerHTML = '';
+      const filtered = allBookings.filter((b) => {
+        const matchesSearch =
+          (b.user?.name || '').toLowerCase().includes(searchTerm) ||
+          (b.user?.email || '').toLowerCase().includes(searchTerm) ||
+          b.game.toLowerCase().includes(searchTerm) ||
+          b.console.toLowerCase().includes(searchTerm);
 
-  if (filtered.length === 0) {
-    bookingsTbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No matching bookings</td></tr>';
-    return;
-  }
+        const matchesStatus = !selectedStatus || b.status === selectedStatus;
 
-  filtered.forEach((b) => renderBookingRow(b));
-}
-
-// ===== STATUS & DELETE HANDLERS =====
-bookingsTbody.addEventListener('change', async (e) => {
-  if (e.target.classList.contains('status-select')) {
-    const id = e.target.dataset.id;
-    const status = e.target.value;
-
-    try {
-      const res = await fetch(`/admin/bookings/update/${id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
+        return matchesSearch && matchesStatus;
       });
 
-      const data = await res.json();
+      bookingsTbody.innerHTML = '';
 
-      if (data.success) {
-        renderBookingRow(data.data);
-        const index = allBookings.findIndex((b) => b._id === id);
-        if (index !== -1) allBookings[index].status = status;
-      } else {
-        alert(data.message || 'Failed to update booking status');
+      if (filtered.length === 0) {
+        bookingsTbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No matching bookings</td></tr>';
+        return;
       }
-    } catch (error) {
-      console.error('Error updating booking:', error);
-      alert('Error updating booking status');
+
+      filtered.forEach((b) => renderBookingRow(b));
     }
-  }
-});
 
-// ===== DELETE BOOKING HANDLER =====
-bookingsTbody.addEventListener('click', async (e) => {
-  if (!e.target.closest('.delete-booking')) return;
+    // ===== STATUS & DELETE HANDLERS =====
+    bookingsTbody.addEventListener('change', async (e) => {
+      if (e.target.classList.contains('status-select')) {
+        const id = e.target.dataset.id;
+        const status = e.target.value;
 
-  const btn = e.target.closest('.delete-booking');
-  const id = btn.dataset.id;
+        try {
+          const res = await fetch(`/admin/bookings/update/${id}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status }),
+          });
 
-  if (!confirm('Are you sure you want to delete this booking?')) return;
+          const data = await res.json();
 
-  try {
-    const res = await fetch(`/admin/bookings/${id}/delete`, { method: 'DELETE' });
-    const data = await res.json();
-
-    if (data.success) {
-      const row = document.getElementById(`booking-${id}`);
-      if (row) {
-        row.classList.add('fade-out');
-        setTimeout(() => row.remove(), 500);
+          if (data.success) {
+            renderBookingRow(data.data);
+            const index = allBookings.findIndex((b) => b._id === id);
+            if (index !== -1) allBookings[index].status = status;
+          } else {
+            alert(data.message || 'Failed to update booking status');
+          }
+        } catch (error) {
+          console.error('Error updating booking:', error);
+          alert('Error updating booking status');
+        }
       }
-      allBookings = allBookings.filter((b) => b._id !== id);
-    } else {
-      alert(data.message || 'Failed to delete booking');
+    });
+
+    // ===== DELETE BOOKING HANDLER =====
+    bookingsTbody.addEventListener('click', async (e) => {
+      if (!e.target.closest('.delete-booking')) return;
+
+      const btn = e.target.closest('.delete-booking');
+      const id = btn.dataset.id;
+
+      if (!confirm('Are you sure you want to delete this booking?')) return;
+
+      try {
+        const res = await fetch(`/admin/bookings/${id}/delete`, { method: 'DELETE' });
+        const data = await res.json();
+
+        if (data.success) {
+          const row = document.getElementById(`booking-${id}`);
+          if (row) {
+            row.classList.add('fade-out');
+            setTimeout(() => row.remove(), 500);
+          }
+          allBookings = allBookings.filter((b) => b._id !== id);
+        } else {
+          alert(data.message || 'Failed to delete booking');
+        }
+      } catch (error) {
+        console.error('Error deleting booking:', error);
+        alert('Error deleting booking');
+      }
+    });
+
+    // ===== FILTER EVENTS =====
+    searchInput.addEventListener('input', displayFilteredBookings);
+    statusFilter.addEventListener('change', displayFilteredBookings);
+
+    refreshBookings?.addEventListener('click', fetchBookings);
+
+    // ===== SOCKET.IO REAL-TIME UPDATES =====
+    if (typeof io !== 'undefined') {
+      socket.on('booking:new', (b) => {
+        allBookings.unshift(b);
+        renderBookingRow(b, true);
+        bookingNotification.classList.remove('d-none');
+      });
+
+      socket.on('booking:updated', (b) => {
+        const index = allBookings.findIndex((bk) => bk._id === b._id);
+        if (index !== -1) allBookings[index] = b;
+        renderBookingRow(b);
+      });
+
+      socket.on('booking:deleted', ({ id }) => {
+        const row = document.getElementById(`booking-${id}`);
+        if (row) {
+          row.classList.add('fade-out');
+          setTimeout(() => row.remove(), 500);
+        }
+        allBookings = allBookings.filter((b) => b._id !== id);
+      });
     }
-  } catch (error) {
-    console.error('Error deleting booking:', error);
-    alert('Error deleting booking');
-  }
-});
 
-// ===== FILTER EVENTS =====
-searchInput.addEventListener('input', displayFilteredBookings);
-statusFilter.addEventListener('change', displayFilteredBookings);
-fromDateInput?.addEventListener('change', displayFilteredBookings);
-toDateInput?.addEventListener('change', displayFilteredBookings);
-
-clearFiltersBtn?.addEventListener('click', () => {
-  searchInput.value = '';
-  statusFilter.value = '';
-  if (fromDateInput) fromDateInput.value = '';
-  if (toDateInput) toDateInput.value = '';
-  displayFilteredBookings();
-});
-
-// ===== SOCKET.IO REAL-TIME UPDATES =====
-if (typeof io !== 'undefined') {
-  const socket = io();
-
-  socket.on('booking:new', (b) => {
-    allBookings.unshift(b);
-    renderBookingRow(b, true);
-  });
-
-  socket.on('booking:updated', (b) => {
-    const index = allBookings.findIndex((bk) => bk._id === b._id);
-    if (index !== -1) allBookings[index] = b;
-    renderBookingRow(b);
-  });
-
-  socket.on('booking:deleted', ({ id }) => {
-    const row = document.getElementById(`booking-${id}`);
-    if (row) {
-      row.classList.add('fade-out');
-      setTimeout(() => row.remove(), 500);
-    }
-    allBookings = allBookings.filter((b) => b._id !== id);
-  });
-}
-
-// ===== INITIAL LOAD =====
-fetchBookings();
-
-    
     // ===== MESSAGES TAB =====
     const messagesTbody = document.getElementById("messages-tbody");
     const newMessageCount = document.getElementById("new-message-count");
@@ -2403,21 +2287,5 @@ fetchBookings();
     socket.on('newBooking', b => renderBookingRow(b, true));
     socket.on('updateBooking', b => renderBookingRow(b));
   </script>
-  <script>
-  const menuBtn = document.querySelector('.menu-toggle');
-  const sidebar = document.querySelector('.sidebar');
-  const overlay = document.querySelector('.overlay');
-
-  menuBtn.addEventListener('click', () => {
-    sidebar.classList.toggle('show');
-    overlay.classList.toggle('show');
-  });
-
-  overlay.addEventListener('click', () => {
-    sidebar.classList.remove('show');
-    overlay.classList.remove('show');
-  });
-</script>
-
 </body>
 </html>
