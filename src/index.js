@@ -1603,34 +1603,55 @@ app.get("/logout", async (req, res) => {
   try {
     // Clear Remember Me token if user exists
     if (req.user) {
-      await handleRememberMe(req.user, res, false);
+      try {
+        await handleRememberMe(req.user, res, false);
+      } catch (rememberErr) {
+        console.warn("⚠️ Remember Me clear failed:", rememberErr.message);
+      }
     }
 
-    // Determine user role for logging/fallback redirect
     const role = req.session?.user?.role || "user";
 
-    if (!req.session) return res.redirect("/home");
-
-    // Destroy session
-    req.session.destroy(err => {
-      if (err) {
-        console.error("Error destroying session:", err);
-        return res.redirect(role === "admin" ? "/admin" : "/user");
-      }
-
-      // Clear session cookie
+    // If no session exists, just redirect
+    if (!req.session) {
+      console.log("⚠️ No session found during logout");
       res.clearCookie("connect.sid", {
         path: "/",
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "strict"
+        sameSite: "strict",
       });
+      return res.redirect("/home");
+    }
+
+    // Destroy session safely
+    req.session.destroy((err) => {
+      // Always clear the cookie
+      res.clearCookie("connect.sid", {
+        path: "/",
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+      });
+
+      if (err) {
+        console.warn("⚠️ Session destroy failed:", err.message);
+        // Fallback redirect
+        return res.redirect(role === "admin" ? "/admin" : "/user");
+      }
 
       console.log(`✅ ${role.charAt(0).toUpperCase() + role.slice(1)} logged out`);
       return res.redirect("/home");
     });
   } catch (err) {
     console.error("Logout error:", err);
+    // Always attempt to clear cookie as fallback
+    res.clearCookie("connect.sid", {
+      path: "/",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
     return res.redirect("/home");
   }
 });
