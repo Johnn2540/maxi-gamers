@@ -234,12 +234,12 @@ io.on("connection", socket => {
   });
 });
 
-// ================== AUTH MIDDLEWARE (Updated) ==================
+// ================== AUTH MIDDLEWARE ==================
 async function ensureAuthenticated(req, res, next) {
   try {
     let sessionUser = req.session.user;
 
-    // 1️⃣ Restore session from Remember Me token if needed
+    // Restore session from Remember Me token
     if (!sessionUser && req.cookies?.rememberMeToken) {
       const userFromToken = await User.findOne({ rememberToken: req.cookies.rememberMeToken });
       if (userFromToken) {
@@ -249,65 +249,63 @@ async function ensureAuthenticated(req, res, next) {
           role: (userFromToken.role || "user").toLowerCase(),
         };
         req.session.lastActivity = Date.now();
-        req.session.justLoggedIn = true; // one-time redirect
+        req.session.justLoggedIn = true; // trigger one-time redirect
       } else {
-        res.clearCookie("rememberMeToken");
+        res.clearCookie("rememberMeToken", { path: "/" });
         return res.redirect("/login");
       }
     }
 
-    // 2️⃣ If no session, redirect to login
+    // Redirect to login if no session
     if (!sessionUser) return res.redirect("/login");
 
-    // 3️⃣ Session timeout (30 min)
+    // Session timeout (30 min)
     const now = Date.now();
     const TIMEOUT_LIMIT = 30 * 60 * 1000;
     if (req.session.lastActivity && now - req.session.lastActivity > TIMEOUT_LIMIT) {
       return req.session.destroy(() => {
-        res.clearCookie("rememberMeToken");
+        res.clearCookie("rememberMeToken", { path: "/" });
         res.redirect(`/login?flash=${encodeURIComponent("Session expired. Please log in again.")}&type=info`);
       });
     }
     req.session.lastActivity = now;
 
-    // 4️⃣ Load full user from DB
+    // Load full user from DB
     const user = await User.findById(sessionUser.id);
-    if (!user) {
-      return req.session.destroy(() => res.redirect("/login"));
-    }
+    if (!user) return req.session.destroy(() => res.redirect("/login"));
 
     const role = (user.role || "").toLowerCase();
 
-    // 5️⃣ Block inactive non-admin users
+    // Block inactive non-admin users
     if (role !== "admin" && !user.active) {
       return req.session.destroy(() => {
-        res.redirect(`/login?flash=${encodeURIComponent("Your account is suspended or pending verification. Please contact admin.")}&type=error`);
+        res.clearCookie("rememberMeToken", { path: "/" });
+        res.redirect(`/login?flash=${encodeURIComponent("Your account is suspended. Contact admin.")}&type=error`);
       });
     }
 
-    // 6️⃣ Attach user for global access
+    // Attach user to req and locals
     req.user = user;
     res.locals.user = {
       ...user.toObject(),
       profilePic: user.profilePic || 'https://via.placeholder.com/40',
-      username: user.name || 'Guest'
+      username: user.name || 'Guest',
     };
 
-    // 7️⃣ One-time redirect after login or Remember Me restore
+    // One-time redirect after login or Remember Me restore
     if (req.session.justLoggedIn) {
       delete req.session.justLoggedIn;
       return res.redirect(role === "admin" ? "/admin" : "/user");
     }
 
-    // 8️⃣ Redirect root/dashboard paths automatically
+    // Redirect root/dashboard automatically
     if (["/", "/dashboard"].includes(req.path)) {
       return res.redirect(role === "admin" ? "/admin" : "/user");
     }
 
-    // 9️⃣ Proceed to next middleware
     next();
-  } catch (error) {
-    console.error("Authentication error:", error);
+  } catch (err) {
+    console.error("Authentication error:", err);
     res.status(500).send("Internal server error during authentication.");
   }
 }
@@ -341,85 +339,50 @@ async function handleRememberMe(user, res, remember) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
+      path: "/",
     });
   } else {
     user.rememberToken = null;
     await user.save();
-    res.clearCookie("rememberMeToken");
+    res.clearCookie("rememberMeToken", { path: "/" });
   }
 }
 
+// ==================== LOGOUT ROUTE (Universal) ==================
+app.get("/logout", async (req, res) => {
+  try {
+    // Clear Remember Me token if user exists
+    if (req.user) {
+      await handleRememberMe(req.user, res, false);
+    }
 
-// ================== HELPER FUNCTIONS ==================
-function handleSignupError(req, res, message, type = "error", redirectPath = "/signup") {
-  if (req.headers.accept?.includes("application/json")) {
-    return res.status(400).json({ success: false, message });
-  }
-  return res.redirect(`${redirectPath}?flash=${encodeURIComponent(message)}&type=${type}`);
-}
+    // Determine user role for logging/fallback redirect
+    const role = req.session?.user?.role || "user";
 
-function handleLoginError(req, res, message, type = "error") {
-  if (req.headers.accept?.includes("application/json")) {
-    return res.status(401).json({ success: false, message });
-  }
-  return res.redirect(`/login?flash=${encodeURIComponent(message)}&type=${type}`);
-}
+    if (!req.session) return res.redirect("/home");
 
-function handleFlashRedirect(res, path, message, type = "error") {
-  return res.redirect(`${path}?flash=${encodeURIComponent(message)}&type=${type}`);
-}
+    // Destroy session
+    req.session.destroy(err => {
+      if (err) {
+        console.error("Error destroying session:", err);
+        return res.redirect(role === "admin" ? "/admin" : "/user");
+      }
 
-// ================== PAGES CONFIGURATION ==================
-const pages = [
-  "user", "signup", "login", "reset-password", "gaming", "loans", 
-  "shop", "blog", "contact", "about", "privacy-policy", "terms", 
-  "profile", "whatscoming", "refund-policy"
-];
-
-// ================== STATIC PAGE ROUTES ==================
-pages.forEach(page => {
-  app.get(`/${page}`, (req, res) => {
-    if (['user', 'profile', 'loans', 'gaming'].includes(page)) {
-      return ensureAuthenticated(req, res, () => {
-        res.render(page, { 
-          user: req.session.user,
-          title: page.charAt(0).toUpperCase() + page.slice(1)
-        });
+      // Clear session cookie
+      res.clearCookie("connect.sid", {
+        path: "/",
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict"
       });
-    }
-    res.render(page, { 
-      user: req.session.user,
-      title: page.charAt(0).toUpperCase() + page.slice(1)
+
+      console.log(`✅ ${role.charAt(0).toUpperCase() + role.slice(1)} logged out`);
+      return res.redirect("/home");
     });
-  });
-});
-
-// --------------------- LOGOUT ROUTES -------------------------
-
-// Admin logout
-app.get("/admin/logout", (req, res) => {
-  req.session.destroy(err => {
-    if (err) {
-      console.error("Error destroying admin session:", err);
-      return res.redirect("/admin");
-    }
-    res.clearCookie("connect.sid");
-    console.log(" Admin logged out");
-    res.redirect("/home");
-  });
-});
-
-// User logout
-app.get("/user/logout", (req, res) => {
-  req.session.destroy(err => {
-    if (err) {
-      console.error("Error destroying user session:", err);
-      return res.redirect("/user");
-    }
-    res.clearCookie("connect.sid");
-    console.log(" User logged out");
-    res.redirect("/home");
-  });
+  } catch (err) {
+    console.error("Logout error:", err);
+    return res.redirect("/home");
+  }
 });
 
 

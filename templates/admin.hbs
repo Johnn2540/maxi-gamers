@@ -148,31 +148,32 @@
 </head>
 <body>
 
-  <!-- Menu Toggle Button (Mobile Only) -->
-  <button class="btn btn-primary menu-toggle" id="menuToggle">
-    <i class="bi bi-list"></i>
-  </button>
+<!-- Menu Toggle Button (Mobile Only) -->
+<button class="btn btn-primary menu-toggle" id="menuToggle">
+  <i class="bi bi-list"></i>
+</button>
 
-  <!-- Overlay for Mobile -->
-  <div class="overlay" id="overlay"></div>
+<!-- Overlay for Mobile -->
+<div class="overlay" id="overlay"></div>
 
-  <!-- Sidebar -->
-  <div class="sidebar d-flex flex-column p-3" id="sidebar">
-    <h4 class="text-white mb-4">⚙️ Admin Panel</h4>
-    <ul class="nav nav-pills flex-column mb-auto">
-      <li><a href="#users" class="nav-link active" data-bs-toggle="tab"><i class="bi bi-people"></i> <span>Users</span></a></li>
-      <li><a href="#products" class="nav-link" data-bs-toggle="tab"><i class="bi bi-box-seam"></i> <span>Products</span></a></li>
-      <li><a href="#loans" class="nav-link" data-bs-toggle="tab"><i class="bi bi-cash-stack"></i> <span>Loans</span></a></li>
-      <li><a href="#content" class="nav-link" data-bs-toggle="tab"><i class="bi bi-layout-text-sidebar"></i> <span>Banner-Content</span></a></li>
-      <li><a href="#leaderboard" class="nav-link" data-bs-toggle="tab"><i class="bi bi-trophy"></i> <span>Leaderboard</span></a></li>
-      <li><a href="#bookings" class="nav-link" data-bs-toggle="tab"><i class="bi bi-calendar-check"></i> <span>Bookings</span></a></li>
-      <li><a href="#messages-tab" class="nav-link" data-bs-toggle="tab"><i class="bi bi-chat-dots"></i> <span>Messages</span></a></li>
-    </ul>
-    <hr />
-    <!-- Logout -->
-<a href="/admin/logout" class="btn btn-sm btn-danger w-100">
-  <i class="bi bi-box-arrow-right"></i> <span>Logout</span>
-</a>
+<!-- Sidebar -->
+<div class="sidebar d-flex flex-column p-3" id="sidebar">
+  <h4 class="text-white mb-4">⚙️ Admin Panel</h4>
+  <ul class="nav nav-pills flex-column mb-auto">
+    <li><a href="#users" class="nav-link active" data-bs-toggle="tab"><i class="bi bi-people"></i> <span>Users</span></a></li>
+    <li><a href="#products" class="nav-link" data-bs-toggle="tab"><i class="bi bi-box-seam"></i> <span>Products</span></a></li>
+    <li><a href="#loans" class="nav-link" data-bs-toggle="tab"><i class="bi bi-cash-stack"></i> <span>Loans</span></a></li>
+    <li><a href="#content" class="nav-link" data-bs-toggle="tab"><i class="bi bi-layout-text-sidebar"></i> <span>Banner-Content</span></a></li>
+    <li><a href="#leaderboard" class="nav-link" data-bs-toggle="tab"><i class="bi bi-trophy"></i> <span>Leaderboard</span></a></li>
+    <li><a href="#bookings" class="nav-link" data-bs-toggle="tab"><i class="bi bi-calendar-check"></i> <span>Bookings</span></a></li>
+    <li><a href="#messages-tab" class="nav-link" data-bs-toggle="tab"><i class="bi bi-chat-dots"></i> <span>Messages</span></a></li>
+  </ul>
+  <hr />
+  <!-- Logout -->
+  <a href="/logout" class="btn btn-sm btn-danger w-100">
+    <i class="bi bi-box-arrow-right"></i> <span>Logout</span>
+  </a>
+</div>
 
 
   <!-- Main Content -->
@@ -1055,8 +1056,8 @@
 const menuToggle = document.getElementById('menuToggle');
 const sidebar = document.getElementById('sidebar');
 const overlay = document.getElementById('overlay');
-// Select all logout links (desktop and mobile)
-const logoutLinks = document.querySelectorAll('a[href="/admin/logout"], a[href="/user/logout"]');
+// Select all logout links (desktop, mobile, sidebar)
+const logoutLinks = document.querySelectorAll('a[href="/logout"]');
 
 // ======= Toggle Sidebar on Mobile =======
 menuToggle.addEventListener('click', () => {
@@ -1076,10 +1077,11 @@ logoutLinks.forEach(link => {
     e.preventDefault(); // prevent default navigation
     sidebar.classList.remove('show'); // hide sidebar if open
     overlay.classList.remove('show'); // hide overlay if visible
-    // Redirect to the logout route
+    // Redirect to universal logout route
     window.location.href = link.getAttribute('href');
   });
 });
+
 
 
     // ===== USERS TAB =====
