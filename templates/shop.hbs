@@ -482,6 +482,14 @@
                   class="filter-btn category-filter"
                   data-category="Speakers"
                 >Speakers</button>
+                <button
+                  class="filter-btn category-filter"
+                  data-category="Woofers"
+                >Woofers</button>
+                <button
+                  class="filter-btn category-filter"
+                  data-category="Other"
+                >Other</button>
               </div>
             </div>
 
@@ -493,9 +501,9 @@
                 class="form-range price-range"
                 id="price-range"
                 min="0"
-                max="100000"
+                max="1000000"
                 step="1000"
-                value="100000"
+                value="1000000"
               />
               <div class="d-flex justify-content-between price-display">
                 <span>Ksh 0</span>
@@ -531,6 +539,10 @@
                   class="filter-btn condition-filter"
                   data-condition="Open Box"
                 >Open Box</button>
+                <button
+                  class="filter-btn condition-filter"
+                  data-condition="Other"
+                >Other</button>
               </div>
             </div>
 
@@ -683,6 +695,10 @@
                   class="filter-btn brand-filter"
                   data-brand="Cooler Master"
                 >Cooler Master</button>
+                <button
+                  class="filter-btn brand-filter"
+                  data-brand="Other"
+                >Other</button>
               </div>
             </div>
 
@@ -848,7 +864,7 @@
       let currentFilters = {
         search: '',
         category: 'all',
-        maxPrice: 100000,
+        maxPrice: 1000000,
         condition: 'all',
         brand: 'all',
         sort: 'featured'
