@@ -234,6 +234,25 @@ io.on("connection", socket => {
   });
 });
 
+// ================== HELPER FUNCTIONS ==================
+function handleSignupError(req, res, message, type = "error", redirectTo = "/signup") {
+  if (req.headers.accept?.includes("application/json")) {
+    return res.status(400).json({ success: false, message, type });
+  }
+  return res.redirect(`${redirectTo}?flash=${encodeURIComponent(message)}&type=${type}`);
+}
+
+function handleLoginError(req, res, message) {
+  if (req.headers.accept?.includes("application/json")) {
+    return res.status(400).json({ success: false, message });
+  }
+  return res.redirect(`/login?flash=${encodeURIComponent(message)}&type=error`);
+}
+
+function handleFlashRedirect(res, path, message, type) {
+  return res.redirect(`${path}?flash=${encodeURIComponent(message)}&type=${type}`);
+}
+
 // ================== AUTH MIDDLEWARE ==================
 async function ensureAuthenticated(req, res, next) {
   try {
@@ -348,8 +367,6 @@ async function handleRememberMe(user, res, remember) {
   }
 }
 
-
-
 // ================== MAIN ROUTES ==================
 
 // --------- HOME ---------
@@ -415,8 +432,6 @@ app.get("/auth/google/callback",
     }
   }
 );
-
-
 
 // ================== USER AUTH ROUTES ==================
 
@@ -513,7 +528,6 @@ app.post("/signup", async (req, res) => {
   }
 });
 
-
 // ====== LOGIN ROUTE (Fixed) ======
 app.post("/login", async (req, res) => {
   try {
@@ -587,7 +601,6 @@ app.post("/login", async (req, res) => {
     return handleLoginError(req, res, "Login failed. Please try again.");
   }
 });
-
 
 // ====== RESET PASSWORD ROUTE ======
 app.post("/reset-password", async (req, res) => {
@@ -680,8 +693,6 @@ app.post("/check-user", async (req, res) => {
     });
   }
 });
-
-
 
 // ================== ADMIN USER ROUTES ==================
 
@@ -793,7 +804,6 @@ app.get("/admin/products/json", ensureAuthenticated, requireAdmin, async (req, r
   }
 });
 
-
 // ========== PUBLIC PRODUCTS JSON (for Shop Page) ==========
 app.get("/products/json", async (req, res) => {
   try {
@@ -818,7 +828,6 @@ app.get("/products/json", async (req, res) => {
     res.status(500).json({ success: false, message: "Failed to fetch products" });
   }
 });
-
 
 // ========== ADD PRODUCT (Supports Up to 4 Images + Dropdown Fields) ==========
 app.post(
@@ -869,7 +878,6 @@ app.post(
     }
   }
 );
-
 
 // ========== EDIT PRODUCT (Supports Image Replacement + Dropdown Updates) ==========
 app.post(
@@ -922,7 +930,6 @@ app.post(
   }
 );
 
-
 // ========== DELETE PRODUCT ==========
 app.post("/admin/products/delete/:id", ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
@@ -941,8 +948,6 @@ app.post("/admin/products/delete/:id", ensureAuthenticated, requireAdmin, async 
     res.status(500).json({ success: false, message: err.message });
   }
 });
-
-
 
 // ================== LEADERBOARD ROUTES ==================
 
@@ -997,7 +1002,7 @@ app.delete("/admin/leaderboard/:id", ensureAuthenticated, requireAdmin, async (r
 // Get user loans page
 app.get("/loans", ensureAuthenticated, async (req, res) => {
   try {
-    const userId = req.session.user?._id;
+    const userId = req.session.user?.id; // FIXED: Changed _id to id
     if (!userId) return res.status(401).send("Not logged in");
 
     const loans = await Loan.find({ user: userId }).sort({ createdAt: -1 });
@@ -1015,7 +1020,7 @@ app.get("/loans", ensureAuthenticated, async (req, res) => {
 // Submit a new loan
 app.post("/loans", ensureAuthenticated, upload.single("itemImage"), async (req, res) => {
   try {
-    const userId = req.session.user?._id;
+    const userId = req.session.user?.id; // FIXED: Changed _id to id
     if (!userId) return res.status(401).json({ success: false, message: "Not logged in" });
 
     const { description, itemValue, loanAmount, loanPeriod } = req.body;
@@ -1054,7 +1059,7 @@ app.post("/loans", ensureAuthenticated, upload.single("itemImage"), async (req, 
 // Get user loans JSON
 app.get("/loans/list", ensureAuthenticated, async (req, res) => {
   try {
-    const userId = req.session.user?._id;
+    const userId = req.session.user?.id; // FIXED: Changed _id to id
     if (!userId) return res.status(401).json([]);
 
     const loans = await Loan.find({ user: userId }).sort({ createdAt: -1 });
@@ -1134,8 +1139,6 @@ app.delete("/admin/loans/:id", ensureAuthenticated, requireAdmin, async (req, re
     res.status(500).json({ success: false, message: "Failed to delete loan" });
   }
 });
-
-
 
 // ================== GAMING BOOKINGS ==================
 
@@ -1538,9 +1541,13 @@ app.post("/profile/update", ensureAuthenticated, upload.single("image"), async (
     user.phone = phone || user.phone;
     user.studentId = studentId || user.studentId;
 
-    // Update profile image if new file uploaded
+    // Update profile image if new file uploaded - FIXED: removed non-existent method
     if (req.file) {
-      await user.updateProfileImage(req.file.path, cloudinary);
+      const result = await cloudinary.uploader.upload(req.file.path, { 
+        folder: "profile-images" 
+      });
+      user.image = result.secure_url;
+      user.imageId = result.public_id;
     }
 
     await user.save();
@@ -1572,7 +1579,7 @@ app.get("/profile/remove-image", ensureAuthenticated, async (req, res) => {
       }
     }
 
-    user.image = "/images/default-profile.png";
+    user.image = "https://via.placeholder.com/150"; // FIXED: Changed to reliable URL
     user.imageId = null;
     await user.save();
 
@@ -1585,9 +1592,7 @@ app.get("/profile/remove-image", ensureAuthenticated, async (req, res) => {
   }
 });
 
-
 // ===================== PUBLIC PAGES =====================
-app.get("/", (req, res) => res.render("home"));
 app.get("/about", (req, res) => res.render("about"));
 app.get("/contact", (req, res) => res.render("contact"));
 app.get("/whatscoming", (req, res) => res.render("whatscoming"));
@@ -1599,11 +1604,14 @@ app.get("/reset-password", (req, res) => res.render("reset-password"));
 app.get("/privacy-policy", (req, res) => res.render("privacy-policy"));
 app.get("/refund-policy", (req, res) => res.render("refund-policy"));
 app.get("/booking", (req, res) => res.render("booking"));
+app.get("/blog", (req, res) => res.render("blog"));
+app.get("/home", (req, res) => res.redirect("/")); // ADDED: Home route for logout redirect
 
 // ===================== USER / ADMIN PAGES =====================
 app.get("/user", ensureAuthenticated, (req, res) => res.render("user"));
+// REMOVED: Duplicate admin route that was causing conflicts
 app.get("/edit-user", ensureAuthenticated, (req, res) => res.render("edit-user"));
-app.get("/loans", ensureAuthenticated, (req, res) => res.render("loans"));
+// REMOVED: Duplicate loans route that was causing conflicts
 app.get("/message", ensureAuthenticated, (req, res) => res.render("message"));
 
 // ==================== LOGOUT ROUTE (Universal) ==================
@@ -1642,7 +1650,6 @@ app.get("/logout", async (req, res) => {
     return res.redirect("/home");
   }
 });
-
 
 // ================== ERROR HANDLING ==================
 app.use((err, req, res, next) => {
