@@ -176,11 +176,19 @@
           <div class="filter-group">
             <label class="form-label fw-semibold">Category</label>
             <div>
-              <button class="filter-btn category-filter" data-category="all">All</button>
-              <button class="filter-btn category-filter" data-category="console">Consoles</button>
-              <button class="filter-btn category-filter" data-category="game">Games</button>
-              <button class="filter-btn category-filter" data-category="accessory">Accessories</button>
-              <button class="filter-btn category-filter" data-category="pc">PC Parts</button>
+              <button class="filter-btn category-filter active" data-category="all">All</button>
+              <button class="filter-btn category-filter" data-category="Consoles">Consoles</button>
+              <button class="filter-btn category-filter" data-category="Games">Games</button>
+              <button class="filter-btn category-filter" data-category="Accessories">Accessories</button>
+              <button class="filter-btn category-filter" data-category="PC Parts">PC Parts</button>
+              <button class="filter-btn category-filter" data-category="Controllers">Controllers</button>
+              <button class="filter-btn category-filter" data-category="Headsets">Headsets</button>
+              <button class="filter-btn category-filter" data-category="Monitors">Monitors</button>
+              <button class="filter-btn category-filter" data-category="Cables">Cables</button>
+              <button class="filter-btn category-filter" data-category="Storage">Storage</button>
+              <button class="filter-btn category-filter" data-category="Keyboards">Keyboards</button>
+              <button class="filter-btn category-filter" data-category="Mice">Mice</button>
+              <button class="filter-btn category-filter" data-category="Speakers">Speakers</button>
             </div>
           </div>
 
@@ -198,10 +206,12 @@
           <div class="filter-group">
             <label class="form-label fw-semibold">Condition</label>
             <div>
-              <button class="filter-btn condition-filter" data-condition="all">All</button>
-              <button class="filter-btn condition-filter" data-condition="new">New</button>
-              <button class="filter-btn condition-filter" data-condition="used">Used</button>
-              <button class="filter-btn condition-filter" data-condition="refurbished">Refurbished</button>
+              <button class="filter-btn condition-filter active" data-condition="all">All</button>
+              <button class="filter-btn condition-filter" data-condition="New">New</button>
+              <button class="filter-btn condition-filter" data-condition="Used">Used</button>
+              <button class="filter-btn condition-filter" data-condition="Refurbished">Refurbished</button>
+              <button class="filter-btn condition-filter" data-condition="Like New">Like New</button>
+              <button class="filter-btn condition-filter" data-condition="Open Box">Open Box</button>
             </div>
           </div>
 
@@ -209,11 +219,21 @@
           <div class="filter-group">
             <label class="form-label fw-semibold">Brand</label>
             <div>
-              <button class="filter-btn brand-filter" data-brand="all">All Brands</button>
-              <button class="filter-btn brand-filter" data-brand="sony">Sony</button>
-              <button class="filter-btn brand-filter" data-brand="microsoft">Microsoft</button>
-              <button class="filter-btn brand-filter" data-brand="nintendo">Nintendo</button>
-              <button class="filter-btn brand-filter" data-brand="razer">Razer</button>
+              <button class="filter-btn brand-filter active" data-brand="all">All Brands</button>
+              <button class="filter-btn brand-filter" data-brand="Sony">Sony</button>
+              <button class="filter-btn brand-filter" data-brand="Microsoft">Microsoft</button>
+              <button class="filter-btn brand-filter" data-brand="Nintendo">Nintendo</button>
+              <button class="filter-btn brand-filter" data-brand="Razer">Razer</button>
+              <button class="filter-btn brand-filter" data-brand="Logitech">Logitech</button>
+              <button class="filter-btn brand-filter" data-brand="Corsair">Corsair</button>
+              <button class="filter-btn brand-filter" data-brand="HP">HP</button>
+              <button class="filter-btn brand-filter" data-brand="Dell">Dell</button>
+              <button class="filter-btn brand-filter" data-brand="Asus">Asus</button>
+              <button class="filter-btn brand-filter" data-brand="Acer">Acer</button>
+              <button class="filter-btn brand-filter" data-brand="Lenovo">Lenovo</button>
+              <button class="filter-btn brand-filter" data-brand="MSI">MSI</button>
+              <button class="filter-btn brand-filter" data-brand="Samsung">Samsung</button>
+              <button class="filter-btn brand-filter" data-brand="LG">LG</button>
             </div>
           </div>
 
@@ -526,7 +546,7 @@
                     `<span class="market-price">Ksh ${p.marketPrice.toLocaleString()}</span>` : ''}
                   <span class="sale-price d-block">Ksh ${p.salePrice.toLocaleString()}</span>
                 </div>
-                ${p.condition === 'new' ? '<span class="verified-badge"><i class="bi bi-patch-check-fill"></i> New</span>' : ''}
+                ${p.condition === 'New' ? '<span class="verified-badge"><i class="bi bi-patch-check-fill"></i> New</span>' : ''}
               </div>
               
               <button class="btn btn-primary mt-auto add-to-cart" 
@@ -645,9 +665,9 @@
             description: 'Next-gen gaming console with 4K gaming',
             marketPrice: 80000,
             salePrice: 75000,
-            category: 'console',
-            condition: 'new',
-            brand: 'sony',
+            category: 'Consoles',
+            condition: 'New',
+            brand: 'Sony',
             images: ['/images/ps5.jpg'],
             createdAt: new Date()
           },
@@ -657,10 +677,82 @@
             description: 'Powerful gaming console with Game Pass',
             marketPrice: 70000,
             salePrice: 65000,
-            category: 'console',
-            condition: 'new',
-            brand: 'microsoft',
+            category: 'Consoles',
+            condition: 'New',
+            brand: 'Microsoft',
             images: ['/images/xbox.jpg'],
+            createdAt: new Date()
+          },
+          {
+            _id: '3',
+            title: 'Razer BlackWidow Keyboard',
+            description: 'Mechanical gaming keyboard with RGB lighting',
+            marketPrice: 15000,
+            salePrice: 12000,
+            category: 'Keyboards',
+            condition: 'New',
+            brand: 'Razer',
+            images: ['/images/keyboard.jpg'],
+            createdAt: new Date()
+          },
+          {
+            _id: '4',
+            title: 'Logitech G Pro Mouse',
+            description: 'Professional gaming mouse with precision sensor',
+            marketPrice: 8000,
+            salePrice: 6500,
+            category: 'Mice',
+            condition: 'New',
+            brand: 'Logitech',
+            images: ['/images/mouse.jpg'],
+            createdAt: new Date()
+          },
+          {
+            _id: '5',
+            title: 'Nintendo Switch OLED',
+            description: 'Hybrid gaming console with OLED screen',
+            marketPrice: 45000,
+            salePrice: 42000,
+            category: 'Consoles',
+            condition: 'New',
+            brand: 'Nintendo',
+            images: ['/images/switch.jpg'],
+            createdAt: new Date()
+          },
+          {
+            _id: '6',
+            title: 'Corsair Gaming Headset',
+            description: 'Surround sound gaming headset with microphone',
+            marketPrice: 12000,
+            salePrice: 9500,
+            category: 'Headsets',
+            condition: 'New',
+            brand: 'Corsair',
+            images: ['/images/headset.jpg'],
+            createdAt: new Date()
+          },
+          {
+            _id: '7',
+            title: 'Samsung Gaming Monitor',
+            description: '27-inch 144Hz gaming monitor',
+            marketPrice: 35000,
+            salePrice: 32000,
+            category: 'Monitors',
+            condition: 'New',
+            brand: 'Samsung',
+            images: ['/images/monitor.jpg'],
+            createdAt: new Date()
+          },
+          {
+            _id: '8',
+            title: 'Used PlayStation 4 Pro',
+            description: 'Pre-owned PS4 Pro in excellent condition',
+            marketPrice: 30000,
+            salePrice: 25000,
+            category: 'Consoles',
+            condition: 'Used',
+            brand: 'Sony',
+            images: ['/images/ps4.jpg'],
             createdAt: new Date()
           }
         ];
