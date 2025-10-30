@@ -348,42 +348,6 @@ async function handleRememberMe(user, res, remember) {
   }
 }
 
-// ==================== LOGOUT ROUTE (Universal) ==================
-app.get("/logout", async (req, res) => {
-  try {
-    // Clear Remember Me token if user exists
-    if (req.user) {
-      await handleRememberMe(req.user, res, false);
-    }
-
-    // Determine user role for logging/fallback redirect
-    const role = req.session?.user?.role || "user";
-
-    if (!req.session) return res.redirect("/home");
-
-    // Destroy session
-    req.session.destroy(err => {
-      if (err) {
-        console.error("Error destroying session:", err);
-        return res.redirect(role === "admin" ? "/admin" : "/user");
-      }
-
-      // Clear session cookie
-      res.clearCookie("connect.sid", {
-        path: "/",
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict"
-      });
-
-      console.log(`✅ ${role.charAt(0).toUpperCase() + role.slice(1)} logged out`);
-      return res.redirect("/home");
-    });
-  } catch (err) {
-    console.error("Logout error:", err);
-    return res.redirect("/home");
-  }
-});
 
 
 // ================== MAIN ROUTES ==================
@@ -1618,6 +1582,64 @@ app.get("/profile/remove-image", ensureAuthenticated, async (req, res) => {
     console.error("Error removing profile image:", err);
     req.session.flash = { type: "error", message: "Failed to remove profile image." };
     res.redirect("/profile");
+  }
+});
+
+
+// ===================== PUBLIC PAGES =====================
+app.get("/", (req, res) => res.render("home"));
+app.get("/about", (req, res) => res.render("about"));
+app.get("/contact", (req, res) => res.render("contact"));
+app.get("/whatscoming", (req, res) => res.render("whatscoming"));
+app.get("/shop", (req, res) => res.render("shop"));
+app.get("/terms", (req, res) => res.render("terms"));
+app.get("/signup", (req, res) => res.render("signup"));
+app.get("/login", (req, res) => res.render("login"));
+app.get("/reset-password", (req, res) => res.render("reset-password"));
+app.get("/privacy-policy", (req, res) => res.render("privacy-policy"));
+app.get("/refund-policy", (req, res) => res.render("refund-policy"));
+app.get("/booking", (req, res) => res.render("booking"));
+
+// ===================== USER / ADMIN PAGES =====================
+app.get("/user", ensureAuthenticated, (req, res) => res.render("user"));
+app.get("/edit-user", ensureAuthenticated, (req, res) => res.render("edit-user"));
+app.get("/loans", ensureAuthenticated, (req, res) => res.render("loans"));
+app.get("/message", ensureAuthenticated, (req, res) => res.render("message"));
+
+// ==================== LOGOUT ROUTE (Universal) ==================
+app.get("/logout", async (req, res) => {
+  try {
+    // Clear Remember Me token if user exists
+    if (req.user) {
+      await handleRememberMe(req.user, res, false);
+    }
+
+    // Determine user role for logging/fallback redirect
+    const role = req.session?.user?.role || "user";
+
+    if (!req.session) return res.redirect("/home");
+
+    // Destroy session
+    req.session.destroy(err => {
+      if (err) {
+        console.error("Error destroying session:", err);
+        return res.redirect(role === "admin" ? "/admin" : "/user");
+      }
+
+      // Clear session cookie
+      res.clearCookie("connect.sid", {
+        path: "/",
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict"
+      });
+
+      console.log(`✅ ${role.charAt(0).toUpperCase() + role.slice(1)} logged out`);
+      return res.redirect("/home");
+    });
+  } catch (err) {
+    console.error("Logout error:", err);
+    return res.redirect("/home");
   }
 });
 
