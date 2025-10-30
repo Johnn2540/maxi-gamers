@@ -172,8 +172,9 @@
       
       #cart-toggle { 
         position: fixed; 
-        right: 370px; 
-        top: 1rem; 
+        right: 20px; 
+        top: 50%; 
+        transform: translateY(-50%);
         z-index: 1100; 
         background: var(--secondary-color); 
         border: none; 
@@ -181,7 +182,12 @@
         padding: 0.6rem 1.2rem; 
         font-weight: 600; 
         box-shadow: 0 4px 12px rgba(255,107,0,0.3); 
+        transition: all 0.3s ease;
       } 
+      
+      #cart-toggle:hover {
+        transform: translateY(-50%) scale(1.05);
+      }
       
       .cart-item { 
         border-bottom: 1px solid #ddd; 
@@ -207,6 +213,12 @@
         .filter-section { 
           margin-bottom: 1rem; 
         } 
+        
+        #cart-toggle {
+          right: 10px;
+          padding: 0.5rem 1rem;
+          font-size: 0.9rem;
+        }
       } 
       
       @media (min-width: 576px) and (max-width: 991.98px) { 
@@ -267,6 +279,36 @@
       .stats-label { 
         font-size: 0.8rem; 
         color: #666; 
+      }
+      
+      /* Image Gallery Styles */
+      .image-gallery {
+        position: relative;
+      }
+      
+      .image-count-badge {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        background: rgba(0,0,0,0.7);
+        color: white;
+        padding: 0.2rem 0.5rem;
+        border-radius: 10px;
+        font-size: 0.7rem;
+      }
+      
+      .carousel-thumb {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        cursor: pointer;
+        opacity: 0.7;
+        transition: opacity 0.3s;
+      }
+      
+      .carousel-thumb.active {
+        opacity: 1;
+        border: 2px solid var(--secondary-color);
       }
     </style>
   </head>
@@ -858,6 +900,27 @@
         });
       }
 
+      // Image handling functions
+      function getProductImages(product) {
+        // Handle different image structures in the data
+        if (product.images && Array.isArray(product.images) && product.images.length > 0) {
+          return product.images.map(img => {
+            if (typeof img === 'string') return img;
+            if (img.url) return img.url;
+            return '/images/placeholder.png';
+          });
+        } else if (product.image) {
+          return [product.image];
+        } else {
+          return ['/images/placeholder.png'];
+        }
+      }
+
+      function handleImageError(img) {
+        img.src = '/images/placeholder.png';
+        img.onerror = null; // Prevent infinite loop
+      }
+
       // Filtering and sorting
       function applyFilters() {
         filteredProducts = allProducts.filter(product => {
@@ -977,28 +1040,19 @@
           const discount = p.marketPrice > p.salePrice ? 
             Math.round(((p.marketPrice - p.salePrice) / p.marketPrice) * 100) : 0;
 
-          // Handle images - compatible with your backend structure
-          let images = [];
-          if (p.images && Array.isArray(p.images) && p.images.length > 0) {
-            images = p.images.map(img => {
-              if (typeof img === 'string') return img;
-              if (img.url) return img.url;
-              return '/images/placeholder.png';
-            });
-          } else if (p.mainImage) {
-            images = [p.mainImage];
-          } else {
-            images = ['/images/placeholder.png'];
-          }
-
-          const mainImage = images[0] || '/images/placeholder.png';
+          // Get all images for this product
+          const images = getProductImages(p);
+          const mainImage = images[0];
 
           return `
             <div class="col-product mb-4">
               <div class="card h-100 product-card position-relative">
                 ${discount > 0 ? `<span class="discount-badge">-${discount}%</span>` : ''}
-                <img src="${mainImage}" class="card-img-top" alt="${p.title}" 
-                     onerror="this.src='/images/placeholder.png'">
+                <div class="image-gallery">
+                  <img src="${mainImage}" class="card-img-top" alt="${p.title}" 
+                       onerror="handleImageError(this)">
+                  ${images.length > 1 ? `<span class="image-count-badge">+${images.length-1} more</span>` : ''}
+                </div>
                 <div class="card-body d-flex flex-column p-3">
                   <h5 class="card-title">${p.title}</h5>
                   <p class="card-text text-muted small flex-grow-1">${p.description || 'Premium gaming product'}</p>
@@ -1017,7 +1071,7 @@
                   </button>
                   <button class="btn btn-outline-secondary mt-2 view-images-btn" 
                           data-images='${JSON.stringify(images)}'>
-                    <i class="bi bi-eye"></i> View Images
+                    <i class="bi bi-images"></i> View Images (${images.length})
                   </button>
                 </div>
               </div>
@@ -1061,21 +1115,22 @@
         
         carouselInner.innerHTML = images.map((img, idx) => `
           <div class="carousel-item ${idx === 0 ? 'active' : ''}">
-            <img src="${img}" class="d-block w-100" style="max-height:80vh; object-fit:contain;">
+            <img src="${img}" class="d-block w-100" style="max-height:80vh; object-fit:contain;" 
+                 onerror="handleImageError(this)">
           </div>
         `).join('');
 
         carouselThumbs.innerHTML = images.map((img, idx) => `
-          <img src="${img}" class="img-thumbnail ${idx === 0 ? 'active' : ''}" 
+          <img src="${img}" class="carousel-thumb ${idx === 0 ? 'active' : ''}" 
                style="width:80px; height:80px; object-fit:cover; cursor:pointer;"
                data-bs-target="#imageCarousel" data-bs-slide-to="${idx}">
         `).join('');
 
         // Add click event to thumbnails
-        carouselThumbs.querySelectorAll('.img-thumbnail').forEach((thumb, idx) => {
+        carouselThumbs.querySelectorAll('.carousel-thumb').forEach((thumb, idx) => {
           thumb.addEventListener('click', () => {
             document.querySelectorAll('.carousel-item').forEach(item => item.classList.remove('active'));
-            document.querySelectorAll('.img-thumbnail').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.carousel-thumb').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.carousel-item')[idx].classList.add('active');
             thumb.classList.add('active');
           });
