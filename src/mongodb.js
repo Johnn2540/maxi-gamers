@@ -7,7 +7,7 @@ const connectDB = async (retries = 5) => {
   const MONGO_URI = process.env.MONGO_URI;
 
   if (!MONGO_URI) {
-    console.error("❌ MONGO_URI is not defined in .env");
+    console.error(" MONGO_URI is not defined in .env");
     process.exit(1);
   }
 
@@ -16,14 +16,14 @@ const connectDB = async (retries = 5) => {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
-    console.log("✅ Connected to MongoDB Atlas");
+    console.log(" Connected to MongoDB Atlas");
   } catch (err) {
-    console.error(`❌ MongoDB connection error: ${err.message || err}`);
+    console.error(` MongoDB connection error: ${err.message || err}`);
     if (retries > 0) {
-      console.log(`⏳ Retrying connection... (${retries} attempts left)`);
+      console.log(` Retrying connection... (${retries} attempts left)`);
       setTimeout(() => connectDB(retries - 1), 3000); // retry after 3 seconds
     } else {
-      console.error("❌ Could not connect to MongoDB after multiple attempts");
+      console.error(" Could not connect to MongoDB after multiple attempts");
       process.exit(1);
     }
   }
@@ -89,12 +89,61 @@ const productSchema = new mongoose.Schema(
     salePrice: { type: Number, required: true },
     description: { type: String },
     onSale: { type: Boolean, default: false },
+
+    //  New Fields for Admin Dropdowns
+    category: {
+      type: String,
+      enum: [
+        'Consoles',
+        'Games',
+        'Accessories',
+        'PC Parts',
+        'Controllers',
+        'Headsets',
+        'Monitors',
+        'Cables',
+        'Storage',
+        'Keyboards',
+        'Mice',
+        'Speakers',
+        'Unspecified'
+      ],
+      default: 'Unspecified'
+    },
+    condition: {
+      type: String,
+      enum: ['New', 'Used', 'Refurbished', 'Like New', 'Open Box', 'Unspecified'],
+      default: 'Unspecified'
+    },
+    brand: {
+      type: String,
+      enum: [
+        'Sony',
+        'Microsoft',
+        'Nintendo',
+        'Razer',
+        'Logitech',
+        'Corsair',
+        'HP',
+        'Dell',
+        'Asus',
+        'Acer',
+        'Lenovo',
+        'MSI',
+        'Samsung',
+        'LG',
+        'Unspecified'
+      ],
+      default: 'Unspecified'
+    },
+
+    //  Images (max 4)
     images: {
       type: [String],
       validate: [
         {
           validator: (arr) => arr.length <= 4,
-          message: "You can upload at most 4 images per product.",
+          message: 'You can upload at most 4 images per product.',
         },
       ],
       default: [],

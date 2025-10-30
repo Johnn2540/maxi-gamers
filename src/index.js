@@ -865,21 +865,23 @@ app.post("/admin/users/update/:id", ensureAuthenticated, requireAdmin, async (re
   }
 });
 
-// ================== PRODUCT ROUTES =================
+// ================== PRODUCT ROUTES ==================
 
+// ========== ADMIN PRODUCTS JSON (for Admin Dashboard) ==========
 app.get("/admin/products/json", ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
     const products = await Product.find();
 
+    // Ensure every product includes mainImage and consistent structure
     const formattedProducts = products.map(p => {
       const obj = p.toObject();
 
-      // If "images" is missing but an old single image exists (e.g., mainImage)
+      // Handle backward compatibility — if old product used only mainImage
       if ((!obj.images || obj.images.length === 0) && obj.mainImage) {
         obj.images = [obj.mainImage];
       }
 
-      // Always set mainImage to the first image
+      // Always define mainImage as the first image
       obj.mainImage = obj.images?.[0] || null;
 
       return obj;
@@ -892,67 +894,75 @@ app.get("/admin/products/json", ensureAuthenticated, requireAdmin, async (req, r
   }
 });
 
-// =================== PUBLIC PRODUCT JSON (Shop) ===================
+
+// ========== PUBLIC PRODUCTS JSON (for Shop Page) ==========
 app.get("/products/json", async (req, res) => {
   try {
     const products = await Product.find();
 
+    // Format data for frontend: always provide mainImage and fallback handling
     const productsWithPath = products.map(p => ({
       ...p.toObject(),
 
-      //  Fallback: if "images" array is empty, use mainImage instead
+      // If no images array, fallback to old single mainImage
       images: (p.images && p.images.length > 0)
         ? p.images
         : (p.mainImage ? [p.mainImage] : []),
 
-      //  Always ensure mainImage exists for UI display
+      // Ensure mainImage always exists (for UI)
       mainImage: p.mainImage || (p.images?.[0] || null)
     }));
 
     res.json(productsWithPath);
   } catch (err) {
-    console.error(" Failed to fetch products:", err);
+    console.error("Failed to fetch products:", err);
     res.status(500).json({ success: false, message: "Failed to fetch products" });
   }
 });
 
 
-// ================== ADD PRODUCT (Up to 4 Images) ==================
+// ========== ADD PRODUCT (Supports Up to 4 Images + Dropdown Fields) ==========
 app.post(
   "/admin/products",
-  upload.array("images", 4),
+  upload.array("images", 4), // Accept up to 4 images
   ensureAuthenticated,
   requireAdmin,
   async (req, res) => {
     try {
-      const { title, marketPrice, salePrice, description, onSale } = req.body;
+      const { title, marketPrice, salePrice, description, onSale, category, condition, brand } = req.body;
       let imageUrls = [];
 
-      // Require at least 1 image
+      // Validation — at least one image required
       if (!req.files || req.files.length === 0) {
         return res.status(400).json({ success: false, message: "At least one image is required." });
       }
 
-      // Upload all images to Cloudinary
+      // Upload each image to Cloudinary
       for (const file of req.files) {
         const result = await cloudinary.uploader.upload(file.path, { folder: "products" });
         imageUrls.push(result.secure_url);
       }
 
-      // Set main image as first image
+      // First image = main display image
       const mainImage = imageUrls[0];
 
+      // Create new product document
       const newProduct = await Product.create({
         title,
         marketPrice,
         salePrice,
         description,
+        category: category || "Unspecified",     // Dropdown default fallback
+        condition: condition || "Unspecified",
+        brand: brand || "Unspecified",
         onSale: onSale === "on" || onSale === "true",
         images: imageUrls,
         mainImage
       });
 
+      // Emit new product event (for real-time admin/shop updates)
       io.emit("newProduct", newProduct);
+
       res.json({ success: true, product: newProduct });
     } catch (err) {
       console.error("Error adding product:", err);
@@ -962,20 +972,22 @@ app.post(
 );
 
 
-// ================== EDIT PRODUCT (Up to 4 Images) ==================
+// ========== EDIT PRODUCT (Supports Image Replacement + Dropdown Updates) ==========
 app.post(
   "/admin/products/edit/:id",
-  upload.array("images", 4),
+  upload.array("images", 4), // Up to 4 replacement images
   ensureAuthenticated,
   requireAdmin,
   async (req, res) => {
     try {
-      const { title, marketPrice, salePrice, description, onSale } = req.body;
+      const { title, marketPrice, salePrice, description, onSale, category, condition, brand } = req.body;
+
+      // Find the product by ID
       const product = await Product.findById(req.params.id);
       if (!product)
         return res.status(404).json({ success: false, message: "Product not found" });
 
-      // If new images uploaded, replace the old ones
+      // If new images uploaded, replace old ones
       if (req.files && req.files.length > 0) {
         const uploadedImages = [];
         for (const file of req.files) {
@@ -983,20 +995,26 @@ app.post(
           uploadedImages.push(result.secure_url);
         }
         product.images = uploadedImages;
-        product.mainImage = uploadedImages[0]; // update main image as first
+        product.mainImage = uploadedImages[0]; // Always first image as main
       }
 
+      // Merge updated fields — retain old values if not provided
       Object.assign(product, {
         title,
         marketPrice,
         salePrice,
         description,
+        category: category || product.category || "Unspecified",
+        condition: condition || product.condition || "Unspecified",
+        brand: brand || product.brand || "Unspecified",
         onSale: onSale === "on" || onSale === "true"
       });
 
       await product.save();
 
+      // Emit real-time update event
       io.emit("updateProduct", product);
+
       res.json({ success: true, product });
     } catch (err) {
       console.error("Error editing product:", err);
@@ -1006,17 +1024,25 @@ app.post(
 );
 
 
-// ================== DELETE PRODUCT ==================
+// ========== DELETE PRODUCT ==========
 app.post("/admin/products/delete/:id", ensureAuthenticated, requireAdmin, async (req, res) => {
   try {
     const product = await Product.findByIdAndDelete(req.params.id);
-    if (!product) return res.status(404).json({ success: false, message: "Product not found" });
+
+    // Handle not found error
+    if (!product)
+      return res.status(404).json({ success: false, message: "Product not found" });
+
+    // Emit delete event for real-time UI sync
     io.emit("deleteProduct", product._id);
+
     res.json({ success: true });
   } catch (err) {
+    console.error("Error deleting product:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
+
 
 
 // ================== LEADERBOARD ROUTES ==================
