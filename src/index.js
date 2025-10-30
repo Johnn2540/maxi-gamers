@@ -234,83 +234,77 @@ io.on("connection", socket => {
   });
 });
 
-// ================== AUTH MIDDLEWARE ==================
+// ================== AUTH MIDDLEWARE (Updated) ==================
 async function ensureAuthenticated(req, res, next) {
   try {
-    // 1️⃣ Check if session exists
-    if (!req.session.user) {
-      const token = req.cookies?.rememberMeToken;
+    let sessionUser = req.session.user;
 
-      if (token) {
-        const user = await User.findOne({ rememberToken: token });
-        if (user) {
-          req.session.user = {
-            id: user._id,
-            name: user.name,
-            role: (user.role || "user").toLowerCase(),
-          };
-          req.session.lastActivity = Date.now();
-          req.session.justLoggedIn = true; // One-time redirect flag
-        } else {
-          res.clearCookie("rememberMeToken");
-          return res.redirect("/login");
-        }
+    // 1️⃣ Restore session from Remember Me token if needed
+    if (!sessionUser && req.cookies?.rememberMeToken) {
+      const userFromToken = await User.findOne({ rememberToken: req.cookies.rememberMeToken });
+      if (userFromToken) {
+        sessionUser = req.session.user = {
+          id: userFromToken._id.toString(),
+          name: userFromToken.name,
+          role: (userFromToken.role || "user").toLowerCase(),
+        };
+        req.session.lastActivity = Date.now();
+        req.session.justLoggedIn = true; // one-time redirect
       } else {
+        res.clearCookie("rememberMeToken");
         return res.redirect("/login");
       }
     }
 
-    // 2️⃣ Session timeout (30 min)
+    // 2️⃣ If no session, redirect to login
+    if (!sessionUser) return res.redirect("/login");
+
+    // 3️⃣ Session timeout (30 min)
     const now = Date.now();
     const TIMEOUT_LIMIT = 30 * 60 * 1000;
-
     if (req.session.lastActivity && now - req.session.lastActivity > TIMEOUT_LIMIT) {
       return req.session.destroy(() => {
         res.clearCookie("rememberMeToken");
-        res.redirect(
-          `/login?flash=${encodeURIComponent("Session expired. Please log in again.")}&type=info`
-        );
+        res.redirect(`/login?flash=${encodeURIComponent("Session expired. Please log in again.")}&type=info`);
       });
     }
-
     req.session.lastActivity = now;
 
-    // 3️⃣ Verify user still exists
-    const user = await User.findById(req.session.user.id);
+    // 4️⃣ Load full user from DB
+    const user = await User.findById(sessionUser.id);
     if (!user) {
       return req.session.destroy(() => res.redirect("/login"));
     }
 
     const role = (user.role || "").toLowerCase();
 
-    // 4️⃣ Block inactive non-admin users with contact info
+    // 5️⃣ Block inactive non-admin users
     if (role !== "admin" && !user.active) {
       return req.session.destroy(() => {
-        res.redirect(
-          `/login?flash=${encodeURIComponent("Your account is suspended or pending verification. Please contact the admin at 0718804786.")}&type=error`
-        );
+        res.redirect(`/login?flash=${encodeURIComponent("Your account is suspended or pending verification. Please contact admin.")}&type=error`);
       });
     }
 
-    // 5️⃣ Attach user info for global access and set template fallbacks
+    // 6️⃣ Attach user for global access
     req.user = user;
-    res.locals.user = user;
-    res.locals.user.profilePic = user.profilePic || 'https://via.placeholder.com/40';
-    res.locals.user.username = user.name || 'Guest';
+    res.locals.user = {
+      ...user.toObject(),
+      profilePic: user.profilePic || 'https://via.placeholder.com/40',
+      username: user.name || 'Guest'
+    };
 
-    // 6️⃣ Handle one-time redirect after login or remember-me restore
+    // 7️⃣ One-time redirect after login or Remember Me restore
     if (req.session.justLoggedIn) {
       delete req.session.justLoggedIn;
-      if (role === "admin") return res.redirect("/admin");
-      if (role === "user" && user.active) return res.redirect("/user");
+      return res.redirect(role === "admin" ? "/admin" : "/user");
     }
 
-    // 7️⃣ Redirect root/dashboard to appropriate dashboard
+    // 8️⃣ Redirect root/dashboard paths automatically
     if (["/", "/dashboard"].includes(req.path)) {
       return res.redirect(role === "admin" ? "/admin" : "/user");
     }
 
-    // 8️⃣ Proceed to next middleware
+    // 9️⃣ Proceed to next middleware
     next();
   } catch (error) {
     console.error("Authentication error:", error);
@@ -321,15 +315,17 @@ async function ensureAuthenticated(req, res, next) {
 // ================== ROLE CHECK HELPERS ==================
 function requireRole(role) {
   return (req, res, next) => {
-    const userRole = (req.user?.role || "").toLowerCase();
-    if (userRole !== role.toLowerCase()) return res.status(403).send("Access denied.");
+    if ((req.user?.role || "").toLowerCase() !== role.toLowerCase()) {
+      return res.status(403).send("Access denied.");
+    }
     next();
   };
 }
 
 function requireAdmin(req, res, next) {
-  const userRole = (req.user?.role || "").toLowerCase();
-  if (userRole !== "admin") return res.status(403).send("Access denied. Admins only.");
+  if ((req.user?.role || "").toLowerCase() !== "admin") {
+    return res.status(403).send("Access denied. Admins only.");
+  }
   next();
 }
 
@@ -352,6 +348,7 @@ async function handleRememberMe(user, res, remember) {
     res.clearCookie("rememberMeToken");
   }
 }
+
 
 // ================== HELPER FUNCTIONS ==================
 function handleSignupError(req, res, message, type = "error", redirectPath = "/signup") {
@@ -396,6 +393,35 @@ pages.forEach(page => {
     });
   });
 });
+
+// --------------------- LOGOUT ROUTES -------------------------
+
+// Admin logout
+app.get("/admin/logout", (req, res) => {
+  req.session.destroy(err => {
+    if (err) {
+      console.error("Error destroying admin session:", err);
+      return res.redirect("/admin");
+    }
+    res.clearCookie("connect.sid");
+    console.log(" Admin logged out");
+    res.redirect("/home");
+  });
+});
+
+// User logout
+app.get("/user/logout", (req, res) => {
+  req.session.destroy(err => {
+    if (err) {
+      console.error("Error destroying user session:", err);
+      return res.redirect("/user");
+    }
+    res.clearCookie("connect.sid");
+    console.log(" User logged out");
+    res.redirect("/home");
+  });
+});
+
 
 // ================== MAIN ROUTES ==================
 
@@ -463,16 +489,7 @@ app.get("/auth/google/callback",
   }
 );
 
-app.get("/logout", (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      console.error("Error destroying session:", err);
-      return res.redirect("/user"); // fallback if error occurs
-    }
-    res.clearCookie("connect.sid"); // clear the session cookie
-    res.redirect("/home"); // redirect to home page
-  });
-});
+
 
 // ================== USER AUTH ROUTES ==================
 
@@ -481,23 +498,23 @@ app.post("/signup", async (req, res) => {
   try {
     const { name, email, phone, password, studentId } = req.body;
 
-    // Sanitize user input
+    // 1️⃣ Sanitize user input
     const sanitizedEmail = email?.toLowerCase().trim();
     const sanitizedName = name?.trim();
     const sanitizedPhone = phone?.trim();
 
-    // Check required fields
+    // 2️⃣ Check required fields
     if (!sanitizedName || !sanitizedEmail || !sanitizedPhone || !password) {
       return handleSignupError(req, res, "All required fields must be filled.", "error");
     }
 
-    // Validate email format
+    // 3️⃣ Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(sanitizedEmail)) {
       return handleSignupError(req, res, "Invalid email format.", "error");
     }
 
-    // Validate password: at least 6 characters, includes letters & numbers
+    // 4️⃣ Validate password (min 6 chars, at least 1 letter & 1 number)
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
     if (!passwordRegex.test(password)) {
       return handleSignupError(
@@ -508,7 +525,7 @@ app.post("/signup", async (req, res) => {
       );
     }
 
-    // Check if user already exists by email or phone
+    // 5️⃣ Check if user already exists by email or phone
     const existingUser = await User.findOne({
       $or: [{ email: sanitizedEmail }, { phone: sanitizedPhone }],
     });
@@ -523,152 +540,119 @@ app.post("/signup", async (req, res) => {
       );
     }
 
-    // Hash the password before saving
+    // 6️⃣ Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create new user in DB
+    // 7️⃣ Create new user
     const user = await User.create({
       name: sanitizedName,
       email: sanitizedEmail,
       phone: sanitizedPhone,
       password: hashedPassword,
       studentId,
-      role: "user", // Default role
-      active: true, // New users are active by default
+      role: "user",       // Default role
+      active: true,       // Active by default
       createdAt: new Date(),
     });
 
-    // Initialize session for the newly signed-up user
+    // 8️⃣ Initialize session
     req.session.user = {
       id: user._id,
       name: user.name,
       role: user.role,
     };
+    req.session.lastActivity = Date.now();
 
     console.log(`🟢 New user registered: ${user.email}`);
 
-    // Redirect new user to /user dashboard
+    // 9️⃣ Redirect to user dashboard
     return res.redirect("/user");
-  } catch (err) {
-    console.error("Signup error:", err);
 
-    // Handle MongoDB duplicate key errors
+  } catch (err) {
+    console.error("🔴 Signup error:", err);
+
+    // 10️⃣ Handle MongoDB duplicate key errors
     if (err.code === 11000) {
       if (err.keyPattern?.email) {
-        return handleSignupError(
-          req,
-          res,
-          "Email already registered. Please login instead.",
-          "info",
-          "/login"
-        );
+        return handleSignupError(req, res, "Email already registered. Please login instead.", "info", "/login");
       }
       if (err.keyPattern?.phone) {
-        return handleSignupError(
-          req,
-          res,
-          "Phone number already registered. Please login instead.",
-          "info",
-          "/login"
-        );
+        return handleSignupError(req, res, "Phone number already registered. Please login instead.", "info", "/login");
       }
     }
 
-    // Fallback error
-    return handleSignupError(
-      req,
-      res,
-      "An unexpected error occurred during signup. Please try again.",
-      "error"
-    );
+    // 11️⃣ Fallback error
+    return handleSignupError(req, res, "An unexpected error occurred during signup. Please try again.", "error");
   }
 });
 
-// ====== LOGIN ROUTE (Updated) ======
+
+// ====== LOGIN ROUTE (Fixed) ======
 app.post("/login", async (req, res) => {
   try {
     const { email, password, remember } = req.body;
-
     const sanitizedEmail = email?.toLowerCase().trim();
 
-    // Validate required fields
+    // Validate input
     if (!sanitizedEmail || !password) {
       return handleLoginError(req, res, "Email and password are required.");
     }
 
-    // Find user by email
+    // Find user
     const user = await User.findOne({ email: sanitizedEmail });
-    if (!user) {
-      return handleLoginError(req, res, "Invalid email or password.");
-    }
+    if (!user) return handleLoginError(req, res, "Invalid email or password.");
 
-    // Compare provided password with hashed password
+    // Check password
     const isMatch = await bcrypt.compare(password, user.password || "");
-    if (!isMatch) {
-      return handleLoginError(req, res, "Invalid email or password.");
-    }
+    if (!isMatch) return handleLoginError(req, res, "Invalid email or password.");
 
-    // Prevent inactive users (except admins)
     const role = (user.role || "").toLowerCase();
+
+    // Block inactive non-admins
     if (role !== "admin" && !user.active) {
-      return handleLoginError(
-        req,
-        res,
-        "Your account is inactive or suspended. Please contact support."
-      );
+      return handleLoginError(req, res, "Your account is inactive or suspended. Contact support.");
     }
 
-    // 🚨 Prevent MongoDB duplicate key (phone: null) crash
-    if (user.phone === undefined || user.phone === null) {
-      user.phone = undefined; // ensures Mongoose won’t include this field in any update
-    }
+    // Ensure phone field is safe for Mongoose
+    if (user.phone === undefined || user.phone === null) user.phone = undefined;
 
-    // Regenerate session securely
+    // Regenerate session
     req.session.regenerate(async (err) => {
-      if (err) {
-        console.error("Session regeneration error:", err);
-        return handleLoginError(req, res, "Login session failed. Try again.");
-      }
+      if (err) return handleLoginError(req, res, "Login session failed. Try again.");
 
-      // Save user info to session
+      // Save user in session
       req.session.user = {
-        id: user._id,
+        id: user._id.toString(),
         name: user.name,
-        role: user.role,
+        role,
       };
       req.session.lastActivity = Date.now();
+      req.session.justLoggedIn = true; // One-time redirect handled in middleware
 
-      // Handle "Remember Me" safely
+      // Handle Remember Me
       try {
-        if (typeof handleRememberMe === "function") {
-          await handleRememberMe(user, res, remember);
-        }
+        await handleRememberMe(user, res, remember);
       } catch (rememberErr) {
         console.warn("⚠️ Remember Me failed:", rememberErr.message);
       }
 
-      // Redirect based on role
-      const redirectUrl = role === "admin" ? "/admin" : "/user";
-
       // Save session and redirect
       req.session.save((saveErr) => {
-        if (saveErr) {
-          console.error("Session save error:", saveErr);
-          return handleLoginError(req, res, "Session save failed. Try again.");
-        }
+        if (saveErr) return handleLoginError(req, res, "Session save failed. Try again.");
+        console.log(" User logged in:", user.email, "| Role:", role);
 
-        console.log("✅ User logged in:", user.email, "| Role:", role);
-
+        // JSON response (API)
         if (req.headers.accept?.includes("application/json")) {
           return res.json({
             success: true,
             message: "Login successful",
             role,
-            redirect: redirectUrl,
+            redirect: role === "admin" ? "/admin" : "/user",
           });
         }
 
-        res.redirect(redirectUrl);
+        // Redirect handled by middleware using justLoggedIn flag
+        res.redirect("/"); // middleware will redirect to /admin or /user automatically
       });
     });
   } catch (err) {
@@ -683,17 +667,17 @@ app.post("/reset-password", async (req, res) => {
   try {
     const { email, newPassword, confirmPassword } = req.body;
 
-    // Validate all fields
+    // 1️⃣ Validate all fields
     if (!email || !newPassword || !confirmPassword) {
       return handleFlashRedirect(res, "/reset-password", "All fields are required.", "error");
     }
 
-    // Check password match
+    // 2️⃣ Check if passwords match
     if (newPassword !== confirmPassword) {
       return handleFlashRedirect(res, "/reset-password", "Passwords do not match.", "error");
     }
 
-    // Validate password format
+    // 3️⃣ Enforce strong password (min 6 chars, at least 1 letter & 1 number)
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
     if (!passwordRegex.test(newPassword)) {
       return handleFlashRedirect(
@@ -704,19 +688,18 @@ app.post("/reset-password", async (req, res) => {
       );
     }
 
-    // Find user by email
+    // 4️⃣ Find user by email
     const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) {
-      return handleFlashRedirect(
-        res,
-        "/reset-password",
-        "No account found with that email address.",
-        "error"
-      );
+      return handleFlashRedirect(res, "/reset-password", "No account found with that email address.", "error");
     }
 
-    // Update password with hashed version
+    // 5️⃣ Update password with hashed version
     user.password = await bcrypt.hash(newPassword, 10);
+
+    // Optional: clear any Remember Me token for security
+    user.rememberToken = null;
+
     await user.save();
 
     return handleFlashRedirect(res, "/login", "Password reset successful. You can now log in.", "success");
@@ -731,7 +714,7 @@ app.post("/check-user", async (req, res) => {
   try {
     const { email, phone } = req.body;
 
-    // Must provide either email or phone
+    // 1️⃣ Must provide either email or phone
     if (!email && !phone) {
       return res.status(400).json({
         success: false,
@@ -740,14 +723,10 @@ app.post("/check-user", async (req, res) => {
       });
     }
 
-    // Build query dynamically
+    // 2️⃣ Build query dynamically
     const query = [];
-    if (typeof email === "string" && email.trim()) {
-      query.push({ email: email.toLowerCase().trim() });
-    }
-    if (typeof phone === "string" && phone.trim()) {
-      query.push({ phone: phone.trim() });
-    }
+    if (typeof email === "string" && email.trim()) query.push({ email: email.toLowerCase().trim() });
+    if (typeof phone === "string" && phone.trim()) query.push({ phone: phone.trim() });
 
     if (!query.length) {
       return res.status(400).json({
@@ -757,21 +736,13 @@ app.post("/check-user", async (req, res) => {
       });
     }
 
-    // Check if user exists
+    // 3️⃣ Check if user exists
     const user = await User.findOne({ $or: query });
-
-    if (user) {
-      return res.json({
-        success: true,
-        exists: true,
-        message: "A user with this email or phone already exists.",
-      });
-    }
 
     return res.json({
       success: true,
-      exists: false,
-      message: "No matching user found.",
+      exists: !!user,
+      message: user ? "A user with this email or phone already exists." : "No matching user found.",
     });
   } catch (err) {
     console.error("🔴 Check-user error:", err);
@@ -782,6 +753,7 @@ app.post("/check-user", async (req, res) => {
     });
   }
 });
+
 
 
 // ================== ADMIN USER ROUTES ==================

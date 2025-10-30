@@ -1051,30 +1051,34 @@
     // Initialize socket connection
     const socket = io();
     
- // DOM elements
+// ======= DOM Elements =======
 const menuToggle = document.getElementById('menuToggle');
 const sidebar = document.getElementById('sidebar');
 const overlay = document.getElementById('overlay');
-const logoutLink = document.querySelector('a[href="/logout"]');
+// Select all logout links (desktop and mobile)
+const logoutLinks = document.querySelectorAll('a[href="/admin/logout"], a[href="/user/logout"]');
 
-// Toggle sidebar on mobile
+// ======= Toggle Sidebar on Mobile =======
 menuToggle.addEventListener('click', () => {
   sidebar.classList.toggle('show');
   overlay.classList.toggle('show');
 });
 
-// Close sidebar when clicking outside on mobile
+// ======= Close Sidebar by Clicking Overlay =======
 overlay.addEventListener('click', () => {
   sidebar.classList.remove('show');
   overlay.classList.remove('show');
 });
 
-// Ensure logout works on mobile and desktop
-logoutLink.addEventListener('click', (e) => {
-  e.preventDefault(); // stop default in case overlay blocks it
-  sidebar.classList.remove('show');
-  overlay.classList.remove('show');
-  window.location.href = '/logout'; // navigate to logout route
+// ======= Handle Logout =======
+logoutLinks.forEach(link => {
+  link.addEventListener('click', (e) => {
+    e.preventDefault(); // prevent default navigation
+    sidebar.classList.remove('show'); // hide sidebar if open
+    overlay.classList.remove('show'); // hide overlay if visible
+    // Redirect to the logout route
+    window.location.href = link.getAttribute('href');
+  });
 });
 
 
