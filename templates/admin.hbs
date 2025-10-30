@@ -424,7 +424,7 @@
   </table>
 </div>
 
-<!-- LOANS TAB -->
+<!-- ========== LOANS TAB ========== -->
 <div class="tab-pane fade" id="loans">
   <h2 class="mb-4">💰 Manage Loans</h2>
 
@@ -441,9 +441,10 @@
 
       <select id="statusFilterLoans" class="form-select" style="max-width: 180px;">
         <option value="">All Status</option>
-        <option value="pending">Pending</option>
-        <option value="approved">Approved</option>
-        <option value="rejected">Rejected</option>
+        <option value="Pending">Pending</option>
+        <option value="Approved">Approved</option>
+        <option value="Rejected">Rejected</option>
+        <option value="Visit Shop">Visit Shop</option>
       </select>
 
       <button id="clearLoanFilters" class="btn btn-outline-secondary">
@@ -479,7 +480,7 @@
   </div>
 </div>
 
-<!-- Loan Image Modal -->
+<!-- ========== Loan Image Modal ========== -->
 <div class="modal fade" id="loanImageModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content bg-dark text-center">
@@ -489,7 +490,6 @@
     </div>
   </div>
 </div>
-
 
       <!-- BANNER-CONTENT TAB -->
       <div class="tab-pane fade" id="content">
@@ -1571,6 +1571,12 @@ document.addEventListener('DOMContentLoaded', loadProducts);
 
 // ===== LOANS TAB =====
 const adminLoanTable = document.getElementById("adminLoanTable");
+const loanSearch = document.getElementById("loanSearch");
+const statusFilterLoans = document.getElementById("statusFilterLoans");
+const clearLoanFilters = document.getElementById("clearLoanFilters");
+const loanCount = document.getElementById("loanCount");
+
+let allLoans = []; // store all loans globally for filtering
 
 // Render one loan row
 function renderAdminLoanRow(loan) {
@@ -1634,19 +1640,20 @@ function showLoanImage(url) {
   document.getElementById("loanModalImg").src = url;
 }
 
-// Load loans initially
+// ===== LOAD LOANS =====
 async function loadAdminLoans() {
   try {
     const res = await fetch("/admin/loans/json");
-    const loans = await res.json();
+    allLoans = await res.json();
 
-    if (!loans.length) {
+    if (!Array.isArray(allLoans) || allLoans.length === 0) {
       adminLoanTable.innerHTML =
         '<tr><td colspan="8" class="text-center">No loans yet</td></tr>';
+      loanCount.textContent = "Showing 0 loans";
       return;
     }
 
-    adminLoanTable.innerHTML = loans.map(renderAdminLoanRow).join("");
+    renderFilteredLoans();
   } catch (error) {
     console.error("Error loading loans:", error);
     adminLoanTable.innerHTML =
@@ -1654,7 +1661,38 @@ async function loadAdminLoans() {
   }
 }
 
-// Admin updates loan status
+// ===== FILTER / SEARCH =====
+function renderFilteredLoans() {
+  const searchTerm = loanSearch?.value?.toLowerCase() || "";
+  const statusTerm = statusFilterLoans?.value || "";
+
+  const filtered = allLoans.filter((loan) => {
+    const matchesSearch =
+      loan.description?.toLowerCase().includes(searchTerm) ||
+      loan.userEmail?.toLowerCase().includes(searchTerm);
+    const matchesStatus = statusTerm ? loan.status === statusTerm : true;
+    return matchesSearch && matchesStatus;
+  });
+
+  adminLoanTable.innerHTML = filtered.length
+    ? filtered.map(renderAdminLoanRow).join("")
+    : '<tr><td colspan="8" class="text-center">No matching loans found</td></tr>';
+
+  loanCount.textContent = `Showing ${filtered.length} loan${
+    filtered.length !== 1 ? "s" : ""
+  }`;
+}
+
+// Filter listeners
+loanSearch?.addEventListener("input", renderFilteredLoans);
+statusFilterLoans?.addEventListener("change", renderFilteredLoans);
+clearLoanFilters?.addEventListener("click", () => {
+  loanSearch.value = "";
+  statusFilterLoans.value = "";
+  renderFilteredLoans();
+});
+
+// ===== ADMIN: UPDATE LOAN STATUS =====
 async function updateLoan(id, status) {
   try {
     const res = await fetch(`/admin/loans/${id}/status`, {
@@ -1665,7 +1703,9 @@ async function updateLoan(id, status) {
 
     const data = await res.json();
     if (data.success) {
-      document.getElementById(`loan-${id}`).outerHTML = renderAdminLoanRow(data.loan);
+      const index = allLoans.findIndex((l) => l._id === id);
+      if (index !== -1) allLoans[index] = data.loan;
+      renderFilteredLoans();
     } else {
       alert("❌ Failed to update loan status: " + (data.message || ""));
     }
@@ -1675,23 +1715,22 @@ async function updateLoan(id, status) {
   }
 }
 
-// ===== NEW FEATURE: Delete Loan Request =====
+// ===== DELETE LOAN =====
 async function deleteLoan(id) {
-  if (!confirm("⚠️ Are you sure you want to delete this loan request? This action cannot be undone.")) return;
+  if (
+    !confirm(
+      "⚠️ Are you sure you want to delete this loan request? This action cannot be undone."
+    )
+  )
+    return;
 
   try {
-    const res = await fetch(`/admin/loans/${id}`, {
-      method: "DELETE",
-    });
-
+    const res = await fetch(`/admin/loans/${id}`, { method: "DELETE" });
     const data = await res.json();
 
     if (data.success) {
-      document.getElementById(`loan-${id}`)?.remove();
-      if (!adminLoanTable.querySelector("tr")) {
-        adminLoanTable.innerHTML =
-          '<tr><td colspan="8" class="text-center">No loans available</td></tr>';
-      }
+      allLoans = allLoans.filter((l) => l._id !== id);
+      renderFilteredLoans();
     } else {
       alert("❌ Failed to delete loan: " + (data.message || ""));
     }
@@ -1701,120 +1740,132 @@ async function deleteLoan(id) {
   }
 }
 
-// Real-time: new loan added
+// ===== REAL-TIME SOCKET EVENTS =====
 socket.on("loanCreated", (loan) => {
-  if (!document.getElementById(`loan-${loan._id}`)) {
-    adminLoanTable.insertAdjacentHTML("afterbegin", renderAdminLoanRow(loan));
+  if (!allLoans.find((l) => l._id === loan._id)) {
+    allLoans.unshift(loan);
+    renderFilteredLoans();
   }
 });
 
-// Real-time: loan updated
 socket.on("loanUpdated", (loan) => {
-  const row = document.getElementById(`loan-${loan._id}`);
-  if (row) {
-    row.outerHTML = renderAdminLoanRow(loan);
-  } else {
-    loadAdminLoans();
-  }
+  const index = allLoans.findIndex((l) => l._id === loan._id);
+  if (index !== -1) allLoans[index] = loan;
+  renderFilteredLoans();
 });
 
-// Real-time: loan deleted
 socket.on("loanDeleted", (id) => {
-  document.getElementById(`loan-${id}`)?.remove();
-  if (!adminLoanTable.querySelector("tr")) {
-    adminLoanTable.innerHTML =
-      '<tr><td colspan="8" class="text-center">No loans available</td></tr>';
-  }
+  allLoans = allLoans.filter((l) => l._id !== id);
+  renderFilteredLoans();
 });
 
-// Initial load
+// ===== INITIAL LOAD =====
 loadAdminLoans();
 
+
     // ===== TOP BAR =====
-    async function loadTopBar() {
+  document.addEventListener('DOMContentLoaded', () => {
+  const tbody = document.querySelector('#topBarTable tbody');
+  const form = document.getElementById('topBarForm');
+  const inputId = document.getElementById('topBarId');
+  const inputContent = document.getElementById('topBarContent');
+  const inputOrder = document.getElementById('topBarOrder');
+  const inputActive = document.getElementById('topBarActive');
+
+  // Load and render top bar messages
+  async function loadTopBar() {
+    try {
+      const res = await fetch('/admin/top-bar/json');
+      const data = await res.json();
+
+      if (!data.length) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center">No messages found</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = data.map(msg => `
+        <tr>
+          <td>${msg.order}</td>
+          <td>${msg.content}</td>
+          <td>${msg.active ? '✅ Active' : '❌ Inactive'}</td>
+          <td>
+            <button class="btn btn-sm btn-primary edit-topbar-btn me-1" data-id="${msg._id}">Edit</button>
+            <button class="btn btn-sm btn-danger delete-topbar-btn" data-id="${msg._id}">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+
+    } catch (error) {
+      console.error('Error loading top bar messages:', error);
+      tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error loading messages</td></tr>';
+    }
+  }
+
+  // Event delegation for edit/delete buttons
+  tbody.addEventListener('click', async e => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    const id = btn.dataset.id;
+
+    if (btn.classList.contains('edit-topbar-btn')) {
       try {
-        const res = await fetch('/admin/top-bar/json');
-        const data = await res.json();
-        const tbody = document.querySelector('#topBarTable tbody');
-        
-        if (!data.length) {
-          tbody.innerHTML = '<tr><td colspan="4" class="text-center">No messages found</td></tr>';
-          return;
+        const data = await fetch('/admin/top-bar/json').then(r => r.json());
+        const msg = data.find(m => m._id === id);
+        if (msg) {
+          inputId.value = msg._id;
+          inputContent.value = msg.content;
+          inputOrder.value = msg.order;
+          inputActive.value = msg.active;
         }
-        
-        tbody.innerHTML = data.map(msg => `
-          <tr>
-            <td>${msg.order}</td>
-            <td>${msg.content}</td>
-            <td>${msg.active ? '✅ Active' : '❌ Inactive'}</td>
-            <td>
-              <button class="btn btn-sm btn-primary edit-topbar-btn me-1" data-id="${msg._id}">Edit</button>
-              <button class="btn btn-sm btn-danger delete-topbar-btn" data-id="${msg._id}">Delete</button>
-            </td>
-          </tr>
-        `).join('');
-        
-        // Edit handler
-        document.querySelectorAll('.edit-topbar-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const msg = data.find(m => m._id === btn.dataset.id);
-            document.getElementById('topBarId').value = msg._id;
-            document.getElementById('topBarContent').value = msg.content;
-            document.getElementById('topBarOrder').value = msg.order;
-            document.getElementById('topBarActive').value = msg.active;
-          });
-        });
-        
-        // Delete handler
-        document.querySelectorAll('.delete-topbar-btn').forEach(btn => {
-          btn.addEventListener('click', async () => {
-            if (confirm('Are you sure you want to delete this message?')) {
-              try {
-                await fetch(`/admin/top-bar/${btn.dataset.id}`, { method: 'DELETE' });
-                loadTopBar();
-              } catch (error) {
-                console.error('Error deleting message:', error);
-                alert('Failed to delete message');
-              }
-            }
-          });
-        });
-      } catch (error) {
-        console.error('Error loading top bar messages:', error);
-        document.querySelector('#topBarTable tbody').innerHTML = 
-          '<tr><td colspan="4" class="text-center text-danger">Error loading messages</td></tr>';
+      } catch (err) {
+        console.error('Error fetching message for edit:', err);
       }
     }
 
-    // Handle form submission
-    document.getElementById('topBarForm').addEventListener('submit', async e => {
-      e.preventDefault();
-      
-      try {
-        await fetch('/admin/top-bar', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            id: document.getElementById('topBarId').value,
-            content: document.getElementById('topBarContent').value,
-            order: parseInt(document.getElementById('topBarOrder').value),
-            active: document.getElementById('topBarActive').value === 'true'
-          })
-        });
-        
-        e.target.reset();
-        document.getElementById('topBarId').value = '';
-        loadTopBar();
-      } catch (error) {
-        console.error('Error saving top bar message:', error);
-        alert('Failed to save message');
+    if (btn.classList.contains('delete-topbar-btn')) {
+      if (confirm('Are you sure you want to delete this message?')) {
+        try {
+          await fetch(`/admin/top-bar/${id}`, { method: 'DELETE' });
+          loadTopBar();
+        } catch (error) {
+          console.error('Error deleting message:', error);
+          alert('Failed to delete message');
+        }
       }
-    });
+    }
+  });
 
-    // ✅ Listen to socket for real-time refresh
-    socket.on("topBarUpdated", () => {
+  // Handle form submission
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    try {
+      await fetch('/admin/top-bar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: inputId.value,
+          content: inputContent.value,
+          order: parseInt(inputOrder.value),
+          active: inputActive.value === 'true'
+        })
+      });
+
+      form.reset();
+      inputId.value = '';
       loadTopBar();
-    });
+    } catch (error) {
+      console.error('Error saving top bar message:', error);
+      alert('Failed to save message');
+    }
+  });
+
+  // Listen to socket for real-time updates
+  socket.on('topBarUpdate', loadTopBar);
+
+  // Initial load
+  loadTopBar();
+});
+
 
     // ===== LEADERBOARD (ADMIN) =====
     const lbTbody = document.querySelector('.admin-leaderboard tbody');
@@ -1965,13 +2016,9 @@ let allBookings = [];
 // ===== RENDER SINGLE ROW =====
 function renderBookingRow(b, isNew = false) {
   const badgeClass =
-    b.status === 'Pending'
-      ? 'warning'
-      : b.status === 'Confirmed'
-      ? 'success'
-      : b.status === 'Completed'
-      ? 'primary'
-      : 'secondary';
+    b.status === 'Pending' ? 'warning' :
+    b.status === 'Confirmed' ? 'success' :
+    b.status === 'Completed' ? 'primary' : 'secondary';
 
   let row = document.getElementById(`booking-${b._id}`);
 
@@ -2005,7 +2052,7 @@ function renderBookingRow(b, isNew = false) {
       <td class="text-end">
         <div class="d-flex justify-content-end gap-1">
           <select class="form-select form-select-sm status-select" data-id="${b._id}">
-            <option value="Pending"   ${b.status === 'Pending' ? 'selected' : ''}>Pending</option>
+            <option value="Pending" ${b.status === 'Pending' ? 'selected' : ''}>Pending</option>
             <option value="Confirmed" ${b.status === 'Confirmed' ? 'selected' : ''}>Confirmed</option>
             <option value="Completed" ${b.status === 'Completed' ? 'selected' : ''}>Completed</option>
             <option value="Cancelled" ${b.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
@@ -2016,9 +2063,11 @@ function renderBookingRow(b, isNew = false) {
         </div>
       </td>
     `;
-    bookingsTbody.appendChild(row);
+    bookingsTbody.prepend(row);
 
-    setTimeout(() => row.classList.remove('new-booking'), 2500);
+    if (isNew) {
+      setTimeout(() => row.classList.remove('new-booking'), 2500);
+    }
   }
 }
 
@@ -2031,12 +2080,6 @@ async function fetchBookings() {
     if (!data.success || !Array.isArray(data.data)) throw new Error('Invalid response format');
 
     allBookings = data.data;
-
-    if (allBookings.length === 0) {
-      bookingsTbody.innerHTML = '<tr><td colspan="8" class="text-center">No bookings found</td></tr>';
-      return;
-    }
-
     displayFilteredBookings();
   } catch (error) {
     console.error('Error loading bookings:', error);
@@ -2070,7 +2113,6 @@ function displayFilteredBookings() {
   });
 
   bookingsTbody.innerHTML = '';
-
   if (filtered.length === 0) {
     bookingsTbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No matching bookings</td></tr>';
     return;
@@ -2079,42 +2121,39 @@ function displayFilteredBookings() {
   filtered.forEach((b) => renderBookingRow(b));
 }
 
-// ===== STATUS & DELETE HANDLERS =====
+// ===== EVENT DELEGATION: STATUS & DELETE =====
 bookingsTbody.addEventListener('change', async (e) => {
-  if (e.target.classList.contains('status-select')) {
-    const id = e.target.dataset.id;
-    const status = e.target.value;
+  if (!e.target.classList.contains('status-select')) return;
 
-    try {
-      const res = await fetch(`/admin/bookings/update/${id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
-      });
+  const id = e.target.dataset.id;
+  const status = e.target.value;
 
-      const data = await res.json();
+  try {
+    const res = await fetch(`/admin/bookings/update/${id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    const data = await res.json();
 
-      if (data.success) {
-        renderBookingRow(data.data);
-        const index = allBookings.findIndex((b) => b._id === id);
-        if (index !== -1) allBookings[index].status = status;
-      } else {
-        alert(data.message || 'Failed to update booking status');
-      }
-    } catch (error) {
-      console.error('Error updating booking:', error);
-      alert('Error updating booking status');
+    if (data.success) {
+      renderBookingRow(data.data);
+      const index = allBookings.findIndex(b => b._id === id);
+      if (index !== -1) allBookings[index].status = status;
+    } else {
+      alert(data.message || 'Failed to update booking status');
     }
+  } catch (error) {
+    console.error('Error updating booking:', error);
+    alert('Error updating booking status');
   }
 });
 
-// ===== DELETE BOOKING HANDLER =====
 bookingsTbody.addEventListener('click', async (e) => {
-  if (!e.target.closest('.delete-booking')) return;
-
   const btn = e.target.closest('.delete-booking');
-  const id = btn.dataset.id;
+  if (!btn) return;
 
+  const id = btn.dataset.id;
   if (!confirm('Are you sure you want to delete this booking?')) return;
 
   try {
@@ -2127,7 +2166,7 @@ bookingsTbody.addEventListener('click', async (e) => {
         row.classList.add('fade-out');
         setTimeout(() => row.remove(), 500);
       }
-      allBookings = allBookings.filter((b) => b._id !== id);
+      allBookings = allBookings.filter(b => b._id !== id);
     } else {
       alert(data.message || 'Failed to delete booking');
     }
@@ -2138,10 +2177,9 @@ bookingsTbody.addEventListener('click', async (e) => {
 });
 
 // ===== FILTER EVENTS =====
-searchInput.addEventListener('input', displayFilteredBookings);
-statusFilter.addEventListener('change', displayFilteredBookings);
-fromDateInput?.addEventListener('change', displayFilteredBookings);
-toDateInput?.addEventListener('change', displayFilteredBookings);
+[searchInput, statusFilter, fromDateInput, toDateInput].forEach(input => {
+  input?.addEventListener('input', displayFilteredBookings);
+});
 
 clearFiltersBtn?.addEventListener('click', () => {
   searchInput.value = '';
@@ -2161,7 +2199,7 @@ if (typeof io !== 'undefined') {
   });
 
   socket.on('booking:updated', (b) => {
-    const index = allBookings.findIndex((bk) => bk._id === b._id);
+    const index = allBookings.findIndex(bk => bk._id === b._id);
     if (index !== -1) allBookings[index] = b;
     renderBookingRow(b);
   });
@@ -2172,7 +2210,7 @@ if (typeof io !== 'undefined') {
       row.classList.add('fade-out');
       setTimeout(() => row.remove(), 500);
     }
-    allBookings = allBookings.filter((b) => b._id !== id);
+    allBookings = allBookings.filter(b => b._id !== id);
   });
 }
 
@@ -2180,128 +2218,140 @@ if (typeof io !== 'undefined') {
 fetchBookings();
 
     
-    // ===== MESSAGES TAB =====
-    const messagesTbody = document.getElementById("messages-tbody");
-    const newMessageCount = document.getElementById("new-message-count");
-    const replyModal = new bootstrap.Modal(document.getElementById("replyModal"));
-    const replyForm = document.getElementById("reply-form");
-    const replyText = document.getElementById("reply-text");
-    const replyId = document.getElementById("reply-id");
+   // ===== MESSAGES TAB =====
+const messagesTbody = document.getElementById("messages-tbody");
+const newMessageCount = document.getElementById("new-message-count");
+const replyModal = new bootstrap.Modal(document.getElementById("replyModal"));
+const replyForm = document.getElementById("reply-form");
+const replyText = document.getElementById("reply-text");
+const replyId = document.getElementById("reply-id");
 
-    let messages = [];
+let messages = [];
 
-    // Fetch & render messages
-    async function loadMessages() {
-      try {
-        const res = await fetch("/admin/messages/json");
-        messages = await res.json();
+// ===== FETCH & RENDER MESSAGES =====
+async function loadMessages() {
+  try {
+    const res = await fetch("/admin/messages/json");
+    messages = await res.json();
+    renderMessages();
+  } catch (error) {
+    console.error("Error loading messages:", error);
+    messagesTbody.innerHTML =
+      '<tr><td colspan="5" class="text-center text-danger">Error loading messages</td></tr>';
+  }
+}
+
+function renderMessages() {
+  messagesTbody.innerHTML = "";
+
+  if (!messages.length) {
+    messagesTbody.innerHTML =
+      '<tr><td colspan="5" class="text-center">No messages yet</td></tr>';
+    newMessageCount.textContent = "0";
+    return;
+  }
+
+  messages.forEach((msg, i) => {
+    const tr = document.createElement("tr");
+    tr.id = `message-${msg._id}`;
+    tr.innerHTML = `
+      <td>${i + 1}</td>
+      <td>${msg.name}</td>
+      <td>${msg.email}</td>
+      <td>${msg.text}</td>
+      <td>
+        <button class="btn btn-sm btn-success reply-btn me-1" data-id="${msg._id}">Reply</button>
+        <button class="btn btn-sm btn-danger delete-btn" data-id="${msg._id}">Delete</button>
+      </td>
+    `;
+    messagesTbody.appendChild(tr);
+  });
+
+  newMessageCount.textContent = messages.length;
+}
+
+// ===== SOCKET.IO: REAL-TIME MESSAGES =====
+socket.on("new-message", (msg) => {
+  messages.push(msg);
+
+  const tr = document.createElement("tr");
+  tr.id = `message-${msg._id}`;
+  tr.innerHTML = `
+    <td>${messages.length}</td>
+    <td>${msg.name}</td>
+    <td>${msg.email}</td>
+    <td>${msg.text}</td>
+    <td>
+      <button class="btn btn-sm btn-success reply-btn me-1" data-id="${msg._id}">Reply</button>
+      <button class="btn btn-sm btn-danger delete-btn" data-id="${msg._id}">Delete</button>
+    </td>
+  `;
+  messagesTbody.appendChild(tr);
+
+  // Highlight new message
+  tr.classList.add("table-success");
+  setTimeout(() => tr.classList.remove("table-success"), 2000);
+
+  newMessageCount.textContent = messages.length;
+});
+
+// ===== EVENT DELEGATION: REPLY & DELETE =====
+messagesTbody.addEventListener("click", (e) => {
+  const btn = e.target.closest("button");
+  if (!btn) return;
+
+  const id = btn.dataset.id;
+  if (!id) return;
+
+  // Reply
+  if (btn.classList.contains("reply-btn")) {
+    replyId.value = id;
+    replyText.value = "";
+    replyModal.show();
+    setTimeout(() => replyText.focus(), 300);
+    return;
+  }
+
+  // Delete
+  if (btn.classList.contains("delete-btn")) {
+    if (!confirm("Are you sure you want to delete this message?")) return;
+
+    fetch(`/admin/messages/${id}`, { method: "DELETE" })
+      .then(() => {
+        messages = messages.filter((m) => m._id !== id);
         renderMessages();
-      } catch (error) {
-        console.error("Error loading messages:", error);
-        messagesTbody.innerHTML =
-          '<tr><td colspan="5" class="text-center text-danger">Error loading messages</td></tr>';
-      }
-    }
-
-    function renderMessages() {
-      messagesTbody.innerHTML = "";
-
-      if (!messages.length) {
-        messagesTbody.innerHTML =
-          '<tr><td colspan="5" class="text-center">No messages yet</td></tr>';
-        newMessageCount.textContent = "0";
-        return;
-      }
-
-      messages.forEach((msg, i) => {
-        const tr = document.createElement("tr");
-        tr.id = `message-${msg._id}`;
-        tr.innerHTML = `
-          <td>${i + 1}</td>
-          <td>${msg.name}</td>
-          <td>${msg.email}</td>
-          <td>${msg.text}</td>
-          <td>
-            <button class="btn btn-sm btn-success reply-btn me-1" data-id="${msg._id}">Reply</button>
-            <button class="btn btn-sm btn-danger delete-btn" data-id="${msg._id}">Delete</button>
-          </td>
-        `;
-        messagesTbody.appendChild(tr);
+      })
+      .catch((error) => {
+        console.error("Error deleting message:", error);
+        alert("Failed to delete message");
       });
+  }
+});
 
-      newMessageCount.textContent = messages.length;
-    }
+// ===== REPLY FORM SUBMISSION =====
+replyForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const id = replyId.value;
+  const text = replyText.value.trim();
+  if (!text) return alert("Reply cannot be empty");
 
-    // Real-time new message handling
-    socket.on("new-message", (msg) => {
-      messages.push(msg);
-      const tr = document.createElement("tr");
-      tr.id = `message-${msg._id}`;
-      tr.innerHTML = `
-        <td>${messages.length}</td>
-        <td>${msg.name}</td>
-        <td>${msg.email}</td>
-        <td>${msg.text}</td>
-        <td>
-          <button class="btn btn-sm btn-success reply-btn me-1" data-id="${msg._id}">Reply</button>
-          <button class="btn btn-sm btn-danger delete-btn" data-id="${msg._id}">Delete</button>
-        </td>
-      `;
-      messagesTbody.appendChild(tr);
-
-      // Smooth highlight
-      tr.classList.add("table-success");
-      setTimeout(() => tr.classList.remove("table-success"), 2000);
-
-      newMessageCount.textContent = messages.length;
+  try {
+    await fetch(`/admin/messages/reply/${id}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reply: text }),
     });
 
-    // Reply + Delete handling
-    messagesTbody.addEventListener("click", (e) => {
-      if (e.target.classList.contains("reply-btn")) {
-        const id = e.target.dataset.id;
-        replyId.value = id;
-        replyText.value = "";
-        replyModal.show();
-        setTimeout(() => replyText.focus(), 300);
-      }
+    replyModal.hide();
+    alert("Reply sent!");
+  } catch (error) {
+    console.error("Error sending reply:", error);
+    alert("Failed to send reply");
+  }
+});
 
-      if (e.target.classList.contains("delete-btn")) {
-        const id = e.target.dataset.id;
-        if (confirm("Are you sure you want to delete this message?")) {
-          fetch(`/admin/messages/${id}`, { method: "DELETE" })
-            .then(() => {
-              messages = messages.filter((m) => m._id !== id);
-              renderMessages();
-            })
-            .catch((error) => {
-              console.error("Error deleting message:", error);
-              alert("Failed to delete message");
-            });
-        }
-      }
-    });
-
-    // Reply form submit
-    replyForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const id = replyId.value;
-      const text = replyText.value;
-
-      try {
-        await fetch(`/admin/messages/reply/${id}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ reply: text }),
-        });
-
-        replyModal.hide();
-        alert("Reply sent!");
-      } catch (error) {
-        console.error("Error sending reply:", error);
-        alert("Failed to send reply");
-      }
-    });
+// ===== INITIAL LOAD =====
+loadMessages();
 
     // ===== INITIAL LOAD =====
     document.addEventListener('DOMContentLoaded', () => {
