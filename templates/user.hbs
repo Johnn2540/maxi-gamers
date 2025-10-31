@@ -325,12 +325,103 @@
         align-items: center;
         gap: 15px;
       }
+
+      /* Hide hamburger menu on desktop */
+      .navbar-toggler {
+        display: none !important;
+      }
     }
 
     @media (max-width: 991.98px) {
       .desktop-user-section {
         display: none !important;
       }
+    }
+
+    /* Scroll Animations */
+    .fade-in-up {
+      opacity: 0;
+      transform: translateY(50px);
+      transition: all 0.8s ease;
+    }
+
+    .fade-in-up.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .fade-in-left {
+      opacity: 0;
+      transform: translateX(-50px);
+      transition: all 0.8s ease;
+    }
+
+    .fade-in-left.visible {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .fade-in-right {
+      opacity: 0;
+      transform: translateX(50px);
+      transition: all 0.8s ease;
+    }
+
+    .fade-in-right.visible {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .scale-in {
+      opacity: 0;
+      transform: scale(0.8);
+      transition: all 0.8s ease;
+    }
+
+    .scale-in.visible {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* Staggered animation delays */
+    .delay-1 { transition-delay: 0.1s; }
+    .delay-2 { transition-delay: 0.2s; }
+    .delay-3 { transition-delay: 0.3s; }
+    .delay-4 { transition-delay: 0.4s; }
+    .delay-5 { transition-delay: 0.5s; }
+
+    /* Hero section specific animations */
+    .hero-content h1,
+    .hero-content p,
+    .hero-content .d-flex,
+    .hero-content .login-box {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: all 1s ease;
+    }
+
+    .hero-content.visible h1 {
+      opacity: 1;
+      transform: translateY(0);
+      transition-delay: 0.2s;
+    }
+
+    .hero-content.visible p {
+      opacity: 1;
+      transform: translateY(0);
+      transition-delay: 0.4s;
+    }
+
+    .hero-content.visible .d-flex {
+      opacity: 1;
+      transform: translateY(0);
+      transition-delay: 0.6s;
+    }
+
+    .hero-content.visible .login-box {
+      opacity: 1;
+      transform: translateY(0);
+      transition-delay: 0.8s;
     }
   </style>
 </head>
@@ -451,12 +542,12 @@
   <!-- Features Section -->
   <section id="features" class="features-section py-5 position-relative overflow-hidden">
     <div class="container position-relative text-center">
-      <h2 class="mb-5">Our Services</h2>
+      <h2 class="mb-5 fade-in-up">Our Services</h2>
       <div class="row g-4 justify-content-center">
 
         <!-- Gaming Lounge -->
         <div class="col-md-4 col-sm-6">
-          <div class="feature-card p-4 text-center h-100">
+          <div class="feature-card p-4 text-center h-100 fade-in-up delay-1">
             <i class="bi bi-controller fs-1 text-primary mb-3"></i>
             <h4 class="fw-bold">Gaming Lounge</h4>
             <p>Play the latest PlayStation games in a premium setup.</p>
@@ -466,7 +557,7 @@
         
         <!-- Quick Loans -->
         <div class="col-md-4 col-sm-6">
-          <div class="feature-card p-4 text-center h-100">
+          <div class="feature-card p-4 text-center h-100 fade-in-up delay-2">
             <i class="bi bi-cash-stack fs-1 text-success mb-3"></i>
             <h4 class="fw-bold">Quick Loans</h4>
             <p>Get instant loans on valuable items with ease.</p>
@@ -476,7 +567,7 @@
 
         <!-- Buy & Sell -->
         <div class="col-md-4 col-sm-6">
-          <div class="feature-card p-4 text-center h-100">
+          <div class="feature-card p-4 text-center h-100 fade-in-up delay-3">
             <i class="bi bi-cart-check fs-1 text-warning mb-3"></i>
             <h4 class="fw-bold">Buy & Sell</h4>
             <p>Purchase or trade used gaming accessories at fair prices.</p>
@@ -491,11 +582,11 @@
   <!-- Sale Products Section -->
   <section class="py-5 bg-dark text-white">
     <div class="container">
-      <h2 class="mb-4 text-center">🔥 On Sale Now</h2>
-      <p class="text-center text-muted mb-5">Grab the best deals while they last!</p>
+      <h2 class="mb-4 text-center fade-in-up">🔥 On Sale Now</h2>
+      <p class="text-center text-muted mb-5 fade-in-up delay-1">Grab the best deals while they last!</p>
 
       <!-- Carousel -->
-      <div id="saleProductsCarousel" class="carousel slide" data-bs-ride="carousel">
+      <div id="saleProductsCarousel" class="carousel slide fade-in-up delay-2" data-bs-ride="carousel">
         <div class="carousel-inner" id="sale-products-container">
           <!-- Products will be injected here dynamically -->
         </div>
@@ -512,14 +603,14 @@
       </div>
 
       <!-- Visit Shop Button -->
-      <div class="text-center mt-4">
+      <div class="text-center mt-4 fade-in-up delay-3">
         <a href="/shop" class="btn btn-outline-light btn-lg">
           Visit Shop <i class="bi bi-arrow-right ms-2"></i>
         </a>
       </div>
 
       <!-- Direction Buttons -->
-      <div class="text-center mt-5">
+      <div class="text-center mt-5 fade-in-up delay-4">
         <div class="d-flex justify-content-center flex-wrap gap-2">
           <button id="getDirectionsBtn" onclick="openDirections()" class="btn btn-success btn-lg">
             📍 Get Directions
@@ -535,7 +626,7 @@
       </div>
 
       <!-- Embedded Google Map -->
-      <div class="text-center mt-4" id="mapContainer">
+      <div class="text-center mt-4 fade-in-up delay-5" id="mapContainer">
         <iframe 
           id="directionsMap"
           src="https://www.google.com/maps/embed/v1/place?key=AIzaSyDnphs9rressecIYYKehF89dWILJTWcMEs&q=Maximum+Gamers+K.M+Opposite+Student+Centre&zoom=17" 
@@ -552,8 +643,8 @@
   <!-- Loan Calculator Section -->
   <section class="cyber-loan-section py-5">
     <div class="container text-center">
-      <h2 class="mb-4">💰 Loan Calculator</h2>
-      <form class="row justify-content-center g-3">
+      <h2 class="mb-4 fade-in-up">💰 Loan Calculator</h2>
+      <form class="row justify-content-center g-3 fade-in-up delay-1">
         <div class="col-md-3 col-sm-6">
           <input type="number" class="form-control bg-black text-white" placeholder="Item Value (KES)" id="loanValue">
         </div>
@@ -564,10 +655,10 @@
           <button type="button" class="btn btn-success w-100" onclick="calculateLoan()">Calculate</button>
         </div>
       </form>
-      <div class="mt-4 fw-bold" id="loanResult"></div>
+      <div class="mt-4 fw-bold fade-in-up delay-2" id="loanResult"></div>
       
       <!-- Apply Loan Button -->
-      <div class="mt-4">
+      <div class="mt-4 fade-in-up delay-3">
         <a href="/loans" class="btn btn-primary btn-lg">Apply for a Loan <i class="bi bi-arrow-right ms-2"></i></a>
       </div>
     </div>
@@ -576,9 +667,9 @@
   <!-- Leaderboard Section -->
   <section id="leaderboard-home" class="py-5 bg-dark text-light">
     <div class="container">
-      <h2 class="mb-4">🏆 Leaderboard</h2>
+      <h2 class="mb-4 fade-in-up">🏆 Leaderboard</h2>
 
-      <div class="table-responsive">
+      <div class="table-responsive fade-in-up delay-1">
         <table class="table table-dark table-striped align-middle leaderboard-table">
           <thead class="table-success text-dark">
             <tr>
@@ -594,7 +685,7 @@
       </div>
       
       <!-- Send Complaint Button -->
-      <div class="text-center mt-4">
+      <div class="text-center mt-4 fade-in-up delay-2">
         <a href="/contact" class="btn btn-outline-warning">
           <i class="bi bi-exclamation-triangle me-2"></i>Send Complaint
         </a>
@@ -605,9 +696,9 @@
   <!-- Testimonials Section -->
   <section class="py-5 bg-dark">
     <div class="container text-center">
-      <h2 class="fw-bold mb-5">💬 What Our Gamers Say</h2>
+      <h2 class="fw-bold mb-5 fade-in-up">💬 What Our Gamers Say</h2>
 
-      <div id="testimonialCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="5000">
+      <div id="testimonialCarousel" class="carousel slide fade-in-up delay-1" data-bs-ride="carousel" data-bs-interval="5000">
         <div class="carousel-inner">
 
           <!-- Testimonial 1 -->
@@ -639,7 +730,7 @@
 
         </div>
 
-        <div class="mt-4">
+        <div class="mt-4 fade-in-up delay-2">
           <div class="carousel-indicators position-static">
             <button type="button" data-bs-target="#testimonialCarousel" data-bs-slide-to="0" class="active"></button>
             <button type="button" data-bs-target="#testimonialCarousel" data-bs-slide-to="1"></button>
@@ -661,7 +752,7 @@
 
     <div class="container">
       <div class="row text-center text-md-start g-3">
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-3 fade-in-up">
           <h6 class="fw-bold">Discover</h6>
           <ul class="list-unstyled">
             <li><a href="/gaming" class="text-white text-decoration-none">Gaming Sessions</a></li>
@@ -669,7 +760,7 @@
             <li><a href="/shop" class="text-white text-decoration-none">Store</a></li>
           </ul>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-3 fade-in-up delay-1">
           <h6 class="fw-bold">Our Shop</h6>
           <ul class="list-unstyled">
             <li><a href="/about" class="text-white text-decoration-none">About Us</a></li>
@@ -677,7 +768,7 @@
             <li><a href="/whatscoming" class="text-white text-decoration-none">What's Coming</a></li>
           </ul>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-3 fade-in-up delay-2">
           <h6 class="fw-bold">Connect</h6>
           <ul class="list-unstyled">
             <li><a href="#" class="text-white text-decoration-none">Instagram</a></li>
@@ -685,7 +776,7 @@
             <li><a href="#" class="text-white text-decoration-none">Facebook</a></li>
           </ul>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-3 fade-in-up delay-3">
           <h6 class="fw-bold">Legal</h6>
           <ul class="list-unstyled">
             <li><a href="/privacy-policy" class="text-white text-decoration-none">Privacy Policy</a></li>
@@ -695,7 +786,7 @@
         </div>
       </div>
 
-      <div class="mt-4 text-center small">
+      <div class="mt-4 text-center small fade-in-up delay-4">
         &copy; 2025 Maximum Gamers. All Rights Reserved.
       </div>
     </div>
@@ -726,6 +817,36 @@
 
   <!-- Custom Scripts -->
   <script>
+    // ========== Scroll Animation Functionality ==========
+    function initScrollAnimations() {
+      const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+      };
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            
+            // Special handling for hero section
+            if (entry.target.classList.contains('hero-content')) {
+              const children = entry.target.querySelectorAll('h1, p, .d-flex, .login-box');
+              children.forEach(child => {
+                child.style.opacity = '1';
+                child.style.transform = 'translateY(0)';
+              });
+            }
+          }
+        });
+      }, observerOptions);
+
+      // Observe all elements with animation classes
+      document.querySelectorAll('.fade-in-up, .fade-in-left, .fade-in-right, .scale-in, .hero-content').forEach(el => {
+        observer.observe(el);
+      });
+    }
+
     // ========== Top Bar Messages ==========
     async function displayTopBar() {
       try {
@@ -979,6 +1100,7 @@
       loadSaleProducts();
       loadLeaderboard();
       initBackToTop();
+      initScrollAnimations();
 
       // Initialize carousel
       const carousel = new bootstrap.Carousel("#saleProductsCarousel", {

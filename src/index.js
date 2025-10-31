@@ -1639,6 +1639,7 @@ app.get("/refund-policy", (req, res) => res.render("refund-policy"));
 app.get("/booking", (req, res) => res.render("booking"));
 app.get("/blog", (req, res) => res.render("blog"));
 app.get("/home", (req, res) => res.redirect("/")); // ADDED: Home route for logout redirect
+app.get("/gaming", (req, res) => res.render("gaming"));
 
 // ===================== USER / ADMIN PAGES =====================
 app.get("/user", ensureAuthenticated, (req, res) => res.render("user"));
