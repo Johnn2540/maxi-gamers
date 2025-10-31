@@ -285,7 +285,7 @@ function safeRedirect(res, url) {
 // ================== AUTH MIDDLEWARE ==================
 async function ensureAuthenticated(req, res, next) {
   try {
-    let sessionUser = req.session.user;
+    let sessionUser = req.session?.user;
 
     // ================== RESTORE FROM REMEMBER ME ==================
     if (!sessionUser && req.cookies?.rememberMeToken) {
@@ -300,7 +300,13 @@ async function ensureAuthenticated(req, res, next) {
         req.session.lastActivity = Date.now();
         req.session.justLoggedIn = true;
 
-        await req.session.save(); // ✅ Ensure session persisted before continuing
+        try {
+          await req.session.save();
+        } catch (err) {
+          if (!err.message.includes("Unable to find the session"))
+            console.warn("⚠️ Session save (restore) error:", err.message);
+        }
+
         console.log(`🔁 Session restored from Remember Me for ${userFromToken.email || userFromToken.name}`);
       } else {
         res.clearCookie("rememberMeToken", { path: "/" });
@@ -313,7 +319,7 @@ async function ensureAuthenticated(req, res, next) {
 
     // ================== SESSION TIMEOUT (30 minutes) ==================
     const now = Date.now();
-    const TIMEOUT_LIMIT = 30 * 60 * 1000; // 30 min inactivity timeout
+    const TIMEOUT_LIMIT = 30 * 60 * 1000; // 30 minutes
 
     if (req.session.lastActivity && now - req.session.lastActivity > TIMEOUT_LIMIT) {
       console.warn("⚠️ Session expired for:", sessionUser.name);
@@ -323,8 +329,15 @@ async function ensureAuthenticated(req, res, next) {
         `/login?flash=${encodeURIComponent("Session expired. Please log in again.")}&type=info`
       );
     } else {
-      req.session.lastActivity = now; // ✅ Update timestamp
-      await req.session.save();
+      req.session.lastActivity = now;
+      if (req.session) {
+        try {
+          await req.session.save();
+        } catch (err) {
+          if (!err.message.includes("Unable to find the session"))
+            console.warn("⚠️ Session save (activity) error:", err.message);
+        }
+      }
     }
 
     // ================== FETCH USER FROM DATABASE ==================
@@ -356,7 +369,12 @@ async function ensureAuthenticated(req, res, next) {
     // ================== ONE-TIME REDIRECT AFTER LOGIN ==================
     if (req.session.justLoggedIn) {
       delete req.session.justLoggedIn;
-      await req.session.save();
+      try {
+        await req.session.save();
+      } catch (err) {
+        if (!err.message.includes("Unable to find the session"))
+          console.warn("⚠️ Session save (post-login) error:", err.message);
+      }
       return safeRedirect(res, role === "admin" ? "/admin" : "/user");
     }
 
@@ -410,7 +428,6 @@ function requireAdmin(req, res, next) {
 // ================== REMEMBER ME HANDLER ==================
 async function handleRememberMe(user, res, remember) {
   try {
-    // Ensure user is a Mongoose document
     if (!user.save) {
       const fetchedUser = await User.findById(user._id || user.id);
       if (!fetchedUser) throw new Error("User not found for Remember Me");
@@ -423,7 +440,7 @@ async function handleRememberMe(user, res, remember) {
       await user.save();
 
       res.cookie("rememberMeToken", token, {
-        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+        maxAge: 30 * 24 * 60 * 60 * 1000,
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
@@ -1689,24 +1706,14 @@ app.get("/logout", async (req, res) => {
       }
     }
 
-    // 2️⃣ Handle missing session gracefully
-    if (!req.session) {
-      console.warn("⚠️ No session found during logout");
-      clearAllCookies(res);
-      return res.redirect("/home");
-    }
+    // 2️⃣ Destroy the session safely
+    await safeDestroySession(req, res);
 
-    // 3️⃣ Destroy the session safely and clear cookies
-    req.session.destroy(async (err) => {
-      if (err) {
-        console.warn("⚠️ Session destroy failed:", err.message);
-      }
+    // 3️⃣ Clear all cookies and redirect
+    clearAllCookies(res);
+    console.log(`✅ ${role.toUpperCase()} logged out successfully`);
+    return res.redirect("/home");
 
-      clearAllCookies(res);
-
-      console.log(`✅ ${role.toUpperCase()} logged out successfully`);
-      return res.redirect("/home");
-    });
   } catch (err) {
     console.error("❌ Logout error:", err);
     clearAllCookies(res);
@@ -1717,7 +1724,6 @@ app.get("/logout", async (req, res) => {
 // ==================== COOKIE CLEAR HELPER ====================
 function clearAllCookies(res) {
   try {
-    // Clear both main session and Remember Me
     res.clearCookie("connect.sid", {
       path: "/",
       httpOnly: true,
@@ -1729,7 +1735,6 @@ function clearAllCookies(res) {
     console.warn("⚠️ Failed to clear cookies:", err.message);
   }
 }
-
 
 // ================== ERROR HANDLING ==================
 app.use((err, req, res, next) => {
