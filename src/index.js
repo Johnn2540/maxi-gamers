@@ -258,9 +258,10 @@ async function ensureAuthenticated(req, res, next) {
   try {
     let sessionUser = req.session.user;
 
-    // Restore session from Remember Me token
+    // ================== RESTORE FROM REMEMBER ME ==================
     if (!sessionUser && req.cookies?.rememberMeToken) {
       const userFromToken = await User.findOne({ rememberToken: req.cookies.rememberMeToken });
+
       if (userFromToken) {
         sessionUser = req.session.user = {
           id: userFromToken._id.toString(),
@@ -268,102 +269,150 @@ async function ensureAuthenticated(req, res, next) {
           role: (userFromToken.role || "user").toLowerCase(),
         };
         req.session.lastActivity = Date.now();
-        req.session.justLoggedIn = true; // trigger one-time redirect
+        req.session.justLoggedIn = true;
+
+        await req.session.save(); // ✅ Ensure session persisted before continuing
+        console.log(`🔁 Session restored from Remember Me for ${userFromToken.email || userFromToken.name}`);
       } else {
         res.clearCookie("rememberMeToken", { path: "/" });
-        return res.redirect("/login");
+        return safeRedirect(res, "/login");
       }
     }
 
-    // Redirect to login if no session
-    if (!sessionUser) return res.redirect("/login");
+    // ================== NO SESSION → REDIRECT ==================
+    if (!sessionUser) return safeRedirect(res, "/login");
 
-    // Session timeout (30 min)
+    // ================== SESSION TIMEOUT (30 minutes) ==================
     const now = Date.now();
-    const TIMEOUT_LIMIT = 30 * 60 * 1000;
-    if (req.session.lastActivity && now - req.session.lastActivity > TIMEOUT_LIMIT) {
-      return req.session.destroy(() => {
-        res.clearCookie("rememberMeToken", { path: "/" });
-        res.redirect(`/login?flash=${encodeURIComponent("Session expired. Please log in again.")}&type=info`);
-      });
-    }
-    req.session.lastActivity = now;
+    const TIMEOUT_LIMIT = 30 * 60 * 1000; // 30 min inactivity timeout
 
-    // Load full user from DB
+    if (req.session.lastActivity && now - req.session.lastActivity > TIMEOUT_LIMIT) {
+      console.warn("⚠️ Session expired for:", sessionUser.name);
+      await safeDestroySession(req, res);
+      return safeRedirect(
+        res,
+        `/login?flash=${encodeURIComponent("Session expired. Please log in again.")}&type=info`
+      );
+    } else {
+      req.session.lastActivity = now; // ✅ Update timestamp
+      await req.session.save();
+    }
+
+    // ================== FETCH USER FROM DATABASE ==================
     const user = await User.findById(sessionUser.id);
-    if (!user) return req.session.destroy(() => res.redirect("/login"));
+    if (!user) {
+      await safeDestroySession(req, res);
+      return safeRedirect(res, "/login");
+    }
 
     const role = (user.role || "").toLowerCase();
 
-    // Block inactive non-admin users
+    // ================== BLOCK INACTIVE NON-ADMIN USERS ==================
     if (role !== "admin" && !user.active) {
-      return req.session.destroy(() => {
-        res.clearCookie("rememberMeToken", { path: "/" });
-        res.redirect(`/login?flash=${encodeURIComponent("Your account is suspended. Contact admin.")}&type=error`);
-      });
+      await safeDestroySession(req, res);
+      return safeRedirect(
+        res,
+        `/login?flash=${encodeURIComponent("Your account is suspended. Contact admin.")}&type=error`
+      );
     }
 
-    // Attach user to req and locals
+    // ================== ATTACH USER TO REQ & LOCALS ==================
     req.user = user;
     res.locals.user = {
       ...user.toObject(),
-      profilePic: user.profilePic || 'https://via.placeholder.com/40',
-      username: user.name || 'Guest',
+      profilePic: user.profilePic || "https://via.placeholder.com/40",
+      username: user.name || "Guest",
     };
 
-    // One-time redirect after login or Remember Me restore
+    // ================== ONE-TIME REDIRECT AFTER LOGIN ==================
     if (req.session.justLoggedIn) {
       delete req.session.justLoggedIn;
-      return res.redirect(role === "admin" ? "/admin" : "/user");
+      await req.session.save();
+      return safeRedirect(res, role === "admin" ? "/admin" : "/user");
     }
 
-    // Redirect root/dashboard automatically
+    // ================== ROOT/DASHBOARD AUTO REDIRECT ==================
     if (["/", "/dashboard"].includes(req.path)) {
-      return res.redirect(role === "admin" ? "/admin" : "/user");
+      return safeRedirect(res, role === "admin" ? "/admin" : "/user");
     }
 
     next();
   } catch (err) {
-    console.error("Authentication error:", err);
+    console.error("❌ Authentication error:", err);
     res.status(500).send("Internal server error during authentication.");
   }
 }
 
 // ================== ROLE CHECK HELPERS ==================
+
+// Generic role-based access control
 function requireRole(role) {
   return (req, res, next) => {
-    if ((req.user?.role || "").toLowerCase() !== role.toLowerCase()) {
-      return res.status(403).send("Access denied.");
+    const userRole = (req.user?.role || "").toLowerCase();
+
+    if (userRole !== role.toLowerCase()) {
+      console.warn(`🚫 Access denied: ${req.user?.email || "Unknown"} → ${req.originalUrl}`);
+
+      if (req.xhr || req.headers.accept?.includes("application/json")) {
+        return res.status(403).json({ error: "Access denied" });
+      } else {
+        return res.redirect(`/login?flash=${encodeURIComponent("Access denied.")}&type=error`);
+      }
     }
+
     next();
   };
 }
 
+// Shortcut for admin routes
 function requireAdmin(req, res, next) {
-  if ((req.user?.role || "").toLowerCase() !== "admin") {
-    return res.status(403).send("Access denied. Admins only.");
+  const userRole = (req.user?.role || "").toLowerCase();
+
+  if (userRole !== "admin") {
+    console.warn(`🚫 Non-admin access attempt by: ${req.user?.email || "Unknown"} → ${req.originalUrl}`);
+
+    if (req.xhr || req.headers.accept?.includes("application/json")) {
+      return res.status(403).json({ error: "Admins only" });
+    } else {
+      return res.redirect(`/user?flash=${encodeURIComponent("Admins only.")}&type=error`);
+    }
   }
+
   next();
 }
 
 // ================== REMEMBER ME HANDLER ==================
 async function handleRememberMe(user, res, remember) {
-  if (remember) {
-    const token = crypto.randomBytes(32).toString("hex");
-    user.rememberToken = token;
-    await user.save();
+  try {
+    // Ensure user is a Mongoose document
+    if (!user.save) {
+      const fetchedUser = await User.findById(user._id || user.id);
+      if (!fetchedUser) throw new Error("User not found for Remember Me");
+      user = fetchedUser;
+    }
 
-    res.cookie("rememberMeToken", token, {
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      path: "/",
-    });
-  } else {
-    user.rememberToken = null;
-    await user.save();
-    res.clearCookie("rememberMeToken", { path: "/" });
+    if (remember) {
+      const token = crypto.randomBytes(32).toString("hex");
+      user.rememberToken = token;
+      await user.save();
+
+      res.cookie("rememberMeToken", token, {
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+      });
+
+      console.log(`💾 Remember Me token set for ${user.email || user.name}`);
+    } else {
+      user.rememberToken = null;
+      await user.save();
+      res.clearCookie("rememberMeToken", { path: "/" });
+      console.log(`🧹 Remember Me token cleared for ${user.email || user.name}`);
+    }
+  } catch (err) {
+    console.error("⚠️ Remember Me handler error:", err);
   }
 }
 
@@ -1598,10 +1647,12 @@ app.get("/edit-user", ensureAuthenticated, (req, res) => res.render("edit-user")
 // REMOVED: Duplicate loans route that was causing conflicts
 app.get("/message", ensureAuthenticated, (req, res) => res.render("message"));
 
-// ==================== LOGOUT ROUTE (Universal) ==================
+// ==================== LOGOUT ROUTE (Universal & Safe) ====================
 app.get("/logout", async (req, res) => {
   try {
-    // Clear Remember Me token if user exists
+    const role = req.session?.user?.role || "user";
+
+    // 1️⃣ Try to clear Remember Me token if user exists
     if (req.user) {
       try {
         await handleRememberMe(req.user, res, false);
@@ -1610,51 +1661,47 @@ app.get("/logout", async (req, res) => {
       }
     }
 
-    const role = req.session?.user?.role || "user";
-
-    // If no session exists, just redirect
+    // 2️⃣ Handle missing session gracefully
     if (!req.session) {
-      console.log("⚠️ No session found during logout");
-      res.clearCookie("connect.sid", {
-        path: "/",
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-      });
+      console.warn("⚠️ No session found during logout");
+      clearAllCookies(res);
       return res.redirect("/home");
     }
 
-    // Destroy session safely
-    req.session.destroy((err) => {
-      // Always clear the cookie
-      res.clearCookie("connect.sid", {
-        path: "/",
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-      });
-
+    // 3️⃣ Destroy the session safely and clear cookies
+    req.session.destroy(async (err) => {
       if (err) {
         console.warn("⚠️ Session destroy failed:", err.message);
-        // Fallback redirect
-        return res.redirect(role === "admin" ? "/admin" : "/user");
       }
 
-      console.log(`✅ ${role.charAt(0).toUpperCase() + role.slice(1)} logged out`);
+      clearAllCookies(res);
+
+      console.log(`✅ ${role.toUpperCase()} logged out successfully`);
       return res.redirect("/home");
     });
   } catch (err) {
-    console.error("Logout error:", err);
-    // Always attempt to clear cookie as fallback
+    console.error("❌ Logout error:", err);
+    clearAllCookies(res);
+    return res.redirect("/home");
+  }
+});
+
+// ==================== COOKIE CLEAR HELPER ====================
+function clearAllCookies(res) {
+  try {
+    // Clear both main session and Remember Me
     res.clearCookie("connect.sid", {
       path: "/",
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
     });
-    return res.redirect("/home");
+    res.clearCookie("rememberMeToken", { path: "/" });
+  } catch (err) {
+    console.warn("⚠️ Failed to clear cookies:", err.message);
   }
-});
+}
+
 
 // ================== ERROR HANDLING ==================
 app.use((err, req, res, next) => {
