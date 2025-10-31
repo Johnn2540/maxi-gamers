@@ -253,6 +253,35 @@ function handleFlashRedirect(res, path, message, type) {
   return res.redirect(`${path}?flash=${encodeURIComponent(message)}&type=${type}`);
 }
 
+// ================== SAFE HELPERS ==================
+async function safeDestroySession(req, res) {
+  return new Promise(resolve => {
+    try {
+      if (req.session) {
+        req.session.destroy(err => {
+          if (err) console.error("⚠️ Error destroying session:", err.message);
+          res.clearCookie("connect.sid", { path: "/" });
+          resolve(true);
+        });
+      } else {
+        res.clearCookie("connect.sid", { path: "/" });
+        resolve(false);
+      }
+    } catch (err) {
+      console.error("⚠️ safeDestroySession error:", err.message);
+      resolve(false);
+    }
+  });
+}
+
+function safeRedirect(res, url) {
+  try {
+    if (!res.headersSent) res.redirect(url);
+  } catch (err) {
+    console.error("⚠️ safeRedirect error:", err.message);
+  }
+}
+
 // ================== AUTH MIDDLEWARE ==================
 async function ensureAuthenticated(req, res, next) {
   try {
@@ -344,8 +373,6 @@ async function ensureAuthenticated(req, res, next) {
 }
 
 // ================== ROLE CHECK HELPERS ==================
-
-// Generic role-based access control
 function requireRole(role) {
   return (req, res, next) => {
     const userRole = (req.user?.role || "").toLowerCase();
@@ -364,7 +391,6 @@ function requireRole(role) {
   };
 }
 
-// Shortcut for admin routes
 function requireAdmin(req, res, next) {
   const userRole = (req.user?.role || "").toLowerCase();
 
@@ -415,6 +441,7 @@ async function handleRememberMe(user, res, remember) {
     console.error("⚠️ Remember Me handler error:", err);
   }
 }
+
 
 // ================== MAIN ROUTES ==================
 

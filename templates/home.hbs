@@ -6,7 +6,6 @@
   <title>{{title}} | Maximum Gamers</title>
   <link rel="icon" href="/images/logo.png" type="image/png">
   
-  
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   
@@ -68,9 +67,9 @@
     }
     
     h1, .hero-title {
-  font-size: 2.5rem;  /* Adjust as needed */
-  margin: 1rem 0;     /* Top/Bottom margin */
-}
+      font-size: 2.5rem;
+      margin: 1rem 0;
+    }
 
     .feature-card:hover {
       transform: translateY(-5px);
@@ -163,55 +162,168 @@
         padding: 2rem 0;
       }
     }
+
     /* Pulse / Zoom Animation */
-@keyframes pulseZoom {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
-}
+    @keyframes pulseZoom {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
 
-.login-box {
-  text-decoration: none;
-  animation: pulseZoom 2s infinite;
-  transition: transform 0.2s ease-in-out;
-}
+    .login-box {
+      text-decoration: none;
+      animation: pulseZoom 2s infinite;
+      transition: transform 0.2s ease-in-out;
+    }
 
-.login-box:hover {
-  transform: scale(1.15);
-  background-color: #ffc107; /* keep warning color on hover */
-}
-/* Back to Top Arrow */
-.back-to-top {
-  position: fixed;
-  bottom: 120px;
-  left: 20px;
-  width: 50px;
-  height: 50px;
-  background: var(--primary-color);
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  cursor: pointer;
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.3s ease;
-  z-index: 999;
-  box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
-}
+    .login-box:hover {
+      transform: scale(1.15);
+      background-color: #ffc107;
+    }
 
-.back-to-top.show {
-  opacity: 1;
-  visibility: visible;
-}
+    /* Back to Top Arrow */
+    .back-to-top {
+      position: fixed;
+      bottom: 120px;
+      left: 20px;
+      width: 50px;
+      height: 50px;
+      background: var(--primary-color);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      cursor: pointer;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+      z-index: 999;
+      box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+    }
 
-.back-to-top:hover {
-  background: #0b5ed7;
-  transform: translateY(-3px);
-  box-shadow: 0 6px 15px rgba(13, 110, 253, 0.4);
-}
+    .back-to-top.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .back-to-top:hover {
+      background: #0b5ed7;
+      transform: translateY(-3px);
+      box-shadow: 0 6px 15px rgba(13, 110, 253, 0.4);
+    }
+
+    /* Product Section Animations */
+    .product-card {
+      transition: all 0.4s ease;
+      background: var(--card-bg);
+      border: 1px solid #333;
+      border-radius: 12px;
+      overflow: hidden;
+      height: 100%;
+      opacity: 0;
+      transform: translateY(50px);
+    }
+
+    .product-card.animated {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .product-card:hover {
+      transform: translateY(-10px) scale(1.02);
+      border-color: var(--secondary-color);
+      box-shadow: 0 10px 30px rgba(0, 255, 153, 0.2);
+    }
+
+    .product-image {
+      height: 220px;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+
+    .product-card:hover .product-image {
+      transform: scale(1.05);
+    }
+
+    .sale-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
+      color: white;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      z-index: 2;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    .price-section {
+      background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+      padding: 10px;
+      border-radius: 8px;
+      margin: 10px 0;
+    }
+
+    /* Scroll Animations */
+    .fade-in-up {
+      opacity: 0;
+      transform: translateY(50px);
+      transition: all 0.8s ease;
+    }
+
+    .fade-in-up.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .stagger-delay-1 { transition-delay: 0.1s; }
+    .stagger-delay-2 { transition-delay: 0.2s; }
+    .stagger-delay-3 { transition-delay: 0.3s; }
+    .stagger-delay-4 { transition-delay: 0.4s; }
+    .stagger-delay-5 { transition-delay: 0.5s; }
+
+    /* Carousel Improvements */
+    .carousel-control-prev, .carousel-control-next {
+      width: 50px;
+      height: 50px;
+      background: rgba(0, 255, 153, 0.1);
+      border-radius: 50%;
+      top: 50%;
+      transform: translateY(-50%);
+      margin: 0 20px;
+      border: 2px solid var(--secondary-color);
+    }
+
+    .carousel-control-prev:hover, .carousel-control-next:hover {
+      background: rgba(0, 255, 153, 0.2);
+    }
+
+    /* Section Headers */
+    .section-header {
+      position: relative;
+      margin-bottom: 3rem;
+    }
+
+    .section-header::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100px;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+      border-radius: 2px;
+    }
   </style>
 </head>
 <body>
@@ -289,30 +401,18 @@
   });
 </script>
 
-
 <!-- Hero Section -->
 <section class="hero-section position-relative text-center text-white d-flex align-items-center justify-content-center">
-  <div class="hero-grid"></div>
-  <div class="hero-grid clone"></div>
-
-  <!-- Border Ring -->
-  <div class="hero-border-ring"></div>
-
-  <!-- Moving Star -->
-  <div class="hero-star"></div>
-
-  <!-- Content -->
   <div class="container hero-content position-relative">
-    <h1 class="display-4 fw-bold hero-title">Welcome to Maximum Gamers</h1>
-    <p class="lead hero-subtitle">Level Up Your Gaming – Book Sessions, Borrow on Valuable Items, and Shop New or
-      Pre-Loved Gear!</p>
-    <div class="d-flex justify-content-center gap-3 mt-4 flex-wrap">
+    <h1 class="display-4 fw-bold hero-title fade-in-up">Welcome to Maximum Gamers</h1>
+    <p class="lead hero-subtitle fade-in-up stagger-delay-1">Level Up Your Gaming – Book Sessions, Borrow on Valuable Items, and Shop New or Pre-Loved Gear!</p>
+    <div class="d-flex justify-content-center gap-3 mt-4 flex-wrap fade-in-up stagger-delay-2">
       <a href="/login" class="btn btn-success btn-lg shadow">🎮 Book a Gaming Session</a>
       <a href="/login" class="btn btn-outline-light btn-lg shadow">💰 Apply for a Loan</a>
     </div>
 
     <!-- Animated Login Box -->
-    <a href="/login" class="mt-4 p-2 bg-warning text-dark fw-bold rounded d-inline-block shadow login-box">
+    <a href="/login" class="mt-4 p-2 bg-warning text-dark fw-bold rounded d-inline-block shadow login-box fade-in-up stagger-delay-3">
       Login to explore more
     </a>
   </div>
@@ -321,12 +421,12 @@
 <!-- Features Section -->
 <section id="features" class="features-section py-5 position-relative overflow-hidden">
   <div class="container position-relative text-center">
-    <h2 class="mb-5">Our Services</h2>
+    <h2 class="mb-5 section-header fade-in-up">Our Services</h2>
     <div class="row g-4 justify-content-center">
 
-              <!-- Gaming Lounge -->
+      <!-- Gaming Lounge -->
       <div class="col-md-4">
-        <div class="feature-card p-4 text-center h-100">
+        <div class="feature-card p-4 text-center h-100 fade-in-up stagger-delay-1">
           <i class="bi bi-controller fs-1 text-primary mb-3"></i>
           <h4 class="fw-bold">Gaming Lounge</h4>
           <p>Play the latest PlayStation games in a premium setup.</p>
@@ -335,37 +435,36 @@
       </div>
       
       <!-- Quick Loans -->
-        <div class="col-md-4 col-sm-6">
-          <div class="feature-card p-4 text-center h-100">
-            <i class="bi bi-cash-stack fs-1 text-success mb-3"></i>
-            <h4 class="fw-bold">Quick Loans</h4>
-            <p>Get instant loans on valuable items with ease.</p>
-            <a href="/login" class="btn btn-outline-success mt-2">Learn More</a>
-          </div>
+      <div class="col-md-4 col-sm-6">
+        <div class="feature-card p-4 text-center h-100 fade-in-up stagger-delay-2">
+          <i class="bi bi-cash-stack fs-1 text-success mb-3"></i>
+          <h4 class="fw-bold">Quick Loans</h4>
+          <p>Get instant loans on valuable items with ease.</p>
+          <a href="/login" class="btn btn-outline-success mt-2">Learn More</a>
         </div>
-
-        <!-- Buy & Sell -->
-        <div class="col-md-4 col-sm-6">
-          <div class="feature-card p-4 text-center h-100">
-            <i class="bi bi-cart-check fs-1 text-warning mb-3"></i>
-            <h4 class="fw-bold">Buy & Sell</h4>
-            <p>Purchase or trade used gaming accessories at fair prices.</p>
-            <a href="/login" class="btn btn-outline-warning mt-2">Shop Now</a>
-          </div>
-        </div>
-
       </div>
-    </div>
-  </section>
 
-  
-      <!-- Sale Products Section -->
+      <!-- Buy & Sell -->
+      <div class="col-md-4 col-sm-6">
+        <div class="feature-card p-4 text-center h-100 fade-in-up stagger-delay-3">
+          <i class="bi bi-cart-check fs-1 text-warning mb-3"></i>
+          <h4 class="fw-bold">Buy & Sell</h4>
+          <p>Purchase or trade used gaming accessories at fair prices.</p>
+          <a href="/login" class="btn btn-outline-warning mt-2">Shop Now</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Sale Products Section -->
 <section class="py-5 bg-dark">
   <div class="container">
-    <h2 class="mb-4">🔥 On Sale Now</h2>
-    <p class="text-center text-muted mb-5">Grab the best deals while they last!</p>
+    <h2 class="mb-4 text-center section-header fade-in-up">🔥 On Sale Now</h2>
+    <p class="text-center text-muted mb-5 fade-in-up stagger-delay-1">Grab the best deals while they last! Limited time offers on premium gaming gear.</p>
 
-    <div id="saleProductsCarousel" class="carousel slide" data-bs-ride="carousel">
+    <div id="saleProductsCarousel" class="carousel slide fade-in-up stagger-delay-2" data-bs-ride="carousel">
       <div class="carousel-inner" id="sale-products-container">
         <!-- Products will be injected here dynamically -->
       </div>
@@ -382,15 +481,17 @@
     </div>
     
     <!-- Visit Shop Button -->
-    <div class="text-center mt-4">
-      <a href="/login" class="btn btn-outline-light btn-lg">Visit Shop <i class="bi bi-arrow-right ms-2"></i></a>
+    <div class="text-center mt-4 fade-in-up stagger-delay-3">
+      <a href="/login" class="btn btn-outline-light btn-lg px-5">
+        <i class="bi bi-bag me-2"></i>Visit Shop
+      </a>
     </div>
   </div>
 </section>
 
 <!-- Direction Buttons -->
-<div class="text-center mt-3">
-  <div class="d-flex justify-content-center flex-wrap gap-2">
+<div class="text-center mt-3 container">
+  <div class="d-flex justify-content-center flex-wrap gap-2 fade-in-up">
     <button id="getDirectionsBtn" onclick="openDirections()" class="btn btn-success btn-lg">
       📍 Get Directions
       <span id="spinner" class="spinner-border spinner-border-sm ms-2 d-none" role="status" aria-hidden="true"></span>
@@ -404,7 +505,7 @@
 </div>
 
 <!-- Embedded Google Map -->
-<div class="text-center mt-4" id="mapContainer">
+<div class="text-center mt-4 container fade-in-up stagger-delay-1" id="mapContainer">
   <iframe 
     id="directionsMap"
     src="https://www.google.com/maps/embed/v1/place?key=AIzaSyDnphs9rressecIYYKehF89dWILJTWcMEs&q=Maximum+Gamers+K.M+Opposite+Student+Centre&zoom=17" 
@@ -420,8 +521,8 @@
   function openDirections() {
     const spinner = document.getElementById("spinner");
     const button = document.getElementById("getDirectionsBtn");
-    spinner.classList.remove("d-none"); // show spinner
-    button.disabled = true; // disable button during loading
+    spinner.classList.remove("d-none");
+    button.disabled = true;
 
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(function(position) {
@@ -459,111 +560,11 @@
   }
 </script>
 
-
-<script>
-  // Reusable cart hook
-  function hookCartButtons(selector) {
-    document.querySelectorAll(selector).forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = btn.dataset.id;
-        const title = btn.dataset.title;
-        const salePrice = parseFloat(btn.dataset.price);
-        // Add to cart logic here
-        console.log("Added to cart:", {id, title, salePrice});
-        updateCartBadge();
-      });
-    });
-  }
-
-  async function loadSaleProducts() {
-    try {
-      const res = await fetch('/products/json');
-      const products = await res.json();
-      const container = document.getElementById('sale-products-container');
-
-      if (!products.length) {
-        container.innerHTML = `
-          <div class="carousel-item active text-center py-5">
-            <h5 class="text-muted">No products available</h5>
-          </div>`;
-        return;
-      }
-
-      // Split products into groups of 3 (desktop view)
-      const chunkSize = window.innerWidth < 768 ? 1 : 3;
-      const productChunks = [];
-      for (let i = 0; i < products.length; i += chunkSize) {
-        productChunks.push(products.slice(i, i + chunkSize));
-      }
-
-     // Build carousel slides
-container.innerHTML = productChunks.map((group, idx) => `
-  <div class="carousel-item ${idx === 0 ? 'active' : ''}">
-    <div class="row justify-content-center">
-      ${group.map(p => {
-        // ✅ Determine product image
-        let imageUrl = '/images/placeholder.png';
-        if (p.images && Array.isArray(p.images) && p.images.length > 0) {
-          // Cloudinary or URL string
-          imageUrl = typeof p.images[0] === 'string'
-            ? p.images[0]
-            : p.images[0].url || '/images/placeholder.png';
-        } else if (p.image) {
-          imageUrl = p.image;
-        }
-
-        return `
-          <div class="col-12 col-sm-6 col-lg-4 mb-4">
-            <div class="card shadow-sm h-100 border-0">
-              <img src="${imageUrl}" 
-                   class="card-img-top" 
-                   alt="${p.title}" 
-                   style="height:220px; object-fit:cover; border-radius:0.5rem 0.5rem 0 0;"
-                   onerror="this.src='/images/placeholder.png'">
-              <div class="card-body d-flex flex-column">
-                <h5 class="card-title text-truncate">${p.title}</h5>
-                <p class="card-text small text-muted text-truncate">${p.description || ''}</p>
-                <p class="mb-2">
-                  <span class="text-danger text-decoration-line-through">Ksh ${p.marketPrice}</span>
-                  <span class="fw-bold text-success ms-2">Ksh ${p.salePrice}</span>
-                </p>
-                <button class="btn btn-success mt-auto add-to-cart" 
-                        data-id="${p._id}" 
-                        data-title="${p.title}" 
-                        data-price="${p.salePrice}">
-                  <i class="bi bi-cart-plus"></i> Add to Cart
-                </button>
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('')}
-    </div>
-  </div>
-`).join('');
-
-      // Hook up cart buttons for this section
-      hookCartButtons('#sale-products-container .add-to-cart');
-
-    } catch (err) {
-      console.error('Error loading sale products:', err);
-      document.getElementById('sale-products-container').innerHTML = `
-        <div class="carousel-item active text-center py-5">
-          <h5 class="text-danger">Error loading products</h5>
-        </div>`;
-    }
-  }
-
-  window.addEventListener('DOMContentLoaded', loadSaleProducts);
-  window.addEventListener('resize', loadSaleProducts);
-</script>
-
-
 <!-- Loan Calculator Section -->
 <section class="cyber-loan-section py-5">
   <div class="container text-center">
-      <h2 class="mb-4">💰 Loan Calculator</h2>
-    <form class="row justify-content-center g-3">
+    <h2 class="mb-4 section-header fade-in-up">💰 Loan Calculator</h2>
+    <form class="row justify-content-center g-3 fade-in-up stagger-delay-1">
       <div class="col-md-3 col-sm-6">
         <input type="number" class="form-control bg-black text-white" placeholder="Item Value (KES)" id="loanValue">
       </div>
@@ -574,11 +575,13 @@ container.innerHTML = productChunks.map((group, idx) => `
         <button type="button" class="btn btn-success w-100" onclick="calculateLoan()">Calculate</button>
       </div>
     </form>
-    <div class="mt-4 fw-bold" id="loanResult"></div>
+    <div class="mt-4 fw-bold fade-in-up stagger-delay-2" id="loanResult"></div>
     
     <!-- Apply Loan Button -->
-    <div class="mt-4">
-      <a href="/login" class="btn btn-primary btn-lg">Apply for a Loan <i class="bi bi-arrow-right ms-2"></i></a>
+    <div class="mt-4 fade-in-up stagger-delay-3">
+      <a href="/login" class="btn btn-primary btn-lg px-5">
+        Apply for a Loan <i class="bi bi-arrow-right ms-2"></i>
+      </a>
     </div>
   </div>
 </section>
@@ -594,10 +597,9 @@ container.innerHTML = productChunks.map((group, idx) => `
       return;
     }
 
-    const interestRate = 0.30; // 30% per month
+    const interestRate = 0.30;
     let totalInterest = 0;
 
-    // Build month-by-month table
     let tableHTML = `
       <div class="table-responsive mt-3">
         <table class="table table-dark table-striped text-white">
@@ -629,7 +631,6 @@ container.innerHTML = productChunks.map((group, idx) => `
 
     tableHTML += `</tbody></table></div>`;
 
-    // Summary
     const resultHTML = `
       <div class='alert alert-info mt-3'>
         Estimated Total Repayment: KES ${(value + totalInterest).toFixed(2)} <br>
@@ -641,13 +642,12 @@ container.innerHTML = productChunks.map((group, idx) => `
   }
 </script>
 
-
 <!-- Leaderboard Section -->
 <section id="leaderboard-home" class="py-5 bg-dark text-light">
   <div class="container">
-   <h2 class="mb-4">🏆 Leaderboard</h2>
+    <h2 class="mb-4 section-header fade-in-up">🏆 Leaderboard</h2>
 
-    <div class="table-responsive">
+    <div class="table-responsive fade-in-up stagger-delay-1">
       <table class="table table-dark table-striped align-middle leaderboard-table">
         <thead class="table-success text-dark">
           <tr>
@@ -663,8 +663,8 @@ container.innerHTML = productChunks.map((group, idx) => `
     </div>
     
     <!-- Send Complaint Button -->
-    <div class="text-center mt-4">
-      <a href="/login" class="btn btn-outline-warning">
+    <div class="text-center mt-4 fade-in-up stagger-delay-2">
+      <a href="/login" class="btn btn-outline-warning px-4">
         <i class="bi bi-exclamation-triangle me-2"></i>Send Complaint
       </a>
     </div>
@@ -674,7 +674,6 @@ container.innerHTML = productChunks.map((group, idx) => `
 <script>
   const leaderboardBody = document.getElementById("leaderboardBody");
 
-  // Render leaderboard
   function renderLeaderboard(players) {
     leaderboardBody.innerHTML = "";
 
@@ -694,7 +693,6 @@ container.innerHTML = productChunks.map((group, idx) => `
     });
   }
 
-  // Fetch leaderboard once on page load
   async function loadLeaderboard() {
     try {
       const res = await fetch("/top-leaderboard");
@@ -706,24 +704,21 @@ container.innerHTML = productChunks.map((group, idx) => `
     }
   }
 
-  // Initial load
   loadLeaderboard();
 </script>
-
 
 <!-- Testimonials Section -->
 <section class="py-5 bg-dark">
   <div class="container text-center">
-    <h2 class="fw-bold mb-5">💬 What Our Gamers Say</h2>
+    <h2 class="fw-bold mb-5 section-header fade-in-up">💬 What Our Gamers Say</h2>
 
-    <div id="testimonialCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="5000">
+    <div id="testimonialCarousel" class="carousel slide fade-in-up stagger-delay-1" data-bs-ride="carousel" data-bs-interval="5000">
       <div class="carousel-inner">
 
-        <!-- Testimon  ial 1 -->
+        <!-- Testimonial 1 -->
         <div class="carousel-item active">
           <div class="card p-4 bg-black mx-auto testimonial-card">
-            <p class="mb-3">"Maximum Gamers has the best gaming environment! Friendly staff and top-quality consoles."
-            </p>
+            <p class="mb-3">"Maximum Gamers has the best gaming environment! Friendly staff and top-quality consoles."</p>
             <h6 class="fw-bold mt-3">- Alex M.</h6>
             <div class="text-warning">⭐⭐⭐⭐⭐</div>
           </div>
@@ -749,7 +744,7 @@ container.innerHTML = productChunks.map((group, idx) => `
 
       </div>
 
-      <div class="mt-4">
+      <div class="mt-4 fade-in-up stagger-delay-2">
         <div class="carousel-indicators position-static">
           <button type="button" data-bs-target="#testimonialCarousel" data-bs-slide-to="0" class="active"></button>
           <button type="button" data-bs-target="#testimonialCarousel" data-bs-slide-to="1"></button>
@@ -771,7 +766,7 @@ container.innerHTML = productChunks.map((group, idx) => `
 
   <div class="container">
     <div class="row text-center text-md-start g-3">
-      <div class="col-6 col-md-3">
+      <div class="col-6 col-md-3 fade-in-up">
         <h6 class="fw-bold">Discover</h6>
         <ul class="list-unstyled">
           <li><a href="/login" class="text-white text-decoration-none">Gaming Sessions</a></li>
@@ -779,7 +774,7 @@ container.innerHTML = productChunks.map((group, idx) => `
           <li><a href="/login" class="text-white text-decoration-none">Store</a></li>
         </ul>
       </div>
-      <div class="col-6 col-md-3">
+      <div class="col-6 col-md-3 fade-in-up stagger-delay-1">
         <h6 class="fw-bold">Our Shop</h6>
         <ul class="list-unstyled">
           <li><a href="/about" class="text-white text-decoration-none">About Us</a></li>
@@ -787,7 +782,7 @@ container.innerHTML = productChunks.map((group, idx) => `
           <li><a href="/login" class="text-white text-decoration-none">What's Coming</a></li>
         </ul>
       </div>
-      <div class="col-6 col-md-3">
+      <div class="col-6 col-md-3 fade-in-up stagger-delay-2">
         <h6 class="fw-bold">Connect</h6>
         <ul class="list-unstyled">
           <li><a href="#" class="text-white text-decoration-none">Instagram</a></li>
@@ -795,7 +790,7 @@ container.innerHTML = productChunks.map((group, idx) => `
           <li><a href="#" class="text-white text-decoration-none">Facebook</a></li>
         </ul>
       </div>
-      <div class="col-6 col-md-3">
+      <div class="col-6 col-md-3 fade-in-up stagger-delay-3">
         <h6 class="fw-bold">Legal</h6>
         <ul class="list-unstyled">
           <li><a href="/privacy-policy" class="text-white text-decoration-none">Privacy Policy</a></li>
@@ -805,13 +800,12 @@ container.innerHTML = productChunks.map((group, idx) => `
       </div>
     </div>
 
-    <div class="mt-4 text-center small">
+    <div class="mt-4 text-center small fade-in-up stagger-delay-4">
       &copy; 2025 Maximum Gamers. All Rights Reserved.
     </div>
   </div>
 </footer>
 
-<!-- CSS -->
 <style>
   .shiny-line {
     height: 4px;
@@ -823,16 +817,10 @@ container.innerHTML = productChunks.map((group, idx) => `
   }
 
   @keyframes shine {
-    0% {
-      background-position: 0% 50%;
-    }
-
-    100% {
-      background-position: 100% 50%;
-    }
+    0% { background-position: 0% 50%; }
+    100% { background-position: 100% 50%; }
   }
 </style>
-
 
 <!-- Mobile Bottom Nav -->
 <nav class="navbar bottom-nav d-lg-none">
@@ -848,181 +836,160 @@ container.innerHTML = productChunks.map((group, idx) => `
 <div class="chat-widget" onclick="window.open('https://wa.me/254718804786','_blank')">
   <i class="bi bi-whatsapp"></i>
 </div>
+
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- Socket.io -->
-<script src="/socket.io/socket.io.js"></script>
-
 <!-- Custom Scripts -->
 <script>
-  // Initialize socket connection
-  const socket = io();
+  // ========== Scroll Animations ==========
+  function initScrollAnimations() {
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
 
-  // Language translations
-  const translations = {
-    EN: {
-      brand: "🎮 Maximum Gamers",
-      signIn: "Sign In",
-      register: "Register",
-      searchPlaceholder: "Search..."
-    },
-    SW: {
-      brand: "🎮 Wachezaji Wakuu",
-      signIn: "Ingia",
-      register: "Jisajili",
-      searchPlaceholder: "Tafuta..."
-    }
-  };
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, observerOptions);
 
-  // Language switcher
-  function switchLanguage() {
-    const selectedLang = document.getElementById("languageSwitcher").value;
-    document.getElementById("brandText").innerText = translations[selectedLang].brand;
-    document.getElementById("signInBtn").innerText = translations[selectedLang].signIn;
-    document.getElementById("registerBtn").innerText = translations[selectedLang].register;
-    document.getElementById("universalSearchInput").setAttribute("placeholder", translations[selectedLang].searchPlaceholder);
-  }
-
-  // Universal search function
-  function universalSearch(event) {
-    event.preventDefault();
-    const input = document.getElementById("universalSearchInput").value.trim().toLowerCase();
-
-    // Remove old highlights
-    document.querySelectorAll("mark.search-highlight").forEach(el => {
-      el.outerHTML = el.innerText;
+    document.querySelectorAll('.fade-in-up').forEach(el => {
+      observer.observe(el);
     });
-
-    if (input === "") return;
-
-    // Search across all text nodes in body
-    const bodyText = document.body.innerHTML;
-    const regex = new RegExp("(" + input + ")", "gi");
-    document.body.innerHTML = bodyText.replace(regex, '<mark class="search-highlight">$1</mark>');
   }
 
-  // Top bar messages
-  let messages = [];
-  let currentIndex = 0;
-  const container = document.getElementById("topBarMessages");
-
-  async function fetchTopBarMessages() {
-    const res = await fetch("/top-bar/json");
-    messages = await res.json();
-    renderMessages();
-  }
-
-  function renderMessages() {
-    container.innerHTML = "";
-    messages.forEach((msg, index) => {
-      const span = document.createElement("span");
-      span.classList.add("top-bar-msg");
-      if (index === 0) span.classList.add("active");
-      span.textContent = msg.content;
-      container.appendChild(span);
-    });
-    currentIndex = 0;
-  }
-
-  function nextMessage() {
-    if (messages.length === 0) return;
-    const spans = container.querySelectorAll(".top-bar-msg");
-    spans[currentIndex].classList.remove("active");
-    currentIndex = (currentIndex + 1) % spans.length;
-    spans[currentIndex].classList.add("active");
-  }
-
-  async function initTopBar() {
-    await fetchTopBarMessages();
-    setInterval(nextMessage, 5000);
-  }
-
-  // Socket.IO for real-time updates
-  socket.on("topBarUpdate", async () => {
-    await fetchTopBarMessages();
-  });
-
-  // Sale products carousel
-  async function fetchSaleProducts() {
+  // ========== Load On-Sale Products with Enhanced Animation ==========
+  async function loadSaleProducts() {
     try {
-      const res = await fetch("/api/products/sale");
+      const res = await fetch('/products/json');
       const products = await res.json();
-      const container = document.getElementById("sale-products-container");
-      container.innerHTML = "";
+      const saleProducts = products.filter(p => p.onSale === true);
+      const container = document.getElementById('sale-products-container');
 
-      products.forEach((product, index) => {
-        container.innerHTML += `
-            <div class="carousel-item ${index === 0 ? "active" : ""}">
-              <div class="row justify-content-center">
-                <div class="col-md-4">
-                  <div class="card shadow-lg border-0">
-                    <img src="${product.image}" class="card-img-top" alt="${product.name}">
-                    <div class="card-body text-center">
-                      <h5 class="card-title text-dark">${product.name}</h5>
-                      <p class="text-muted">
-                        <span class="text-decoration-line-through">KSH ${product.originalPrice}</span>
-                        <span class="fw-bold text-success">KSH ${product.salePrice}</span>
-                      </p>
-                      <button class="btn btn-success w-100">
-                        <i class="bi bi-cart"></i> Add to Cart
+      if (!saleProducts.length) {
+        container.innerHTML = `
+          <div class="carousel-item active text-center py-5">
+            <h5 class="text-muted">No products currently on sale</h5>
+            <p class="text-muted">Check back later for amazing deals!</p>
+          </div>`;
+        return;
+      }
+
+      const chunkSize = window.innerWidth < 768 ? 1 : 3;
+      const productChunks = [];
+      for (let i = 0; i < saleProducts.length; i += chunkSize) {
+        productChunks.push(saleProducts.slice(i, i + chunkSize));
+      }
+
+      container.innerHTML = productChunks.map((group, idx) => `
+        <div class="carousel-item ${idx === 0 ? 'active' : ''}">
+          <div class="row justify-content-center">
+            ${group.map((p, productIndex) => {
+              let imageUrl = '/images/placeholder.png';
+              if (p.images && Array.isArray(p.images) && p.images.length > 0) {
+                imageUrl = typeof p.images[0] === 'string'
+                  ? p.images[0]
+                  : p.images[0].url || '/images/placeholder.png';
+              } else if (p.image) {
+                imageUrl = p.image;
+              }
+
+              const discount = Math.round(((p.marketPrice - p.salePrice) / p.marketPrice) * 100);
+
+              return `
+                <div class="col-12 col-sm-6 col-lg-4 mb-4">
+                  <div class="product-card h-100" style="transition-delay: ${productIndex * 0.1}s">
+                    <div class="position-relative">
+                      <span class="sale-badge">${discount}% OFF</span>
+                      <img src="${imageUrl}" 
+                           class="product-image w-100" 
+                           alt="${p.title}"
+                           onerror="this.src='/images/placeholder.png'">
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                      <h5 class="card-title text-light">${p.title}</h5>
+                      <p class="card-text small text-muted flex-grow-1">${p.description || 'Premium gaming accessory'}</p>
+                      <div class="price-section">
+                        <div class="d-flex justify-content-between align-items-center">
+                          <span class="text-danger text-decoration-line-through">Ksh ${p.marketPrice}</span>
+                          <span class="fw-bold text-success fs-5">Ksh ${p.salePrice}</span>
+                        </div>
+                        <small class="text-warning">Save Ksh ${p.marketPrice - p.salePrice}</small>
+                      </div>
+                      <button class="btn btn-success w-100 mt-2">
+                        <i class="bi bi-cart-plus me-2"></i>Add to Cart
                       </button>
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          `;
-      });
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `).join('');
+
+      // Animate product cards after they are loaded
+      setTimeout(() => {
+        document.querySelectorAll('.product-card').forEach((card, index) => {
+          setTimeout(() => {
+            card.classList.add('animated');
+          }, index * 100);
+        });
+      }, 500);
+
     } catch (err) {
-      console.error("Error loading sale products:", err);
+      console.error('Error loading sale products:', err);
+      container.innerHTML = `
+        <div class="carousel-item active text-center py-5">
+          <h5 class="text-danger">Error loading products</h5>
+          <p class="text-muted">Please try again later</p>
+        </div>`;
     }
   }
 
-
-  // Initialize everything when DOM is loaded
+  // ========== Initialize Everything ==========
   document.addEventListener('DOMContentLoaded', () => {
-    initTopBar();
-    fetchSaleProducts();
-    renderLeaderboardHome();
+    displayTopBar();
+    loadSaleProducts();
+    loadLeaderboard();
+    initScrollAnimations();
+    initBackToTop();
 
-    // Initialize carousel
+    // Initialize carousels
     const carousel = new bootstrap.Carousel("#saleProductsCarousel", {
       interval: 5000,
       ride: "carousel"
     });
 
-    // Initialize testimonial carousel
     const testimonialCarousel = new bootstrap.Carousel("#testimonialCarousel");
-
-    // Refresh leaderboard when admin updates
-    socket.on("leaderboardUpdate", renderLeaderboardHome);
   });
 
   // Back to Top functionality
-function initBackToTop() {
-  const backToTopButton = document.getElementById('backToTop');
-  
-  // Show/hide button based on scroll position
-  window.addEventListener('scroll', () => {
-    if (window.pageYOffset > 300) {
-      backToTopButton.classList.add('show');
-    } else {
-      backToTopButton.classList.remove('show');
-    }
-  });
-  
-  // Scroll to top when clicked
-  backToTopButton.addEventListener('click', () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
+  function initBackToTop() {
+    const backToTopButton = document.getElementById('backToTop');
+    
+    window.addEventListener('scroll', () => {
+      if (window.pageYOffset > 300) {
+        backToTopButton.classList.add('show');
+      } else {
+        backToTopButton.classList.remove('show');
+      }
     });
-  });
-}
+    
+    backToTopButton.addEventListener('click', () => {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    });
+  }
 
-// Initialize back to top button when DOM is loaded
-document.addEventListener('DOMContentLoaded', initBackToTop);
+  // Recalculate product layout on window resize
+  window.addEventListener('resize', loadSaleProducts);
 </script>
 
 <!-- Back to Top Arrow -->
@@ -1030,5 +997,4 @@ document.addEventListener('DOMContentLoaded', initBackToTop);
   <i class="bi bi-arrow-up-circle-fill"></i>
 </div>
 </body>
-
-</html> 
+</html>
